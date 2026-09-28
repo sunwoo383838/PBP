@@ -216,19 +216,19 @@ def build_worldgen(out: Path):
     seq_counter = iter(range(1, 10_000))
     later_db = []                                            # (day, round, g, key, db_day, value)
 
-    def world(day, rnd, g, action, agent=None, payload=None):
+    def world(day, rnd, g, action, agent=None, payload=None, entities=()):
         timeline.append(TimelineEvent(eid=f"EV-{len(timeline) + len(work) + 1:04d}", seq=1, day=day, round=rnd, kind="world",
-                                      group=g, agent=agent, action=action, payload=payload or {}))
+                                      group=g, agent=agent, action=action, payload=payload or {}, entities=list(entities)))
 
     def db_write(day, rnd, g, key, db_day, value):
         v = put(g, key, day, db_day, value)
         world(day, rnd, g, "db_write", payload=dump(DbWrite(key=key, version=db[g][key][v - 1])))
 
-    def local(day, rnd, g, agent, tid, text, results, entities, schema, answer):
+    def local(day, rnd, g, agent, tid, text, results, entities, schema, answer, disc=None):
         timeline.append(TimelineEvent(eid=f"EV-{len(timeline) + len(work) + 1:04d}", seq=1, day=day, round=rnd, kind="local",
                                       group=g, agent=agent, task_id=tid, text=text,
                                       tool_results=[RenderedToolResult(tool=t, text=x) for t, x in results],
-                                      entities=entities, output_schema=schema))
+                                      entities=entities, output_schema=schema, payload={"disc": disc} if disc else {}))
         gold.append(GoldRecord(task_id=tid, answer=answer))
 
     grade_schema = OutputSchema(slots=[Slot(name="grade", type="number")])
@@ -244,7 +244,7 @@ def build_worldgen(out: Path):
           [("db.query", "FIN-TYO 営業1課 remaining: 4,051,700")], ["営業1課"], amount_schema, {"remaining": 4_051_700})
     local(2, 1, "FIN-SEL", "fin-sel.a3", "L-003", "CMT-00001 가승인 확정 처리하고 상태 알려줘.",
           [("payables.confirm", "CMT-00001 영업1팀 612,300원 확정 대기 등록")], ["CMT-00001", "영업1팀"], status_schema,
-          {"status": "pending"})
+          {"status": "pending"}, disc="H1")
     db_write(2, 1, "FIN-SEL", "FIN-SEL/commit/CMT-00001/status", 3, {"status": "pending", "amount": 612_300, "dept": "영업1팀"})
     world(3, 0, "FIN-SEL", "agent_leave", agent="fin-sel.a3")
     local(3, 1, "HR-SEL", "hr-sel.a2", "L-004", "도윤 대리 부서 이동 발효 처리해 줘.",
@@ -252,12 +252,13 @@ def build_worldgen(out: Path):
     db_write(3, 1, "HR-SEL", "HR-SEL/emp/E-SEL-1001/profile", 4, profile("E-SEL-1001", dept="영업1팀"))
     world(4, 0, "FIN-SEL", "agent_join", agent="fin-sel.n0001", payload={
         "from": "fin-sel.a3", "role": "payables",
-        "handover_notes": ["[인수인계] CMT-00001 영업1팀 가승인 확정 대기, 8일 정산 예정."]})
+        "handover_notes": ["[인수인계] CMT-00001 영업1팀 가승인 확정 대기, 8일 정산 예정."]},
+          entities=["CMT-00001", "영업1팀"])
     local(4, 2, "HR-TYO", "hr-tyo.a3", "L-005", "小野さん 급여 등급 확인해 줘.",
           [("db.query", "E-TYO-1001 profile: 開発1課, 2급, regular, active")], ["E-TYO-1001"], grade_schema, {"grade": 2})
     local(5, 1, "FIN-TYO", "fin-tyo.a2", "L-006", "開発1課 예산 조정 반영하고 조정 후 잔액 알려줘.",
           [("fin.adjust_request", "開発1課 capex 잔액 2,988,600원으로 조정 (분기 이월 반영)")], ["開発1課"], amount_schema,
-          {"remaining": 2_988_600})
+          {"remaining": 2_988_600}, disc="H0")
     db_write(5, 1, "FIN-TYO", "FIN-TYO/line/開発1課/remaining", 7, 2_988_600)
 
     # ── 교차 작업 ──
@@ -356,7 +357,8 @@ def build_worldgen(out: Path):
                                             journal=journal[g], egress_log=egress[g],
                                             db=[DbRecord(key=k, versions=[x for x in vs if x.day <= 0])
                                                 for k, vs in db[g].items() if any(x.day <= 0 for x in vs)],
-                                            aliases={**aliases[g.split("-")[1]], **{d: [d] for d in DEPTS[g.split("-")[1]]}}),
+                                            aliases={**aliases[g.split("-")[1]], **{d: [d] for d in DEPTS[g.split("-")[1]]}},
+                                            env={"scope_categories": DEPTS[g.split("-")[1]]}),
                     timeline, work, gold,
                     {"domains": ["HR", "FIN"], "regions": REGIONS, "rounds_per_day": 3, "db_lag": [1, 2]})
 

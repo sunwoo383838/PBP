@@ -21,7 +21,7 @@ from gbg.contracts.envelope import Response
 from gbg.kernel.rng import NamedRNG
 from gbg.kernel.runner import KernelParams, RunConfigError, Runner
 from gbg.kernel.tools import Resource, Tool, ToolRegistry
-from gbg.tests.support import PublicScenarioAdapter
+from gbg.tests.support import load_adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 CONDITIONS = load_conditions(ROOT / "configs" / "conditions.yaml")
@@ -85,7 +85,7 @@ def factory(adapter, jitter_seed=None):
 
 def make_runner(run_dir, scenario="worldgen_mini", *, seed=7, condition="direct", jitter_seed=None, fault=None,
                 launch_order=None, agent_factory=None):
-    adapter = PublicScenarioAdapter(scenario)
+    adapter = load_adapter(scenario)
     return Runner(adapter, condition=condition, seed=seed, run_dir=run_dir, conditions=CONDITIONS, access=ACCESS,
                   tools=make_tools(), agent_factory=agent_factory or factory(adapter, jitter_seed),
                   params=KernelParams(), fault=fault, launch_order=launch_order)
@@ -129,7 +129,7 @@ def test_wal_seq_is_dense_and_rounds_ordered(baseline):
 
 def test_world_updates_are_in_wal(baseline):
     d, _ = baseline
-    adapter = PublicScenarioAdapter("worldgen_mini")
+    adapter = load_adapter("worldgen_mini")
     writes = [e for e in adapter.events() if e.kind == "world" and e.action == "db_write"]
     logged = [e for e in wal_events(d) if e["type"] == "world_update"]
     assert [e["payload"]["eid"] for e in logged] == [e.eid for e in writes]
@@ -139,7 +139,7 @@ def test_world_updates_are_in_wal(baseline):
 
 def test_every_task_answered_once(baseline):
     d, _ = baseline
-    adapter = PublicScenarioAdapter("worldgen_mini")
+    adapter = load_adapter("worldgen_mini")
     tasks = {e.task_id for e in adapter.events() if e.kind != "world"}
     answers = [e["payload"]["task_id"] for e in wal_events(d) if e["type"] == "answer"]
     assert sorted(answers) == sorted(tasks)
@@ -176,7 +176,7 @@ def crash_at(stage, day, after=0):
 @pytest.mark.parametrize("how", ["agent", "wal_event", "side_file", "before_marker"])
 def test_resume_after_crash_mid_day3(baseline, tmp_path, how):
     d, h = baseline
-    adapter = PublicScenarioAdapter("worldgen_mini")
+    adapter = load_adapter("worldgen_mini")
     if how == "agent":
         runner = make_runner(tmp_path, agent_factory=_bomb_factory(adapter, "hr-sel.a2", 3))
     else:
@@ -251,7 +251,7 @@ class Forwarder(ScriptedAgent):
 
 
 def test_hop_limit_ends_in_error(tmp_path):
-    adapter = PublicScenarioAdapter("silo_mini")
+    adapter = load_adapter("silo_mini")
     agents = sorted(m.agent_id for g in adapter.groups() for m in g.members)
     nxt = {a: agents[(i + 1) % len(agents)] for i, a in enumerate(agents)}
     runner = make_runner(tmp_path, "silo_mini", agent_factory=lambda aid, g, role: Forwarder(aid, nxt[aid]))
@@ -274,8 +274,8 @@ def test_responder_sees_round_start_history(tmp_path):
     for e in ev:
         if e["type"] == "message" and e["payload"]["kind"] == "response":
             resp.setdefault(e["round"], []).append(int(e["payload"]["response"]["answer"]))
-    assert set(resp[1]) == {0}, "1라운드 응답자는 커밋된 이력이 없다"
-    assert all(n > 0 for n in resp[2]), "2라운드 응답자는 1라운드 커밋분을 본다"
+    assert set(resp[1]) == {1}, "1라운드 응답자는 워밍업 이력(안내 한 줄)만 본다"
+    assert all(n > 1 for n in resp[2]), "2라운드 응답자는 1라운드 커밋분을 본다"
 
 
 def test_named_rng_streams():

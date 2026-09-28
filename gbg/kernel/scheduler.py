@@ -7,7 +7,8 @@
 (0, 타임라인 seq) 세계 이벤트, (1, 작업 id, n1, n2, ...) 작업과 그 작업에서 파생된 문답이다. 각 호출 경로가
 자기 슬롯을 예약하므로 실행이 어떻게 섞여도 키가 같다.
 
-커널 상태(구성원, 활동 여부, 커밋된 이력)는 커밋된 사건으로만 바뀐다(apply). 재개는 WAL을 apply로 재생한다.
+커널 상태(구성원, 활동 여부)와 저장소 투영은 커밋된 사건으로만 바뀐다(apply). 재개는 WAL을 apply로 재생한다.
+에이전트는 라운드 시작 시점의 이력을 본다: 라운드 중에는 투영이 바뀌지 않는다.
 """
 import asyncio
 from collections.abc import Callable
@@ -16,7 +17,8 @@ from typing import Protocol
 
 from gbg.contracts.envelope import Request, Response
 from gbg.contracts.events import Event, EventType
-from gbg.contracts.schemas import TimelineEvent
+from gbg.contracts.schemas import HistoryEntry, TimelineEvent
+from gbg.stores import Stores
 
 from .access_guard import AccessGuard
 from .rng import NamedRNG
@@ -70,7 +72,7 @@ class AgentContext:
     task_id: str                                # 이 호출 경로의 원 작업
     hop: int                                    # 0 = 작업 수행, n = n번째 홉의 응답
     lineage: list[str]
-    history: tuple[Event, ...]                  # 라운드 시작 시점의 커밋된 이력
+    history: tuple[HistoryEntry, ...]           # 라운드 시작 시점의 이력 (워밍업 + 커밋분)
 
     @property
     def rng(self):
@@ -92,16 +94,15 @@ class Member:
 
 
 class Kernel:
-    def __init__(self, *, seed: int, condition: str, guard: AccessGuard, tools: ToolRegistry,
+    def __init__(self, *, seed: int, condition: str, guard: AccessGuard, tools: ToolRegistry, stores: Stores,
                  agent_factory: AgentFactory, hop_limit: int,
                  launch_order: Callable[[list[str]], list[str]] | None = None):
         from .bus import Bus
         self.rng = NamedRNG(seed)
-        self.condition, self.guard, self.tools = condition, guard, tools
+        self.condition, self.guard, self.tools, self.stores = condition, guard, tools, stores
         self.agent_factory, self.launch_order = agent_factory, launch_order
         self.members: dict[str, Member] = {}
         self.agents: dict[str, Agent] = {}
-        self.histories: dict[str, list[Event]] = {}
         self.last_seq = 0
         self.bus = Bus(self, hop_limit)
 
@@ -109,7 +110,6 @@ class Kernel:
     def add_member(self, agent_id: str, group: str, role: str):
         self.members[agent_id] = Member(group, role)
         self.agents[agent_id] = self.agent_factory(agent_id, group, role)
-        self.histories.setdefault(agent_id, [])
 
     def apply(self, ev: Event):
         if ev.type == "agent_leave":
@@ -117,9 +117,6 @@ class Kernel:
         elif ev.type == "agent_join" and ev.payload["agent"] not in self.members:
             p = ev.payload
             self.add_member(p["agent"], p["group"], p["role"])
-        for a in self.participants(ev):
-            if a in self.histories:
-                self.histories[a].append(ev)
         self.last_seq = ev.seq
 
     @staticmethod
@@ -155,8 +152,10 @@ class Kernel:
                 self._world(Span(drafts, (0, te.seq)), te)
                 continue
             span = Span(drafts, (1, te.task_id))
-            span.emit("task_delivered", "kernel", {"task_id": te.task_id, "eid": te.eid, "kind": te.kind,
-                                                   "agent": te.agent, "group": te.group})
+            span.emit("task_delivered", "kernel", {
+                "task_id": te.task_id, "eid": te.eid, "kind": te.kind, "agent": te.agent, "group": te.group,
+                "text": te.text, "tool_results": [r.model_dump() for r in te.tool_results], "entities": te.entities,
+                "disc": te.payload.get("disc")})
             if not self.is_active(te.agent):
                 span.emit("answer", "kernel", {"task_id": te.task_id, "agent": te.agent, "answer": None,
                                                "error": "agent_unavailable"})
@@ -176,7 +175,8 @@ class Kernel:
         elif te.action == "agent_join":
             p = te.payload
             span.emit("agent_join", "kernel", {"agent": te.agent, "group": te.group, "role": p["role"],
-                                               "from": p.get("from"), "handover_notes": p.get("handover_notes", [])})
+                                               "from": p.get("from"), "handover_notes": p.get("handover_notes", []),
+                                               "entities": te.entities})
             self.add_member(te.agent, te.group, p["role"])
         else:                                                               # db_write · env: 저장소 투영은 Stage 2
             span.emit("world_update", "kernel", {"eid": te.eid, "action": te.action, "group": te.group,
@@ -186,7 +186,7 @@ class Kernel:
         m = self.members[agent_id]
         for te, span in queue:
             ctx = AgentContext(self, span, agent_id, m.group, m.role, day, rnd, te.task_id, 0, [],
-                               tuple(self.histories[agent_id]))
+                               self.stores.history.entries(agent_id))
             try:
                 answer = await self.agents[agent_id].work(ctx, te)
                 span.emit("answer", f"agent:{agent_id}", {"task_id": te.task_id, "agent": agent_id, "answer": answer})

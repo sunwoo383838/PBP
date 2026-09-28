@@ -8,10 +8,11 @@ from pathlib import Path
 from gbg.contracts.access import AccessTable
 from gbg.contracts.adapter import BenchmarkAdapter
 from gbg.contracts.conditions import Condition, resolve_condition
+from gbg.stores import Stores
 
 from .access_guard import AccessGuard
 from .scheduler import AgentFactory, Kernel
-from .tools import ToolRegistry
+from .tools import Tool, ToolRegistry
 from .wal import WAL, Fault
 
 
@@ -28,18 +29,24 @@ class KernelParams:
 class Runner:
     def __init__(self, adapter: BenchmarkAdapter, *, condition: str, seed: int, run_dir: Path,
                  conditions: dict[str, Condition], access: AccessTable, tools: ToolRegistry,
-                 agent_factory: AgentFactory, params: KernelParams = KernelParams(), fault: Fault | None = None,
+                 agent_factory: AgentFactory, env_tools: Callable[[Stores], list[Tool]] | None = None,
+                 params: KernelParams = KernelParams(), fault: Fault | None = None,
                  launch_order: Callable[[list[str]], list[str]] | None = None):
-        resolve_condition(conditions, condition)
+        cond = resolve_condition(conditions, condition)
         self.adapter, self.condition, self.seed, self.params = adapter, condition, seed, params
         self.run_dir = Path(run_dir)
         self.wal = WAL(self.run_dir, fault)
+        self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day)
+        for tool in env_tools(self.stores) if env_tools else []:
+            tools.register(tool)
         self.kernel = Kernel(seed=seed, condition=condition, guard=AccessGuard(access, condition), tools=tools,
-                             agent_factory=agent_factory, hop_limit=params.hop_limit, launch_order=launch_order)
+                             stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
+                             launch_order=launch_order)
+        self.card_mode = cond.card_mode
 
     def _check_config(self):
-        cfg = {"benchmark": self.adapter.name, "condition": self.condition, "seed": self.seed,
-               "params": asdict(self.params)}
+        cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,
+               "seed": self.seed, "params": asdict(self.params)}
         path = self.run_dir / "run.json"
         if path.exists():
             old = json.loads(path.read_text(encoding="utf-8"))
@@ -58,7 +65,7 @@ class Runner:
                 k.add_member(m.agent_id, g.id, m.role)
         committed = self.wal.recover()
         for ev in committed:
-            k.apply(ev)
+            self._apply(ev)
         done = (committed[-1].day, committed[-1].round) if committed else (0, self.params.rounds_per_day)
 
         by_slot: dict[tuple[int, int], list] = {}
@@ -75,7 +82,12 @@ class Runner:
                 arrivals = sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq)
                 drafts = asyncio.run(k.run_round(day, rnd, arrivals))
                 events, side = k.seal(day, rnd, drafts)
+                for ev in events:                                         # 투영 갱신 → 그 obs 기록도 같은 커밋에
+                    for name, rec in self._apply(ev):
+                        side.setdefault(f"obs/{name}.jsonl", []).append(rec)
                 self.wal.commit(events, side)
-                for ev in events:
-                    k.apply(ev)
         return self.wal.hash()
+
+    def _apply(self, ev):
+        self.kernel.apply(ev)
+        return self.stores.apply(ev)

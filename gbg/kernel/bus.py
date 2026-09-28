@@ -29,15 +29,14 @@ class Bus:
                       to_agent=to_agent, question=question, purpose=purpose, origin_task=ctx.task_id,
                       hop=ctx.hop + 1, lineage=[*ctx.lineage, ctx.group])
         head = {"task_id": ctx.task_id, "rid": rid, "from_agent": ctx.agent_id, "to_agent": to_agent}
-        span.emit("message", f"agent:{ctx.agent_id}", {**head, "kind": "request", "request": req.model_dump(mode="json")})
-
-        if req.hop > self.hop_limit:
-            resp, actor = error_response(rid, "hop_limit", ctx.day), "kernel"
-        elif not k.is_active(to_agent):
-            resp, actor = error_response(rid, "agent_unavailable", ctx.day), "kernel"
+        refused = "hop_limit" if req.hop > self.hop_limit else ("agent_unavailable" if not k.is_active(to_agent) else None)
+        span.emit("message", f"agent:{ctx.agent_id}", {**head, "kind": "request", "delivered": refused is None,
+                                                       "request": req.model_dump(mode="json")})
+        if refused:
+            resp, actor = error_response(rid, refused, ctx.day), "kernel"
         else:
             rctx = AgentContext(k, span, to_agent, to.group, to.role, ctx.day, ctx.round, ctx.task_id, req.hop,
-                                req.lineage, tuple(k.histories[to_agent]))
+                                req.lineage, k.stores.history.entries(to_agent))
             actor = f"agent:{to_agent}"
             try:
                 resp = await k.agents[to_agent].respond(rctx, req)
