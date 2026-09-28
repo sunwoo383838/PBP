@@ -1,0 +1,269 @@
+{
+ "group": "HR-SEL",
+ "histories": {
+  "hr-sel.a1": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 김하린 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-SEL-1000"
+    ],
+    "digest": "-5일차 E-SEL-1000 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "김하린 인사 기록 확정: 영업1팀, 3급, regular.",
+    "tokens": 35,
+    "entities": [
+     "E-SEL-1000"
+    ],
+    "digest": "-5일차 E-SEL-1000 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 3,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 이서준 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-SEL-1002"
+    ],
+    "digest": "-5일차 E-SEL-1002 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 4,
+    "day": -5,
+    "role": "assistant",
+    "text": "이서준 인사 기록 확정: 영업1팀, 4급, regular.",
+    "tokens": 35,
+    "entities": [
+     "E-SEL-1002"
+    ],
+    "digest": "-5일차 E-SEL-1002 인사 기록 확정 (인사기록 담당)"
+   }
+  ],
+  "hr-sel.a2": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 박도윤 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-SEL-1001"
+    ],
+    "digest": "-5일차 E-SEL-1001 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "박도윤 인사 기록 확정: 개발1팀, 2급, contractor.",
+    "tokens": 38,
+    "entities": [
+     "E-SEL-1001"
+    ],
+    "digest": "-5일차 E-SEL-1001 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 3,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 최지우 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-SEL-1003"
+    ],
+    "digest": "-5일차 E-SEL-1003 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 4,
+    "day": -5,
+    "role": "assistant",
+    "text": "최지우 인사 기록 확정: 개발1팀, 1급, regular.",
+    "tokens": 35,
+    "entities": [
+     "E-SEL-1003"
+    ],
+    "digest": "-5일차 E-SEL-1003 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 5,
+    "day": 0,
+    "role": "user",
+    "text": "[작업] 박도윤 부서 이동 요청 검토",
+    "tokens": 22,
+    "entities": [
+     "E-SEL-1001",
+     "영업1팀"
+    ],
+    "digest": "0일차 E-SEL-1001 부서 이동 승인 (인사기록 담당)"
+   },
+   {
+    "seq": 6,
+    "day": 0,
+    "role": "assistant",
+    "text": "박도윤 영업1팀 이동 승인, 3일 발효.",
+    "tokens": 24,
+    "entities": [
+     "E-SEL-1001",
+     "영업1팀"
+    ],
+    "digest": "0일차 E-SEL-1001 부서 이동 승인 (인사기록 담당)"
+   }
+  ]
+ },
+ "activity": [
+  {
+   "entity": "E-SEL-1001",
+   "agent": "hr-sel.a2",
+   "seq": 6,
+   "day": 0,
+   "role": "records"
+  }
+ ],
+ "journal": [
+  {
+   "entity": "E-SEL-1000",
+   "agent": "hr-sel.a1",
+   "seq": 2
+  },
+  {
+   "entity": "E-SEL-1001",
+   "agent": "hr-sel.a2",
+   "seq": 2
+  },
+  {
+   "entity": "E-SEL-1002",
+   "agent": "hr-sel.a1",
+   "seq": 4
+  },
+  {
+   "entity": "E-SEL-1003",
+   "agent": "hr-sel.a2",
+   "seq": 4
+  }
+ ],
+ "egress_log": [
+  {
+   "day": 0,
+   "entity": "개발1팀",
+   "attr": "available_budget",
+   "to_group": "FIN-SEL",
+   "question": "개발1팀 장비 예산 여유 있는지 확인 부탁드립니다.",
+   "status": "ok",
+   "referral_to": null
+  }
+ ],
+ "db": [
+  {
+   "key": "HR-SEL/emp/E-SEL-1000/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "영업1팀",
+      "grade": 3,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-SEL/emp/E-SEL-1001/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "개발1팀",
+      "grade": 2,
+      "contract": "contractor",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-SEL/emp/E-SEL-1002/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "영업1팀",
+      "grade": 4,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-SEL/emp/E-SEL-1003/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "개발1팀",
+      "grade": 1,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-SEL/emp/E-SEL-1001/transfer",
+   "versions": [
+    {
+     "v": 1,
+     "day": 0,
+     "db_day": 2,
+     "value": {
+      "to": "영업1팀",
+      "effective": 3,
+      "status": "approved"
+     }
+    }
+   ]
+  }
+ ],
+ "aliases": {
+  "E-SEL-1000": [
+   "김하린",
+   "하린 과장"
+  ],
+  "E-SEL-1001": [
+   "박도윤",
+   "도윤 대리"
+  ],
+  "E-SEL-1002": [
+   "이서준",
+   "서준 선임"
+  ],
+  "E-SEL-1003": [
+   "최지우",
+   "지우 과장"
+  ],
+  "영업1팀": [
+   "영업1팀"
+  ],
+  "개발1팀": [
+   "개발1팀"
+  ]
+ },
+ "env": {}
+}

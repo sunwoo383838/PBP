@@ -1,0 +1,5 @@
+# 사다리 4단. card_mode: static | dynamic (모든 조건에 붙일 수 있는 옵션, 기본 static)
+direct:  {agent_tool: ask_agent, directory: agent_cards, card_mode: static, ingress: null, egress: null}
+routing: {agent_tool: ask_group, directory: group_cards, card_mode: static, ingress: {fanout: 1, assemble: false, requery: false}, egress: null}
+ingress: {agent_tool: ask_group, directory: group_cards, card_mode: static, ingress: {fanout: 3, assemble: true, requery: true}, egress: null}
+i_e:     {agent_tool: ask,       directory: group_cards, card_mode: static, ingress: {fanout: 3, assemble: true, requery: true}, egress: {history: true}}

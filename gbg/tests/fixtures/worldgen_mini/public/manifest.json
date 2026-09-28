@@ -1,0 +1,23 @@
+{
+ "benchmark": "worldgen",
+ "world_hash": "b1818f92d0e09fb8",
+ "seed": 0,
+ "days": 5,
+ "generator": "gbg.tests.fixtures.build_fixtures",
+ "tokenizer": null,
+ "params": {
+  "domains": [
+   "HR",
+   "FIN"
+  ],
+  "regions": [
+   "SEL",
+   "TYO"
+  ],
+  "rounds_per_day": 3,
+  "db_lag": [
+   1,
+   2
+  ]
+ }
+}

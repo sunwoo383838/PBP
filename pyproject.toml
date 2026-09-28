@@ -1,0 +1,25 @@
+[project]
+name = "g2g"
+version = "0.1.0"
+description = "경계 실험 하네스: 권한으로 나뉜 LLM 에이전트 그룹 간 통신 조건 비교"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.13.5",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gbg"]
+
+[tool.pytest.ini_options]
+testpaths = ["gbg/tests"]

@@ -1,0 +1,222 @@
+{
+ "group": "FIN-SEL",
+ "histories": {
+  "fin-sel.a1": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 영업1팀 예산 라인 확인",
+    "tokens": 19,
+    "entities": [
+     "영업1팀"
+    ],
+    "digest": "-5일차 영업1팀 예산 잔액 확정 (예산 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "영업1팀 capex 잔액 3,120,400원 확정.",
+    "tokens": 30,
+    "entities": [
+     "영업1팀"
+    ],
+    "digest": "-5일차 영업1팀 예산 잔액 확정 (예산 담당)"
+   }
+  ],
+  "fin-sel.a2": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 개발1팀 예산 라인 확인",
+    "tokens": 19,
+    "entities": [
+     "개발1팀"
+    ],
+    "digest": "-5일차 개발1팀 예산 잔액 확정 (예산 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "개발1팀 capex 잔액 2,874,300원 확정.",
+    "tokens": 30,
+    "entities": [
+     "개발1팀"
+    ],
+    "digest": "-5일차 개발1팀 예산 잔액 확정 (예산 담당)"
+   },
+   {
+    "seq": 3,
+    "day": 0,
+    "role": "user",
+    "text": "[작업] 개발1팀 예산 조정",
+    "tokens": 16,
+    "entities": [
+     "개발1팀"
+    ],
+    "digest": "0일차 개발1팀 예산 조정 (예산 담당)"
+   },
+   {
+    "seq": 4,
+    "day": 0,
+    "role": "assistant",
+    "text": "개발1팀 capex 잔액 2,417,900원으로 조정 (본부 재배정). DB 반영은 2일차.",
+    "tokens": 56,
+    "entities": [
+     "개발1팀"
+    ],
+    "digest": "0일차 개발1팀 예산 조정 (예산 담당)"
+   }
+  ],
+  "fin-sel.a3": [
+   {
+    "seq": 1,
+    "day": -1,
+    "role": "user",
+    "text": "[작업] 영업1팀 장비 가승인 검토",
+    "tokens": 20,
+    "entities": [
+     "CMT-00001",
+     "영업1팀"
+    ],
+    "digest": "-1일차 CMT-00001 가승인 검토 시작 (지급 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -1,
+    "role": "assistant",
+    "text": "CMT-00001 영업1팀 장비 612,300원 가승인 검토 시작, 8일 정산 예정.",
+    "tokens": 51,
+    "entities": [
+     "CMT-00001",
+     "영업1팀"
+    ],
+    "digest": "-1일차 CMT-00001 가승인 검토 시작 (지급 담당)"
+   },
+   {
+    "seq": 3,
+    "day": 0,
+    "role": "user",
+    "text": "[작업] 개발1팀 장비 가승인 검토",
+    "tokens": 20,
+    "entities": [
+     "CMT-00002",
+     "개발1팀"
+    ],
+    "digest": "0일차 CMT-00002 가승인 검토 시작 (지급 담당)"
+   },
+   {
+    "seq": 4,
+    "day": 0,
+    "role": "assistant",
+    "text": "CMT-00002 개발1팀 장비 455,800원 가승인 검토 시작, 8일 정산 예정.",
+    "tokens": 51,
+    "entities": [
+     "CMT-00002",
+     "개발1팀"
+    ],
+    "digest": "0일차 CMT-00002 가승인 검토 시작 (지급 담당)"
+   }
+  ]
+ },
+ "activity": [
+  {
+   "entity": "CMT-00001",
+   "agent": "fin-sel.a3",
+   "seq": 2,
+   "day": -1,
+   "role": "payables"
+  }
+ ],
+ "journal": [
+  {
+   "entity": "영업1팀",
+   "agent": "fin-sel.a1",
+   "seq": 2
+  },
+  {
+   "entity": "개발1팀",
+   "agent": "fin-sel.a2",
+   "seq": 2
+  },
+  {
+   "entity": "개발1팀",
+   "agent": "fin-sel.a2",
+   "seq": 4
+  },
+  {
+   "entity": "CMT-00002",
+   "agent": "fin-sel.a3",
+   "seq": 4
+  }
+ ],
+ "egress_log": [
+  {
+   "day": -1,
+   "entity": "E-SEL-1001",
+   "attr": "profile",
+   "to_group": "HR-SEL",
+   "question": "도윤 대리 소속 확인 부탁드립니다.",
+   "status": "ok",
+   "referral_to": null
+  }
+ ],
+ "db": [
+  {
+   "key": "FIN-SEL/line/영업1팀/remaining",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": 3120400
+    }
+   ]
+  },
+  {
+   "key": "FIN-SEL/line/개발1팀/remaining",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": 2874300
+    },
+    {
+     "v": 2,
+     "day": 0,
+     "db_day": 2,
+     "value": 2417900
+    }
+   ]
+  }
+ ],
+ "aliases": {
+  "E-SEL-1000": [
+   "김하린",
+   "하린 과장"
+  ],
+  "E-SEL-1001": [
+   "박도윤",
+   "도윤 대리"
+  ],
+  "E-SEL-1002": [
+   "이서준",
+   "서준 선임"
+  ],
+  "E-SEL-1003": [
+   "최지우",
+   "지우 과장"
+  ],
+  "영업1팀": [
+   "영업1팀"
+  ],
+  "개발1팀": [
+   "개발1팀"
+  ]
+ },
+ "env": {}
+}

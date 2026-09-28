@@ -1,0 +1,52 @@
+{
+ "group": "G3",
+ "histories": {
+  "g3.a1": [
+   {
+    "seq": 1,
+    "day": 0,
+    "role": "user",
+    "text": "[안내] 당신은 조각 하나를 가지고 있다. shard.read로 확인할 수 있다.",
+    "tokens": 49,
+    "entities": [
+     "SH-g3.a1"
+    ],
+    "digest": "0일차 조각 안내"
+   }
+  ],
+  "g3.a2": [
+   {
+    "seq": 1,
+    "day": 0,
+    "role": "user",
+    "text": "[안내] 당신은 조각 하나를 가지고 있다. shard.read로 확인할 수 있다.",
+    "tokens": 49,
+    "entities": [
+     "SH-g3.a2"
+    ],
+    "digest": "0일차 조각 안내"
+   }
+  ]
+ },
+ "activity": [],
+ "journal": [],
+ "egress_log": [],
+ "db": [],
+ "aliases": {},
+ "env": {
+  "shards": {
+   "g3.a1": [
+    "apple",
+    "river",
+    "piano",
+    "tiger"
+   ],
+   "g3.a2": [
+    "apple",
+    "river",
+    "ocean",
+    "cedar"
+   ]
+  }
+ }
+}

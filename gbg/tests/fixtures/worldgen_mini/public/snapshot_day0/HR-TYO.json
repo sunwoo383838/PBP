@@ -1,0 +1,212 @@
+{
+ "group": "HR-TYO",
+ "histories": {
+  "hr-tyo.a1": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 佐藤結衣 인사 기록 확인",
+    "tokens": 19,
+    "entities": [
+     "E-TYO-1000"
+    ],
+    "digest": "-5일차 E-TYO-1000 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "佐藤結衣 인사 기록 확정: 営業1課, 3급, regular.",
+    "tokens": 36,
+    "entities": [
+     "E-TYO-1000"
+    ],
+    "digest": "-5일차 E-TYO-1000 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 3,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 田中翔 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-TYO-1002"
+    ],
+    "digest": "-5일차 E-TYO-1002 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 4,
+    "day": -5,
+    "role": "assistant",
+    "text": "田中翔 인사 기록 확정: 営業1課, 5급, contractor.",
+    "tokens": 38,
+    "entities": [
+     "E-TYO-1002"
+    ],
+    "digest": "-5일차 E-TYO-1002 인사 기록 확정 (인사기록 담당)"
+   }
+  ],
+  "hr-tyo.a2": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 小野健 인사 기록 확인",
+    "tokens": 18,
+    "entities": [
+     "E-TYO-1001"
+    ],
+    "digest": "-5일차 E-TYO-1001 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "小野健 인사 기록 확정: 開発1課, 2급, regular.",
+    "tokens": 35,
+    "entities": [
+     "E-TYO-1001"
+    ],
+    "digest": "-5일차 E-TYO-1001 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 3,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 高橋美咲 인사 기록 확인",
+    "tokens": 19,
+    "entities": [
+     "E-TYO-1003"
+    ],
+    "digest": "-5일차 E-TYO-1003 인사 기록 확정 (인사기록 담당)"
+   },
+   {
+    "seq": 4,
+    "day": -5,
+    "role": "assistant",
+    "text": "高橋美咲 인사 기록 확정: 開発1課, 2급, regular.",
+    "tokens": 36,
+    "entities": [
+     "E-TYO-1003"
+    ],
+    "digest": "-5일차 E-TYO-1003 인사 기록 확정 (인사기록 담당)"
+   }
+  ]
+ },
+ "activity": [],
+ "journal": [
+  {
+   "entity": "E-TYO-1000",
+   "agent": "hr-tyo.a1",
+   "seq": 2
+  },
+  {
+   "entity": "E-TYO-1001",
+   "agent": "hr-tyo.a2",
+   "seq": 2
+  },
+  {
+   "entity": "E-TYO-1002",
+   "agent": "hr-tyo.a1",
+   "seq": 4
+  },
+  {
+   "entity": "E-TYO-1003",
+   "agent": "hr-tyo.a2",
+   "seq": 4
+  }
+ ],
+ "egress_log": [],
+ "db": [
+  {
+   "key": "HR-TYO/emp/E-TYO-1000/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "営業1課",
+      "grade": 3,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-TYO/emp/E-TYO-1001/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "開発1課",
+      "grade": 2,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-TYO/emp/E-TYO-1002/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "営業1課",
+      "grade": 5,
+      "contract": "contractor",
+      "status": "active"
+     }
+    }
+   ]
+  },
+  {
+   "key": "HR-TYO/emp/E-TYO-1003/profile",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": {
+      "dept": "開発1課",
+      "grade": 2,
+      "contract": "regular",
+      "status": "active"
+     }
+    }
+   ]
+  }
+ ],
+ "aliases": {
+  "E-TYO-1000": [
+   "佐藤結衣",
+   "佐藤さん"
+  ],
+  "E-TYO-1001": [
+   "小野健",
+   "小野さん"
+  ],
+  "E-TYO-1002": [
+   "田中翔",
+   "田中さん"
+  ],
+  "E-TYO-1003": [
+   "高橋美咲",
+   "高橋さん"
+  ],
+  "営業1課": [
+   "営業1課"
+  ],
+  "開発1課": [
+   "開発1課"
+  ]
+ },
+ "env": {}
+}

@@ -1,0 +1,11 @@
+{
+ "benchmark": "silo",
+ "world_hash": "28cc8b187bf13a1d",
+ "seed": 0,
+ "days": 1,
+ "generator": "gbg.tests.fixtures.build_fixtures",
+ "tokenizer": null,
+ "params": {
+  "max_rounds": 3
+ }
+}

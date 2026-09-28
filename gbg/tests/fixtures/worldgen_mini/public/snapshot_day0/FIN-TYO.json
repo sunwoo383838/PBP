@@ -1,0 +1,150 @@
+{
+ "group": "FIN-TYO",
+ "histories": {
+  "fin-tyo.a1": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 営業1課 예산 라인 확인",
+    "tokens": 19,
+    "entities": [
+     "営業1課"
+    ],
+    "digest": "-5일차 営業1課 예산 잔액 확정 (예산 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "営業1課 capex 잔액 4,051,700원 확정.",
+    "tokens": 30,
+    "entities": [
+     "営業1課"
+    ],
+    "digest": "-5일차 営業1課 예산 잔액 확정 (예산 담당)"
+   }
+  ],
+  "fin-tyo.a2": [
+   {
+    "seq": 1,
+    "day": -5,
+    "role": "user",
+    "text": "[작업] 開発1課 예산 라인 확인",
+    "tokens": 19,
+    "entities": [
+     "開発1課"
+    ],
+    "digest": "-5일차 開発1課 예산 잔액 확정 (예산 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -5,
+    "role": "assistant",
+    "text": "開発1課 capex 잔액 3,366,200원 확정.",
+    "tokens": 30,
+    "entities": [
+     "開発1課"
+    ],
+    "digest": "-5일차 開発1課 예산 잔액 확정 (예산 담당)"
+   }
+  ],
+  "fin-tyo.a3": [
+   {
+    "seq": 1,
+    "day": -2,
+    "role": "user",
+    "text": "[작업] 開発1課 장비 가승인 검토",
+    "tokens": 20,
+    "entities": [
+     "CMT-00003",
+     "開発1課"
+    ],
+    "digest": "-2일차 CMT-00003 가승인 검토 시작 (지급 담당)"
+   },
+   {
+    "seq": 2,
+    "day": -2,
+    "role": "assistant",
+    "text": "CMT-00003 開発1課 장비 389,100원 가승인 검토 시작, 8일 정산 예정.",
+    "tokens": 51,
+    "entities": [
+     "CMT-00003",
+     "開発1課"
+    ],
+    "digest": "-2일차 CMT-00003 가승인 검토 시작 (지급 담당)"
+   }
+  ]
+ },
+ "activity": [
+  {
+   "entity": "CMT-00003",
+   "agent": "fin-tyo.a3",
+   "seq": 2,
+   "day": -2,
+   "role": "payables"
+  }
+ ],
+ "journal": [
+  {
+   "entity": "営業1課",
+   "agent": "fin-tyo.a1",
+   "seq": 2
+  },
+  {
+   "entity": "開発1課",
+   "agent": "fin-tyo.a2",
+   "seq": 2
+  }
+ ],
+ "egress_log": [],
+ "db": [
+  {
+   "key": "FIN-TYO/line/営業1課/remaining",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": 4051700
+    }
+   ]
+  },
+  {
+   "key": "FIN-TYO/line/開発1課/remaining",
+   "versions": [
+    {
+     "v": 1,
+     "day": -5,
+     "db_day": -5,
+     "value": 3366200
+    }
+   ]
+  }
+ ],
+ "aliases": {
+  "E-TYO-1000": [
+   "佐藤結衣",
+   "佐藤さん"
+  ],
+  "E-TYO-1001": [
+   "小野健",
+   "小野さん"
+  ],
+  "E-TYO-1002": [
+   "田中翔",
+   "田中さん"
+  ],
+  "E-TYO-1003": [
+   "高橋美咲",
+   "高橋さん"
+  ],
+  "営業1課": [
+   "営業1課"
+  ],
+  "開発1課": [
+   "開発1課"
+  ]
+ },
+ "env": {}
+}
