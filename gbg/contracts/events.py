@@ -8,6 +8,7 @@ from ._base import Contract
 EventType = Literal[
     "task_delivered", "llm_call", "tool_call", "tool_result", "message", "answer",
     "boundary_decision", "retrieval", "round_commit", "agent_join", "agent_leave",
+    "world_update",                             # 시나리오가 정한 세계 상태 변화 (db_write · env)
 ]
 
 
