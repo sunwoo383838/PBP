@@ -90,6 +90,9 @@ def render_members(cards: list[AgentCard], group: str) -> str:
     return f"Members of your group ({group}), reachable with ask_agent:\n{body}"
 
 
+PERIOD_NOTE = "- Periods: anything recorded as lasting \"until day N\" (a hold, reservation, exclusion, delay or exception) is still in effect on day N."
+
+
 def render_rules(rules, label: str | None = None) -> str:
     """규정 블록: 그룹 접두어 없는 id, 제목, 본문. label이 있으면(full_load) 그룹마다 제목을 단다."""
     lines = []
@@ -97,7 +100,8 @@ def render_rules(rules, label: str | None = None) -> str:
         rid = r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
         lines.append(f"- {rid}{f' ({r.title})' if r.title else ''}: {r.body}")
     head = f"[Rules of {label}]" if label else "[Rules of your area]"
-    return head + "\n" + ("\n".join(lines) if lines else "(none)")
+    lines.append(PERIOD_NOTE)                                             # 기간 해석 (worldgen 정답 기준, 모든 호출 동일)
+    return head + "\n" + "\n".join(lines)
 
 
 def render_system(card: AgentCard, tools: list[tuple[str, str]], directory: str, rules: str = "") -> str:
