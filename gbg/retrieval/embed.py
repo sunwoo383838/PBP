@@ -59,7 +59,23 @@ class DeepInfraEmbedder:
         self.api_key = api_key or os.environ.get(llm.api_key_env) or _local_key()
         self.api_calls = 0
 
+    MAX_CHARS = 16000                          # bge-m3 입력 한도 8,192토큰 안쪽 (영문 약 4k토큰). 넘으면 앞부분만 임베딩
+
     async def embed(self, texts: Sequence[str]) -> np.ndarray:
+        """긴 텍스트(과제를 이어 풀 때 생기는 긴 문답 에피소드)는 앞부분만 임베딩한다. BM25·증거 표시는 원문 전체.
+        그래도 모델 한도를 넘으면(문자당 토큰이 많은 텍스트) 절반씩 줄여 다시 보낸다."""
+        from gbg.llm.backend import LLMError
+        cap = self.MAX_CHARS
+        for _ in range(4):
+            try:
+                return await self._embed([t[:cap] for t in texts])
+            except LLMError as e:
+                if "context length" not in str(e) and "input_tokens" not in str(e):
+                    raise
+                cap //= 2
+        return await self._embed([t[:cap] for t in texts])
+
+    async def _embed(self, texts: Sequence[str]) -> np.ndarray:
         from gbg.llm.backend import Backoff, LLMError
         r = self.llm.retry
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}

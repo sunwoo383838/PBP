@@ -364,3 +364,21 @@ def test_runner_runs_eval_seed_only_with_frozen_retrieval_config(tmp_path):
     with pytest.raises(ConfigError, match="평가 시드 12"):
         mk("missing", None)
     mk("frozen", RP)                                                       # 동결된 설정 그대로면 실행
+
+
+def test_long_texts_are_clipped_for_the_embedding_model():
+    """과제를 이어 풀면 생기는 긴 에피소드: 임베딩 입력만 앞부분으로 자르고, 한도 초과 거부가 오면 절반씩 줄여 재시도."""
+    import asyncio
+    import httpx
+    from gbg.retrieval.embed import DeepInfraEmbedder
+    sent = []
+
+    def handler(req):
+        body = __import__("json").loads(req.content)
+        sent.append([len(t) for t in body["input"]])
+        if max(len(t) for t in body["input"]) > 5000:
+            return httpx.Response(400, json={"error": {"message": "the model's context length is only 8192 tokens (parameter=input_tokens)"}})
+        return httpx.Response(200, json={"data": [{"index": i, "embedding": [1.0, 0.0]} for i, _ in enumerate(body["input"])]})
+    e = DeepInfraEmbedder(P.llm, "m", api_key="k", transport=httpx.MockTransport(handler))
+    out = asyncio.run(e.embed(["x" * 40000, "short"]))
+    assert out.shape == (2, 2) and sent == [[16000, 5], [8000, 5], [4000, 5]]
