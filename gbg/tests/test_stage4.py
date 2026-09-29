@@ -397,3 +397,24 @@ def test_long_documents_are_clipped_for_the_reranker():
         return httpx.Response(200, json={"scores": [0.5] * len(body["documents"])})
     r = DeepInfraReranker(P.llm, "m", api_key="k", transport=httpx.MockTransport(handler))
     assert r.score("q", ["x" * 50000, "short"]) == [0.5, 0.5] and sent == [16000, 8000, 4000]
+
+
+def test_retriever_sync_lock_works_across_event_loops():
+    """실행기는 묶음마다 asyncio.run(새 루프)을 쓴다. 검색기 동기화 잠금이 앞 루프에 묶여 있으면 경합 때 오류가 난다
+    (dry15: "Lock … is bound to a different event loop"로 재시작 113회)."""
+    import asyncio
+    from gbg.retrieval.hybrid import GroupRetriever
+
+    class R(GroupRetriever):
+        def __init__(self):
+            pass
+
+        async def _sync(self):
+            await asyncio.sleep(0.01)
+
+    r = R()
+
+    async def contended():
+        await asyncio.gather(r.sync(), r.sync(), r.sync())
+    for _ in range(3):
+        asyncio.run(contended())

@@ -65,8 +65,9 @@ class GroupRetriever:
         """저장소의 새 이력을 색인에 반영한다. 동시에 도는 과제들이 같은 검색기를 쓰므로 한 번에 하나만 동기화한다
         (먼저 온 호출이 벡터까지 넣기 전에 다른 호출이 검색하면 결과가 실행마다 달라진다)."""
         import asyncio
-        if getattr(self, "_lock", None) is None:
-            self._lock = asyncio.Lock()
+        loop = asyncio.get_running_loop()                                  # 실행기는 묶음마다 새 이벤트 루프를 쓴다:
+        if getattr(self, "_lock_loop", None) is not loop:                  # 잠금은 루프마다 새로 (다른 루프에 묶인 잠금은 오류)
+            self._lock, self._lock_loop = asyncio.Lock(), loop
         async with self._lock:
             await self._sync()
 
