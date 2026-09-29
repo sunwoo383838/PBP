@@ -120,18 +120,20 @@ RECORDS_NOTE = ("- Records and the database: database registration can lag by a 
                 "work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a "
                 "status change such as a confirmed exit or cancellation) can be newer than the database version and "
                 "still counts, within its stated period or from its effective day; informal remarks or undecided "
-                "suggestions do not change anything. Colleagues in the same area read the same database, so identical "
+                "suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules "
+                "count changes that take effect soon). Colleagues in the same area read the same database, so identical "
                 "database values from several of them are one source, not independent confirmations.")
 
 
-def render_rules(rules, label: str | None = None) -> str:
+def render_rules(rules, label: str | None = None, notes: bool = True) -> str:
     """규정 블록: 그룹 접두어 없는 id, 제목, 본문. label이 있으면(full_load) 그룹마다 제목을 단다."""
     lines = []
     for r in rules:
         rid = r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
         lines.append(f"- {rid}{f' ({r.title})' if r.title else ''}: {r.body}")
     head = f"[Rules of {label}]" if label else "[Rules of your area]"
-    lines += [PERIOD_NOTE, RECORDS_NOTE]                                 # 기간 해석·기록과 DB (worldgen 정답 기준, 모든 호출 동일)
+    if notes:                                                             # full_load는 마지막 그룹 뒤에 한 번만
+        lines += [PERIOD_NOTE, RECORDS_NOTE]                                 # 기간 해석·기록과 DB (worldgen 정답 기준, 모든 호출 동일)
     return head + "\n" + "\n".join(lines)
 
 

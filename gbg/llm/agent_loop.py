@@ -160,7 +160,8 @@ class LLMAgent:
         tools = [(s.name, s.description) for s in self.env(ctx)] + [(COMM_TOOLS[t][0], COMM_TOOLS[t][1]) for t in self.comm(ctx)]
         rb = ctx.kernel.stores.rulebook                                     # 자기 그룹 규정 고정 (full_load는 전 그룹)
         if self.rt.condition.agent_tool == "search_memory":
-            rules = "\n\n".join(render_rules(rb.read_all(g), g) for g in sorted(cards.group_cards))
+            gs = sorted(cards.group_cards)
+            rules = "\n\n".join(render_rules(rb.read_all(g), g, notes=g == gs[-1]) for g in gs)
         else:
             rules = render_rules(rb.read_all(ctx.group))
         if ctx.serving is not None and (scope := self.records_scope(ctx)):   # 응답자 자신의 system에만 (card에는 없음)
