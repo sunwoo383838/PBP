@@ -136,13 +136,33 @@ class Runner:
                     continue
                 events: list = []
                 side: dict[str, list[dict]] = {}
-                for te in sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq):   # seq 순서로 하나씩
-                    drafts = asyncio.run(k.run_item(day, rnd, te))
-                    evs, s = k.number(day, rnd, drafts)
-                    self._absorb(evs, s, events, side)                    # 다음 항목은 반영된 세계를 본다
+                for batch in self._batches(sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq)):
+                    for drafts in asyncio.run(self._run_batch(day, rnd, batch)):    # 결과는 seq 순서로 반영
+                        evs, s = k.number(day, rnd, drafts)
+                        self._absorb(evs, s, events, side)                # 다음 묶음은 반영된 세계를 본다
                 self._absorb([k.marker(day, rnd, len(events))], {}, events, side)
                 self.wal.commit(events, side)
         return self.wal.hash()
+
+    def _batches(self, items: list) -> list[list]:
+        """seq 순서의 항목을 실행 묶음으로. parallel_tasks면 세계 사건 없이 이어지는 교차 과제를 한 묶음으로 동시에
+        실행한다(앞 과제에 이어지는 과제는 그 앞 과제와 같은 묶음에 넣지 않는다). 세계 사건은 하나씩."""
+        out: list[list] = []
+        for te in items:
+            prev = out[-1] if out else None
+            if (self.params.parallel_tasks and te.kind == "cross" and prev and prev[-1].kind == "cross"
+                    and (te.payload or {}).get("follows") not in {x.task_id for x in prev}):
+                prev.append(te)
+            else:
+                out.append([te])
+        return out
+
+    async def _run_batch(self, day: int, rnd: int, batch: list) -> list:
+        """묶음의 항목을 동시에 실행한다. 과제마다 실행 문맥(예산·도구 캐시)이 따로 복사되고, 묶음 안 과제는 묶음 시작
+        시점의 세계를 본다(서로의 문답은 반영 전이라 보이지 않는다)."""
+        if len(batch) == 1:
+            return [await self.kernel.run_item(day, rnd, batch[0])]
+        return list(await asyncio.gather(*(self.kernel.run_item(day, rnd, te) for te in batch)))
 
     def _absorb(self, evs, s, events, side):
         for name, recs in s.items():

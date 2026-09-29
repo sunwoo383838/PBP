@@ -2,6 +2,8 @@
 kernel:
   rounds_per_day: 3
   hop_limit: 4
+  parallel_tasks: true                      # 2026-09-30: 같은 라운드에서 세계 사건 없이 이어지는 교차 과제는 동시에 (앞 과제에 이어지는 과제는 제외).
+                                            # 같은 묶음의 과제끼리는 서로의 문답을 보지 못한다. 결과는 seq 순서로 반영(WAL 순서는 순차와 같음)
 
 llm:
   base_url: https://api.deepinfra.com/v1/openai

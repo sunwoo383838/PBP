@@ -59,6 +59,15 @@ class GroupRetriever:
         return sorted(a for a, (g, _) in self.stores.members.items() if g == self.group)
 
     async def sync(self):
+        """저장소의 새 이력을 색인에 반영한다. 동시에 도는 과제들이 같은 검색기를 쓰므로 한 번에 하나만 동기화한다
+        (먼저 온 호출이 벡터까지 넣기 전에 다른 호출이 검색하면 결과가 실행마다 달라진다)."""
+        import asyncio
+        if getattr(self, "_lock", None) is None:
+            self._lock = asyncio.Lock()
+        async with self._lock:
+            await self._sync()
+
+    async def _sync(self):
         changed: list[Episode] = []
         for a in self.agents():
             entries = self.stores.history.entries(a)

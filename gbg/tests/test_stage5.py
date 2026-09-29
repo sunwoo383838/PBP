@@ -784,3 +784,62 @@ def test_out_of_scope_items_are_not_requeried_in_the_same_group(tmp_path):
              and e["payload"]["stage"] == "ingress")
     assert [x["attribute"] for x in d["redirects"]] == ["laptop asset tag"]
     assert all("laptop asset tag" not in m for m in d.get("requery_items", [])), "소관 밖 항목은 재질의 대상이 아니다"
+
+
+# ─────────────────────────── 같은 라운드 과제의 동시 실행 ───────────────────────────
+def _run_with(tmp, condition, adapter, script=oracle, parallel=True):
+    rt = AgentRuntime(T.CONDITIONS[condition], adapter.group_tools,
+                      ContextBuilder(T.TOK.count, T.P.context.raw_window, T.P.context.summary), T.P.agent.max_steps,
+                      T.P.agent.format_retries, T.P.agent.safety_steps, T.P.agent.responder_max_steps,
+                      tuple(T.P.agent.responder_exclude_tools))
+    r = Runner(adapter, condition=condition, seed=7, run_dir=tmp, conditions=T.CONDITIONS, access=T.ACCESS,
+               tools=ToolRegistry(T.ACCESS), env_tools=adapter.make_tools,
+               agent_factory=lambda aid, g, role: LLMAgent(aid, rt), params=T.P.kernel.model_copy(update={"parallel_tasks": parallel}),
+               llm=T.backend("SCRIPTED", script=script), tokens=T.TOK.count, **boundary_kwargs())
+    h = r.run()
+    return r, T.wal(tmp), h
+
+
+def _same_round_adapter():
+    """W-004를 W-003 바로 뒤, 같은 라운드(2일 1라운드)로 옮긴 변형 (사이에 세계 사건 없음)."""
+    a = load_adapter("worldgen_mini")
+    evs = list(a.events())
+    w3 = next(e for e in evs if e.task_id == "W-003")
+    moved = [e.model_copy(update={"day": w3.day, "round": w3.round, "seq": w3.seq + 0.5}) if e.task_id == "W-004" else e
+             for e in evs]
+    a._events = sorted(moved, key=lambda e: e.seq)
+    return a
+
+
+def test_batches_group_consecutive_tasks_only():
+    from types import SimpleNamespace as NS
+    r = Runner.__new__(Runner)
+    r.params = T.P.kernel.model_copy(update={"parallel_tasks": True})
+    c = lambda t, f=None: NS(kind="cross", task_id=t, payload={"follows": f})
+    w = NS(kind="transcript", task_id=None, payload={})
+    ids = lambda bs: [[x.task_id or "world" for x in b] for b in bs]
+    assert ids(r._batches([c("A"), c("B"), w, c("C"), c("D", "C"), c("E")])) == [["A", "B"], ["world"], ["C"], ["D", "E"]]
+    r.params = T.P.kernel.model_copy(update={"parallel_tasks": False})
+    assert ids(r._batches([c("A"), c("B")])) == [["A"], ["B"]]
+
+
+def test_same_round_tasks_run_concurrently_with_separate_budgets_and_deterministic_wal(tmp_path):
+    import threading
+    active, peak = [0], [0]
+    lock = threading.Lock()
+
+    def script(req):
+        return oracle(req)
+    runs = []
+    for i in range(2):
+        r, ev, h = _run_with(tmp_path / f"p{i}", "ingress", _same_round_adapter(), script=script)
+        runs.append((ev, h))
+    assert runs[0][1] == runs[1][1], "같은 LLM 응답이면 동시 실행도 WAL이 같다"
+    ev = runs[0][0]
+    ans = {e["payload"]["task_id"]: e["payload"] for e in ev if e["type"] == "answer"}
+    assert {"W-003", "W-004"} <= set(ans)
+    calls = {t: sum(1 for e in ev if e["type"] == "llm_call" and e["payload"].get("task_id") == t) for t in ("W-003", "W-004")}
+    assert all(ans[t]["budget"]["used"]["calls"] == calls[t] for t in calls), "예산은 과제마다 따로"
+    seqs = [e for e in ev if e["payload"].get("task_id") in ("W-003", "W-004") and e["type"] in ("task_delivered", "answer")]
+    order = [(e["type"], e["payload"]["task_id"]) for e in seqs]
+    assert order.index(("answer", "W-003")) < order.index(("task_delivered", "W-004")), "WAL은 seq 순서(과제별 연속)로 반영"

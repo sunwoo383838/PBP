@@ -78,7 +78,7 @@ class BoundaryModule:
         self.record_kinds = list(record_kinds)                            # 이 그룹의 기록 종류 (소관 판정·route 입력)
         self.retriever, self.resolver, self.count = retriever, resolver, count
         self.format_retries, self.egress_cap = format_retries, egress_cap
-        self.in_progress: list[dict] = []                                 # 이 창구가 지금 처리 중인 요청
+        self.in_progress: dict[str, list[dict]] = {}                      # 과제 → 이 창구가 그 과제로 처리 중인 요청
         self.oracle = oracle                                              # retrieval_oracle: 과제 → 그룹 → 정답 조각
 
     # ─────────────────────────── 공통 ───────────────────────────
@@ -129,11 +129,14 @@ class BoundaryModule:
         step = [0]
         trace = {"stage": "ingress", "group": self.group, "rid": req.rid, "from_group": req.from_group,
                  "question": req.question, "deliver": self.cond.ingress.deliver}
-        self.in_progress.append({"rid": req.rid, "question": req.question, "from_group": req.from_group})
+        mine = self.in_progress.setdefault(ctx.task_id, [])              # 동시에 도는 다른 과제의 요청은 섞지 않는다
+        mine.append({"rid": req.rid, "question": req.question, "from_group": req.from_group})
         try:
             resp = await self._ingress(bctx, span, req, stores, step, trace)
         finally:
-            self.in_progress.pop()
+            mine.pop()
+            if not mine:
+                self.in_progress.pop(ctx.task_id, None)
         redirects = trace.pop("_redirects", [])
         if redirects and resp.status != "referral":                       # 일부 항목만 소관 밖: missing + 안내를 붙인다
             texts = [f"{x.entity} {x.attribute}".strip() for x in redirects]
@@ -379,18 +382,19 @@ class BoundaryModule:
                     out.append(f"{key} v{v.v} (registered day {v.db_day}): {_dumps(v.value)}")
         return out
 
-    def _state(self, stores, entities: list[str]) -> list[str]:
+    def _state(self, stores, entities: list[str], task_id: str) -> list[str]:
         """경계 상태: 이 창구의 과거 교차 문답(같은 엔티티)과 제공 버전, 진행 중 요청."""
         out = [f"day {x['day']}: request from {x['from_group']}: {x['question']!r} → answered {x['answer']!r}"
                + (f" (versions given: {', '.join(x['versions'])})" if x["versions"] else "")
                for x in stores.boundary_log.lookup(self.group, entities)]
-        out += [f"in progress: request from {x['from_group']}: {x['question']!r}" for x in self.in_progress[:-1]]
+        out += [f"in progress: request from {x['from_group']}: {x['question']!r}"
+                for x in self.in_progress.get(task_id, [])[:-1]]
         return out
 
     async def _assemble(self, bctx, span, req, text, it, entities, ev: Evidence, replies, stores, step, trace):
         cfg = self.cond.ingress
         versions = self._versions(stores, entities, bctx.day) if cfg.version_marks else []
-        state = self._state(stores, entities) if cfg.boundary_state else []
+        state = self._state(stores, entities, bctx.task_id) if cfg.boundary_state else []
         system = P.ASSEMBLE_SYSTEM.format(state_cite=P.STATE_CITE if state else "",
                                           version_rule=P.VERSION_RULE if cfg.version_marks else "",
                                           group_desc=self._group_desc(stores))

@@ -23,6 +23,8 @@ from gbg.contracts.schemas import HistoryEntry, TimelineEvent
 from gbg.stores import Stores
 
 from .access_guard import AccessGuard
+from contextvars import ContextVar
+
 from .budget import UNLIMITED, TaskBudget
 from .errors import AgentFailure, FatalError
 from .rng import NamedRNG
@@ -136,12 +138,32 @@ class Kernel:
         self.last_seq = 0
         self.bus = Bus(self, hop_limit)
         self.llm = llm
-        self.budget: TaskBudget | None = None      # 실행 중인 과제의 예산 (순차 실행이라 하나뿐)
+        self._budget: ContextVar = ContextVar(f"budget_{id(self)}", default=None)     # 과제 단위 (동시 실행 대비)
+        self._task_cache: ContextVar = ContextVar(f"task_cache_{id(self)}", default=None)
         self.boundaries: dict = {}                 # 그룹 → 경계 모듈 (경계 조건에서만)
         self.budget_limit = True                   # False면 과제 예산 상한 미적용 (참조 행 full_load)
-        self.task_cache: dict = {}                 # 과제 안 도구 캐시 (과제마다 비운다)
+
 
     # ── 상태: 번호가 매겨진 사건으로만 바뀐다 ──
+    # 실행 중인 과제의 예산과 과제 안 도구 캐시. 같은 라운드의 과제를 동시에 실행하므로 전역이 아니라 과제의 실행
+    # 문맥(asyncio 작업마다 복사되는 ContextVar)에 둔다. 응답자·경계 모듈 호출도 같은 문맥에서 돌아 같은 예산에 청구된다.
+    @property
+    def budget(self) -> TaskBudget | None:
+        return self._budget.get()
+
+    @budget.setter
+    def budget(self, b: TaskBudget | None):
+        self._budget.set(b)
+
+    @property
+    def task_cache(self) -> dict:
+        c = self._task_cache.get()
+        return c if c is not None else {}
+
+    @task_cache.setter
+    def task_cache(self, c: dict):
+        self._task_cache.set(c)
+
     def add_member(self, agent_id: str, group: str, role: str):
         self.members[agent_id] = Member(group, role)
         self.agents[agent_id] = self.agent_factory(agent_id, group, role)

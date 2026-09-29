@@ -12,6 +12,7 @@ from .conditions import ConfigError
 class KernelParams(Contract):
     rounds_per_day: int = Field(3, ge=1)
     hop_limit: int = Field(4, ge=1)
+    parallel_tasks: bool = False                # 같은 라운드에서 세계 사건 없이 이어지는 교차 과제를 동시에 실행
 
 
 class RetryParams(Contract):
