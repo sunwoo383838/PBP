@@ -68,7 +68,9 @@ def normalize(raw: dict) -> dict:
     usage = raw.get("usage") or {}
     out = {"content": content or None, "tool_calls": calls, "finish_reason": choice.get("finish_reason"),
            "usage": {"prompt_tokens": usage.get("prompt_tokens", 0), "completion_tokens": usage.get("completion_tokens", 0),
-                     "estimated_cost": usage.get("estimated_cost", 0.0)}}
+                     "estimated_cost": usage.get("estimated_cost", 0.0),
+                     # 제공자 쪽 프롬프트 캐시 적중 토큰: 과제당 토큰에는 반영하지 않고 별도 열로만 기록
+                     "provider_cached_tokens": (usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0}}
     if stripped:
         out["thinking_stripped"] = True
     if msg.get("reasoning_content"):                                    # thinking이 켜져 있었다는 신호 (내용은 버린다)

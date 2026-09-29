@@ -1,11 +1,11 @@
-"""정확 조회: 그룹 색인 + catalog 한 단계 연결. 라우터와 게이트웨이가 공통으로 쓴다.
+"""정확 조회: 그룹 색인 + catalog 한 단계 연결. 모든 경계 조건의 그룹 기록 검색(evidence.py)의 첫 단계다.
 
     확장   = 조회 엔티티 ∪ 그 엔티티의 catalog 항목이 가리키는 값(연결 필드) ∪ 그 엔티티를 연결 필드로 가리키는
              catalog 항목의 id와 그 항목의 연결 필드 값  (예: 품목 laptop → 견적 Q-… → 공급사 V-…)
     일지   = 확장된 엔티티를 색인 키(entities)로 갖는 일지 항목 (H0 원문)
     처리자 = 확장된 엔티티의 활동 흔적·엔티티 색인이 가리키는 에이전트 (H1)
 
-라우터는 이 결과(일지 항목, 처리자)만 쓴다. 게이트웨이는 여기에 그룹 이력 전체의 엔티티 태그 검색(tag_search)을 더한다.
+검색은 여기에 그룹 이력 전체의 엔티티 태그 검색(tag_search)과 하이브리드 검색을 더한다.
 """
 from dataclasses import dataclass
 
@@ -57,6 +57,6 @@ def index_lookup(stores, group: str, entities: list[str], link_fields: list[str]
 
 
 def tag_search(stores, agents: list[str], entities: list[str]) -> list[tuple[str, int]]:
-    """게이트웨이 전용: 그룹 이력 전체에서 엔티티 태그가 붙었거나 엔티티를 언급하는 항목."""
+    """그룹 이력 전체에서 엔티티 태그가 붙었거나 엔티티를 언급하는 항목 (경계 모듈 전용)."""
     return [(a, e.seq) for a in agents for e in stores.history.entries(a)
             if any(x in e.entities or _mentions(x, e.text) for x in entities)]

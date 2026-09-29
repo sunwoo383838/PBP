@@ -12,6 +12,7 @@ from gbg.contracts.params import KernelParams, RetrievalParams
 from gbg.stores import Stores
 
 from .access_guard import AccessGuard
+from .full_load import all_groups_tool, load_history_tool
 from .scheduler import AgentFactory, Kernel
 from .tools import Tool, ToolRegistry
 from .wal import WAL, Fault
@@ -27,7 +28,8 @@ class Runner:
                  agent_factory: AgentFactory, env_tools: Callable[[Stores], list[Tool]] | None = None,
                  params: KernelParams = KernelParams(), fault: Fault | None = None, llm=None,
                  tokens: Callable[[str], int] | None = None, max_day: int | None = None,
-                 retrieval: RetrievalParams | None = None, freeze: RetrievalFreeze | None = None):
+                 retrieval: RetrievalParams | None = None, freeze: RetrievalFreeze | None = None,
+                 embedder=None, format_retries: int = 1, full_load_tokens: int = 40000):
         freeze = freeze or load_freeze(DEFAULT_FREEZE)                     # 평가 시드는 동결된 조회 설정으로만
         seed_of = (getattr(adapter, "manifest", None) or {}).get("params", {}).get("seed")
         try:
@@ -47,12 +49,31 @@ class Runner:
         self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day,
                                           responder_session=cond.responder_session, **extra)
         self.max_day = max_day
+        full_load = cond.agent_tool == "load_group_history"
         for tool in env_tools(self.stores) if env_tools else []:
-            tools.register(tool)
+            tools.register(all_groups_tool(tool) if full_load else tool)   # full_load: 모든 그룹에 같은 도구
         self.kernel = Kernel(seed=seed, condition=condition, guard=AccessGuard(access, condition), tools=tools,
                              stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
                              defaults=defaults, llm=llm)
         self.card_mode = cond.card_mode
+        self.kernel.budget_limit = cond.budget_limit
+        if full_load:
+            from gbg.stores.history import approx_tokens
+            tools.register(load_history_tool(self.stores, tokens or approx_tokens, full_load_tokens,
+                                             lambda: self.kernel.task_cache))
+        if cond.ingress is not None:                                       # 경계 조건: 그룹마다 경계 모듈 하나
+            if embedder is None or retrieval is None:
+                raise ConfigError(f"조건 '{condition}'의 경계 모듈에는 임베더와 조회 설정(retrieval)이 필요하다")
+            from gbg.boundary.module import BoundaryModule
+            from gbg.retrieval.alias import AliasResolver
+            from gbg.retrieval.hybrid import GroupRetriever
+            from gbg.stores.history import approx_tokens
+            for g in adapter.groups():
+                resolver = AliasResolver(adapter.initial_state(g.id).aliases, embedder=embedder,
+                                         embed_threshold=retrieval.alias.embed_threshold)
+                self.kernel.boundaries[g.id] = BoundaryModule(
+                    g.id, cond, retriever=GroupRetriever(self.stores, g.id, embedder, retrieval), resolver=resolver,
+                    count=tokens or approx_tokens, format_retries=format_retries)
 
     def _check_config(self):
         cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,

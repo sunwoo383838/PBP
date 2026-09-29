@@ -125,6 +125,13 @@ class LLMAgent:
     def __init__(self, agent_id: str, rt: AgentRuntime):
         self.agent_id, self.rt = agent_id, rt
 
+    def env(self, ctx_or_group) -> list[ToolSpec]:
+        """환경 도구 명세. full_load는 모든 그룹의 도구를 group 인자 하나로 합친다."""
+        if self.rt.condition.agent_tool == "load_group_history" and isinstance(ctx_or_group, AgentContext):
+            from gbg.kernel.full_load import merge_specs
+            return merge_specs({g: self.rt.env_specs(g) for g in ctx_or_group.kernel.stores.cards.group_cards})
+        return self.rt.env_specs(ctx_or_group.group if isinstance(ctx_or_group, AgentContext) else ctx_or_group)
+
     def system(self, ctx: AgentContext) -> tuple[str, int]:
         cards = ctx.kernel.stores.cards
         cond = self.rt.condition
@@ -133,12 +140,12 @@ class LLMAgent:
                    if (c.occupant != self.agent_id if cond.directory == "agent_cards" else c.group != ctx.group)]
         directory = render_directory(entries)
         comm = COMM_TOOLS[cond.agent_tool]
-        tools = [(s.name, s.description) for s in self.rt.env_specs(ctx.group)] + [(comm[0], comm[1])]
+        tools = [(s.name, s.description) for s in self.env(ctx)] + [(comm[0], comm[1])]
         return render_system(own, tools, directory), self.rt.builder.count(directory)
 
-    def tool_schemas(self, group: str, finish: dict) -> list[dict]:
+    def tool_schemas(self, group, finish: dict) -> list[dict]:
         comm = COMM_TOOLS[self.rt.condition.agent_tool]
-        return ([_fn(s.name, s.description, s.parameters) for s in self.rt.env_specs(group)]
+        return ([_fn(s.name, s.description, s.parameters) for s in self.env(group)]
                 + [_fn(*comm), _fn(finish["name"], finish["description"], finish["parameters"])])
 
     async def work(self, ctx: AgentContext, task: TimelineEvent) -> dict:
@@ -153,7 +160,9 @@ class LLMAgent:
                                 lambda args: check_answer(task.output_schema, args))
 
     async def respond(self, ctx: AgentContext, request: Request) -> Response:
-        text = f"[Question from {public_id(request.from_agent)}] {request.question}"
+        who = ("your group's intake desk (a request from another group)" if request.from_agent.startswith("boundary:")
+               else public_id(request.from_agent))
+        text = f"[Question from {who}] {request.question}"
         if request.purpose:
             text += f"\nPurpose: {request.purpose}"
         text += "\nAnswer with the reply tool."
@@ -165,11 +174,12 @@ class LLMAgent:
         system, dir_tokens = self.system(ctx)
         context = self.rt.builder.build(system, ctx.history, task_text, dir_tokens)
         messages = list(context.messages)
-        tools = self.tool_schemas(ctx.group, finish)
-        env = {s.name for s in self.rt.env_specs(ctx.group)}
+        tools = self.tool_schemas(ctx, finish)
+        env = {s.name for s in self.env(ctx)}
         tool_def_tokens = self.rt.builder.count(_dumps(tools))                # 도구 정의 = 호출마다 드는 고정비
         comm = COMM_TOOLS[self.rt.condition.agent_tool][0]
         errors = 0
+        cached_in_context = False                                          # 캐시된 도구 결과가 입력에 들어갔는가
 
         def fail_format(call_id: str | None, why: str):
             nonlocal errors
@@ -183,7 +193,7 @@ class LLMAgent:
 
         for step in range(1, self.rt.max_steps + 1):
             comp = {**context.composition, "tool_def_tokens": tool_def_tokens,
-                    "loop_messages": len(messages) - len(context.messages)}
+                    "loop_messages": len(messages) - len(context.messages), "cached_tool_result": cached_in_context}
             estimate = self.rt.builder.count(_dumps(messages)) + tool_def_tokens    # 호출 전 프롬프트 추정
             try:
                 res = await ctx.llm(messages, tools, step, comp, estimate=estimate)
@@ -223,6 +233,7 @@ class LLMAgent:
                     out = await self._communicate(ctx, comm, args)
                 else:
                     out = {"ok": False, "error": "unknown_tool"}
+                cached_in_context = cached_in_context or bool(isinstance(out, dict) and out.get("cached"))
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": _dumps(out)})
         raise AgentFailure("step_limit")
 
@@ -251,6 +262,23 @@ class LLMAgent:
                 return {"ok": False, "error": "bad_arguments"}
             to = ctx.kernel.stores.cards.resolve(args["agent_id"]) or args["agent_id"]    # 불투명 id → 실제 id
             r = await ctx.ask(to, args["question"])
-            return {"ok": r.status != "error", "status": r.status, "answer": r.answer,
-                    "values": [v.model_dump(mode="json") for v in r.values], "missing": r.missing}
-        return {"ok": False, "error": "not_available"}                     # ask_group · ask: 경계 모듈(Stage 5)
+        elif tool == "ask_group":
+            if not isinstance(args.get("group"), str) or not isinstance(args.get("question"), str):
+                return {"ok": False, "error": "bad_arguments"}
+            r = await ctx.ask_group(args["group"], args["question"])
+        elif tool == "load_group_history":
+            out = await ctx.call_tool("load_group_history", **args)
+            return {"ok": out["ok"], **(out.get("result") or {"error": out.get("error")})}
+        elif tool == "ask":
+            if not isinstance(args.get("question"), str) or not isinstance(args.get("purpose"), str):
+                return {"ok": False, "error": "bad_arguments"}
+            r = await ctx.ask_egress(args["question"], args["purpose"])
+        else:
+            return {"ok": False, "error": "not_available"}
+        out = {"ok": r.status != "error", "status": r.status, "answer": r.answer,
+               "values": [v.model_dump(mode="json") for v in r.values], "missing": r.missing}
+        if r.referral_to:
+            out["referral_to"] = r.referral_to
+        if r.need:
+            out["need"] = r.need
+        return out

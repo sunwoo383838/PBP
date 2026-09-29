@@ -43,6 +43,17 @@ def _categorical(answer) -> str:
     return f": {', '.join(keep)}" if keep else ""
 
 
+def _label(agent: str | None, msg: dict, to_side: bool = False) -> str:
+    """이력 문구의 상대 표기: 에이전트는 불투명 id, 경계 모듈은 접수 창구, 그룹에 물었으면 그룹 id."""
+    if agent and agent.startswith("boundary:"):
+        return "your group's intake desk"
+    if agent:
+        return public_id(agent)
+    if to_side and msg.get("to_group"):
+        return msg["to_group"]
+    return "your group's boundary"
+
+
 class HistoryStore:
     def __init__(self, snapshots: dict[str, list[HistoryEntry]], tag: Tagger,
                  tokens: Callable[[str], int] = approx_tokens, responder_session: str = "persistent"):
@@ -50,6 +61,7 @@ class HistoryStore:
         self.tag, self.tokens = tag, tokens
         self.ephemeral = responder_session == "ephemeral"
         self.tasks: dict[str, dict] = {}               # task_id → 과제 정보 (엔티티, 종류, 발견성, 그룹)
+        self._at: tuple[int | None, int | None] = (None, None)   # apply 중인 사건의 (라운드, WAL seq)
 
     def entries(self, agent: str) -> tuple[HistoryEntry, ...]:
         return tuple(self._h.get(agent, []))
@@ -65,13 +77,22 @@ class HistoryStore:
             tokens: int | None = None) -> int:
         hist = self._h.setdefault(agent, [])
         seq = hist[-1].seq + 1 if hist else 1
+        rnd, order = self._at                                              # 반영 중인 사건의 (라운드, WAL seq)
         hist.append(HistoryEntry(seq=seq, day=day, role=role, text=text,
                                  tokens=self.tokens(text) if tokens is None else tokens,
-                                 entities=sorted(set(entities)), digest=digest))
+                                 entities=sorted(set(entities)), digest=digest, round=rnd, order=order))
         return seq
 
     def apply(self, ev: Event, group_of: dict[str, str]) -> dict[str, int]:
-        """사건 하나를 이력에 반영하고, 답 항목이 생기면 {agent: seq}를 돌려준다(색인 갱신용)."""
+        """사건 하나를 이력에 반영하고, 답 항목이 생기면 {agent: seq}를 돌려준다(색인 갱신용).
+        새 항목에는 그 사건의 (라운드, WAL seq)를 적는다 (full_load의 시간순 정렬용)."""
+        self._at = (ev.round, ev.seq)
+        try:
+            return self._apply(ev, group_of)
+        finally:
+            self._at = (None, None)
+
+    def _apply(self, ev: Event, group_of: dict[str, str]) -> dict[str, int]:
         p, d = ev.payload, ev.day
         tag = lambda agent, text: self.tag(group_of[agent], text)
         in_session = self.ephemeral and p.get("serving") is not None       # 외부 요청에 답하는 세션 안의 사건
@@ -101,14 +122,14 @@ class HistoryStore:
             self.add(a, d, "tool", text, tag(a, text), f"Day {d}: {p['tool']} {'succeeded' if p['ok'] else 'failed'}")
         elif ev.type == "message" and p["kind"] == "request":
             a, to, q = p["from_agent"], p["to_agent"], p["request"]["question"]
-            pa, pto = public_id(a), public_id(to)                          # 이력 문구에는 불투명 id만
+            pa, pto = _label(a, p), _label(to, p, to_side=True)            # 이력 문구에는 불투명 id·그룹만
             if known(a) and not in_session:
                 self.add(a, d, "assistant", f"[Question to {pto}] {q}", tag(a, q), f"Day {d}: asked {pto}{_targets(tag(a, q))}")
             if p.get("delivered") and known(to) and not self.ephemeral:
                 self.add(to, d, "user", f"[Question from {pa}] {q}", tag(to, q), f"Day {d}: question from {pa}{_targets(tag(to, q))}")
         elif ev.type == "message" and p["kind"] == "response":
             a, to, r = p["from_agent"], p["to_agent"], p["response"]
-            pa, pto = public_id(a), public_id(to)
+            pa, pto = _label(a, p), _label(to, p, to_side=True)
             if ev.actor == f"agent:{to}" and known(to):
                 if self.ephemeral:                                          # 세션 전체를 요약 한 줄로
                     ents = tag(to, p.get("question", ""))

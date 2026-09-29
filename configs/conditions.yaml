@@ -7,13 +7,19 @@ defaults:
   final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
   requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
 
+# 사다리: direct → routing → ingress_read → ingress_sel → ingress → i_e. 참조 행: direct_dyncard, routing_reveal, full_load.
+# 경계 조건(routing 이후)은 담당자 선택이 모두 같고(검색 → LLM 선택, 인원 상한 없음, 과제 예산이 상한) 전달 방식만 다르다.
+# 구현 순서: direct, routing, ingress, i_e, full_load를 먼저 완성한다. ingress_read·ingress_sel은 정의만 두고 그다음에 구현한다.
 direct:          {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null}
 direct_dyncard:  {agent_tool: ask_agent, directory: agent_cards, card_mode: dynamic, ingress: null, egress: null,
                   blocked: "동적 card 내용이 확정될 때까지 실행하지 않는다"}
-routing:         {agent_tool: ask_group, directory: group_cards, card_mode: static,  ingress: {fanout: 1, assemble: false, requery: false, reveal_holders: false}, egress: null}
-routing_reveal:  {agent_tool: ask_group, directory: group_cards, card_mode: static,  ingress: {fanout: 0, assemble: false, requery: false, reveal_holders: true},  egress: null}   # 보유자 목록만 알려 주고 요청자가 ask_agent로 직접 질의
-# 구현 순서: 핵심 조건(direct, routing, ingress, i_e, full_load)을 먼저 완성하고, ingress_raw·ingress_sel은 정의만 두고 그다음에 구현한다.
-ingress_raw:     {agent_tool: ask_group, directory: group_cards, card_mode: static,  ingress: {fanout: 3, assemble: false, requery: false, reveal_holders: false}, egress: null}   # 조회·fan-out은 Ingress와 같고, 응답 원문을 조립 없이 그대로 전달
-ingress_sel:     {agent_tool: ask_group, directory: group_cards, card_mode: static,  ingress: {fanout: 3, assemble: true,  requery: false, reveal_holders: false, boundary_state: false, version_marks: false}, egress: null}   # 조회·fan-out은 Ingress와 같고 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
-ingress:         {agent_tool: ask_group, directory: group_cards, card_mode: static,  ingress: {fanout: 3, assemble: true,  requery: true,  reveal_holders: false, boundary_state: true,  version_marks: true},  egress: null}
-i_e:             {agent_tool: ask,       directory: group_cards, card_mode: static,  ingress: {fanout: 3, assemble: true,  requery: true,  reveal_holders: false, boundary_state: true,  version_marks: true},  egress: {history: true}}
+routing:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: forward}, egress: null}   # 검색 결과는 담당자 선택에만. 요청 원문 전달, 응답 원문 반환
+routing_reveal:  {agent_tool: ask_group, directory: group_cards, ingress: {deliver: forward, reveal_holders: true}, egress: null,
+                  blocked: "참조 행: 핵심 조건 다음에 구현 (요청자에게 ask_agent도 필요)"}   # 담당자 목록만 알려 주고 요청자가 ask_agent로 직접 질의
+ingress_read:    {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null,
+                  blocked: "정의만 둔다: 핵심 조건 다음에 구현"}   # routing + 검색된 기록 원문 첨부
+ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble}, egress: null,
+                  blocked: "정의만 둔다: 핵심 조건 다음에 구현"}   # 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
+ingress:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: null}
+i_e:             {agent_tool: ask,       directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: true}}
+full_load:       {agent_tool: load_group_history, directory: group_cards, ingress: null, egress: null, budget_limit: false}   # 권한을 풀어 준 참조(상한 아님): 모든 그룹의 조회 도구 + 그룹 이력 원문 전체

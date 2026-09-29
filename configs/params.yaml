@@ -31,6 +31,7 @@ context:
 agent:
   max_steps: 6
   format_retries: 1
+  full_load_tokens: 40000                   # full_load: 상대 그룹 이력을 이어 붙여 이 토큰에서 자름 (오래된 줄부터)
 
 retrieval:
   embed_model: BAAI/bge-m3                  # DeepInfra, 1024차원. 텍스트 해시로 SQLite 캐시

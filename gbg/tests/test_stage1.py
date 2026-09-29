@@ -21,7 +21,7 @@ from gbg.contracts.envelope import Response
 from gbg.kernel.rng import NamedRNG
 from gbg.kernel.runner import KernelParams, RunConfigError, Runner
 from gbg.kernel.tools import Resource, Tool, ToolRegistry
-from gbg.tests.support import load_adapter
+from gbg.tests.support import boundary_kwargs, load_adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 CONDITIONS = load_conditions(ROOT / "configs" / "conditions.yaml")
@@ -88,7 +88,7 @@ def make_runner(run_dir, scenario="worldgen_mini", *, seed=7, condition="direct"
     adapter = load_adapter(scenario)
     return Runner(adapter, condition=condition, seed=seed, run_dir=run_dir, conditions=CONDITIONS, access=ACCESS,
                   tools=make_tools(), agent_factory=agent_factory or factory(adapter, jitter_seed),
-                  params=KernelParams(), fault=fault)
+                  params=KernelParams(), fault=fault, **boundary_kwargs())
 
 
 def wal_events(run_dir):

@@ -6,8 +6,9 @@ import json
 
 from gbg.contracts.adapter import BenchmarkAdapter
 from gbg.contracts.events import Event
-from gbg.contracts.schemas import DbWrite, GroupInit, GroupSpec, IndexEntry
+from gbg.contracts.schemas import DbWrite, EgressRecord, GroupInit, GroupSpec, IndexEntry
 
+from .boundary_log import BoundaryLog
 from .cards import CardRegistry
 from .catalog import Catalog
 from .db import VersionedDB
@@ -32,6 +33,7 @@ class Stores:
                                 {g: i.entity_index for g, i in inits.items()})
         self.catalog = Catalog({g: i.catalog for g, i in inits.items()})
         self.egress_log = EgressLog({g: i.egress_log for g, i in inits.items()})
+        self.boundary_log = BoundaryLog()
         self.env = {g: dict(i.env) for g, i in inits.items()}
         names = {s for i in inits.values() for e, al in i.aliases.items() for s in (e, *al)}
         categories = {g: list(i.env.get("scope_categories", [])) for g, i in inits.items()}
@@ -60,6 +62,14 @@ class Stores:
                     self.index.add(x["group"], x["index"], IndexEntry(day=ev.day, agent=x["agent"],
                                                                       text=x.get("text") or x.get("trace") or "",
                                                                       entities=x.get("entities", [])))
+        elif ev.type == "boundary_decision":
+            if p.get("stage") == "egress":                                  # Egress 결과 → egress_log
+                for x in p.get("log", []):
+                    self.egress_log.add(p["group"], EgressRecord.model_validate(x))
+            elif p.get("stage") == "ingress" and p.get("answer") is not None:   # 조립한 교차 문답 → 경계 상태
+                self.boundary_log.add(p["group"], {"day": ev.day, "from_group": p["from_group"], "question": p["question"],
+                                                   "entities": p.get("entities", []), "answer": p["answer"],
+                                                   "versions": p.get("versions_given", [])})
         elif ev.type == "agent_join":
             self.members[p["agent"]] = (p["group"], p["role"])
             obs += self.cards.join(p["agent"], p["group"], p["role"], p.get("from"), ev.day, ev.seq)
@@ -74,6 +84,6 @@ class Stores:
     def dump(self) -> dict:
         """모든 투영의 정규 형태 (재생성 비교용)."""
         out = {"db": self.db.dump(), "rulebook": self.rulebook.dump(), "history": self.history.dump(),
-               "index": self.index.dump(), "catalog": self.catalog.dump(), "egress_log": self.egress_log.dump(),
+               "index": self.index.dump(), "catalog": self.catalog.dump(), "egress_log": self.egress_log.dump(), "boundary_log": self.boundary_log.dump(),
                "env": self.env, "cards": self.cards.dump(), "members": {a: list(v) for a, v in sorted(self.members.items())}}
         return json.loads(json.dumps(out, ensure_ascii=False, sort_keys=True))

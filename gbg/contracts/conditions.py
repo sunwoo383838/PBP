@@ -46,20 +46,23 @@ class Defaults(Contract):
 
 
 class IngressConfig(Contract):
-    fanout: int = Field(ge=0)                   # 담당자 수 상한 (0 = 보유자 목록만 공개)
-    assemble: bool                              # 증거 + 응답으로 조립 (LLM ②)
-    requery: bool                               # 빠진 항목 재질의 1회
-    reveal_holders: bool = False                # 보유자 목록만 돌려주고 요청자가 직접 묻는다
+    """받는 쪽 경계 모듈. 담당자 선택은 모든 경계 조건이 같다: 요청 해석 → 별칭 해소 → referral·need_more →
+    그룹 기록 검색(색인 entities + catalog 연결 + 하이브리드 이력 검색) → LLM이 검색 결과를 보고 담당자 선택.
+    인원 상한은 없고 과제 예산이 상한이다. 조건마다 다른 것은 전달 방식뿐이다."""
+    deliver: Literal["forward", "read", "assemble"]
+    # forward  = 요청 원문을 담당자들에게 그대로, 응답 원문을 요청자에게 그대로 (Routing. 검색 결과는 선택에만)
+    # read     = forward + 검색된 기록 원문 첨부 (ingress_read)
+    # assemble = 게이트웨이 LLM이 증거와 응답으로 조립 (ingress_sel, Ingress, I+E)
+    requery: bool = False                       # 빠진 항목 재질의
     boundary_state: bool = False                # 경계 상태(과거 교차 문답·제공 버전·진행 중 요청)를 조립에 쓴다
     version_marks: bool = False                 # 조립 답에 버전 표시 (같은 DB 키·버전 번호로 묶은 사실)
+    reveal_holders: bool = False                # 전달하지 않고 담당자 목록만 돌려준다 (요청자가 직접 묻는다)
 
     @model_validator(mode="after")
-    def _reveal(self):
-        if (self.fanout == 0) != self.reveal_holders:
-            raise ValueError("fanout 0은 reveal_holders=true일 때만, reveal_holders=true는 fanout 0일 때만 허용한다")
-        if self.reveal_holders and (self.assemble or self.requery):
-            raise ValueError("reveal_holders는 조립·재질의 없이 보유자 목록만 돌려준다")
-        if not self.assemble and (self.requery or self.boundary_state or self.version_marks):
+    def _deliver(self):
+        if self.reveal_holders and self.deliver != "forward":
+            raise ValueError("reveal_holders는 forward(Routing)에서만: 담당자 목록만 돌려준다")
+        if self.deliver != "assemble" and (self.requery or self.boundary_state or self.version_marks):
             raise ValueError("재질의·경계 상태·버전 표시는 조립(assemble)하는 게이트웨이에만 있다")
         return self
 
@@ -69,22 +72,24 @@ class EgressConfig(Contract):
 
 
 class Condition(Contract):
-    agent_tool: Literal["ask_agent", "ask_group", "ask"]
+    agent_tool: Literal["ask_agent", "ask_group", "ask", "load_group_history"]
     directory: Literal["agent_cards", "group_cards"]
     card_mode: Literal["static", "dynamic"] = "static"
     responder_session: Literal["persistent", "ephemeral"] = "persistent"
     ingress: IngressConfig | None
     egress: EgressConfig | None
     blocked: str | None = None                  # 설정에는 있지만 실행기가 거부하는 조건 (사유)
+    budget_limit: bool = True                   # False = 과제 예산 상한 미적용(참조 행 full_load), 소비량만 기록
 
     @model_validator(mode="after")
     def _consistent(self):
         direct = self.agent_tool == "ask_agent"
+        load = self.agent_tool == "load_group_history"                 # full_load: 통신 대신 상대 그룹 이력을 컨텍스트로
         if direct != (self.directory == "agent_cards"):
             raise ValueError("ask_agent는 에이전트 card 디렉터리와, 그룹 도구는 그룹 card 디렉터리와 짝이다")
-        if direct and (self.ingress or self.egress):
-            raise ValueError("Direct 요청은 경계 모듈을 지나지 않는다")
-        if not direct and self.ingress is None:
+        if (direct or load) and (self.ingress or self.egress):
+            raise ValueError("Direct·full_load 요청은 경계 모듈을 지나지 않는다")
+        if not (direct or load) and self.ingress is None:
             raise ValueError("그룹에 묻는 조건은 받는 쪽 Ingress가 있어야 한다")
         if (self.egress is not None) != (self.agent_tool == "ask"):
             raise ValueError("Egress는 ask(question, purpose) 도구와 짝이다")

@@ -80,6 +80,7 @@ class AgentContext:
     lineage: list[str]
     history: tuple[HistoryEntry, ...]           # 과제 시작 시점의 이력 (워밍업 + 반영분)
     serving: str | None = None                  # 응답 중인 요청의 rid (작업 수행이면 None)
+    boundary: str | None = None                 # 경계 모듈이 부르는 중이면 그 그룹
 
     @property
     def rng(self):
@@ -87,15 +88,27 @@ class AgentContext:
 
     @property
     def component(self) -> str:
-        """예산 구성요소: 과제 담당자가 작업을 수행하는 중이면 requester, 그 밖의 에이전트 호출은 responder."""
+        """예산 구성요소: 경계 모듈이면 boundary, 과제 담당자가 작업을 수행하는 중이면 requester, 그 밖은 responder."""
+        if self.boundary is not None:
+            return "boundary"
         b = self.kernel.budget
         return "requester" if self.serving is None and b is not None and self.agent_id == b.requester else "responder"
+
+    @property
+    def actor(self) -> str:
+        return f"boundary:{self.boundary}" if self.boundary is not None else f"agent:{self.agent_id}"
 
     async def call_tool(self, name: str, **args) -> dict:
         return await self.kernel.call_tool(self, name, args)
 
-    async def ask(self, to_agent: str, question: str, purpose: str | None = None) -> Response:
-        return await self.kernel.bus.ask(self, to_agent, question, purpose)
+    async def ask(self, to_agent: str, question: str, purpose: str | None = None, hop: int | None = None) -> Response:
+        return await self.kernel.bus.ask(self, to_agent, question, purpose, hop)
+
+    async def ask_group(self, group: str, question: str, purpose: str | None = None) -> Response:
+        return await self.kernel.bus.ask_group(self, group, question, purpose)
+
+    async def ask_egress(self, question: str, purpose: str | None) -> Response:
+        return await self.kernel.bus.ask_egress(self, question, purpose)
 
     async def llm(self, messages: list[dict], tools: list[dict], step: int, composition: dict | None = None,
                   final: bool = False, estimate: int = 0):
@@ -124,6 +137,9 @@ class Kernel:
         self.bus = Bus(self, hop_limit)
         self.llm = llm
         self.budget: TaskBudget | None = None      # 실행 중인 과제의 예산 (순차 실행이라 하나뿐)
+        self.boundaries: dict = {}                 # 그룹 → 경계 모듈 (경계 조건에서만)
+        self.budget_limit = True                   # False면 과제 예산 상한 미적용 (참조 행 full_load)
+        self.task_cache: dict = {}                 # 과제 안 도구 캐시 (과제마다 비운다)
 
     # ── 상태: 번호가 매겨진 사건으로만 바뀐다 ──
     def add_member(self, agent_id: str, group: str, role: str):
@@ -173,7 +189,10 @@ class Kernel:
             "task_id": te.task_id, "eid": te.eid, "agent": te.agent, "group": te.group, "text": te.text,
             "request": te.request, "entities": te.entities,
             "answer_slots": [s.name for s in te.output_schema.slots]})
-        self.budget = TaskBudget(te.task_id, te.agent, self.defaults)
+        defaults = self.defaults if self.budget_limit else self.defaults.model_copy(   # 참조 행: 상한 없이 소비량만
+            update={"budget": self.defaults.budget.model_copy(update={"calls": None, "tokens": None})})
+        self.budget = TaskBudget(te.task_id, te.agent, defaults)
+        self.task_cache = {}
         head = {"task_id": te.task_id, "agent": te.agent}
         try:
             if not self.is_active(te.agent):
@@ -253,10 +272,13 @@ class Kernel:
         head = {"task_id": ctx.task_id, "agent": ctx.agent_id, "step": step, "component": component,
                 "final": final, "serving": ctx.serving}
         obs = [("llm", {"day": ctx.day, "round": ctx.round, **head, "model": res.model, "key": res.key,
-                        "cached": res.cached, "attempts": res.attempts, "latency_ms": res.latency_ms, "usage": res.usage})]
+                        "cached": res.cached, "attempts": res.attempts, "latency_ms": res.latency_ms, "usage": res.usage,
+                        "tokens": int(res.usage.get("prompt_tokens", 0)) + int(res.usage.get("completion_tokens", 0)),
+                        "provider_cached_tokens": int(res.usage.get("provider_cached_tokens", 0) or 0),
+                        "cached_tool_result": bool((composition or {}).get("cached_tool_result"))})]
         if composition is not None:
             obs.append(("context_windows", {"day": ctx.day, "round": ctx.round, **head, **composition}))
-        ctx.span.emit("llm_call", f"agent:{ctx.agent_id}", {**head, "model": res.model, "key": res.key,
+        ctx.span.emit("llm_call", ctx.actor, {**head, "model": res.model, "key": res.key,
                                                              "usage": res.usage, "finish_reason": res.finish_reason,
                                                              "message": res.message}, obs=obs)
         return res

@@ -32,6 +32,10 @@ COMM_TOOLS = {
                    "the request, and returns the answer.",
             {"type": "object", "properties": {"question": {"type": "string"}, "purpose": {"type": "string"}},
              "required": ["question", "purpose"], "additionalProperties": False}),
+    "load_group_history": ("load_group_history", "Load all records of the members of a group in the directory, oldest "
+                                                 "first, into your context. If they are too long, the oldest are cut.",
+                           {"type": "object", "properties": {"group": {"type": "string"}},
+                            "required": ["group"], "additionalProperties": False}),
 }
 
 

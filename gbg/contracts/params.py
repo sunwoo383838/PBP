@@ -48,6 +48,7 @@ class ContextParams(Contract):
 class AgentParams(Contract):
     max_steps: int = Field(ge=1)
     format_retries: int = Field(ge=0)
+    full_load_tokens: int = Field(default=40000, ge=1)  # full_load의 load_group_history 상한 (넘으면 오래된 줄부터)
 
 
 class BM25Params(Contract):

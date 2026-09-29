@@ -31,7 +31,7 @@ from gbg.llm.cache import ResponseCache
 from gbg.llm.context_builder import ContextBuilder
 from gbg.llm.tokenizer import TokenizerError, load_tokenizer, tokenizer_path
 from gbg.stores.cards import looks_like_amount
-from gbg.tests.support import load_adapter
+from gbg.tests.support import boundary_kwargs, load_adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 P = load_params(ROOT / "configs" / "params.yaml")
@@ -128,7 +128,7 @@ def llm_runner(tmp, llm, *, condition="direct", name="worldgen_mini", max_day=1,
                       P.agent.max_steps, P.agent.format_retries)
     return Runner(a, condition=condition, seed=7, run_dir=tmp, conditions=conditions, access=ACCESS,
                   tools=ToolRegistry(ACCESS), env_tools=a.make_tools, agent_factory=lambda aid, g, role: LLMAgent(aid, rt),
-                  params=P.kernel, llm=llm, tokens=TOK.count, max_day=max_day)
+                  params=P.kernel, llm=llm, tokens=TOK.count, max_day=max_day, **boundary_kwargs())
 
 
 def wal(d):

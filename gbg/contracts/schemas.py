@@ -31,6 +31,8 @@ class HistoryEntry(Contract):
     tokens: int = Field(ge=0)
     entities: list[str]
     digest: str                                 # 결정·대상·범주형 값만, 수치 없음
+    round: int | None = None                    # 하루 안 라운드 (워밍업은 worldgen transcripts의 round)
+    order: int | None = None                    # 그룹 공통 순번 = WAL seq (실행 중 사건만. 워밍업은 공개 순번이 없어 None)
 
 
 class IndexEntry(Contract):

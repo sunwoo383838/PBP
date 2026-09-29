@@ -201,16 +201,20 @@ def test_card_kinds_are_distinct():
 # ─────────────────────────── 2. 조건 설정 ───────────────────────────
 def test_conditions_load_ladder_and_reference_rows():
     conds = load_conditions(CONFIGS / "conditions.yaml")
-    assert list(conds) == ["direct", "direct_dyncard", "routing", "routing_reveal", "ingress_raw", "ingress_sel", "ingress", "i_e"]
+    assert list(conds) == ["direct", "direct_dyncard", "routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress",
+                           "i_e", "full_load"]
+    fl = conds["full_load"]
+    assert fl.agent_tool == "load_group_history" and fl.ingress is None and not fl.budget_limit, "참조 행: 예산 상한 없음"
     assert conds["direct"].agent_tool == "ask_agent" and conds["direct"].directory == "agent_cards"
     assert conds["direct"].ingress is None and conds["direct"].egress is None
-    assert conds["routing"].ingress.fanout == 1 and not conds["routing"].ingress.assemble
-    assert conds["routing_reveal"].ingress.fanout == 0 and conds["routing_reveal"].ingress.reveal_holders
-    assert conds["ingress_raw"].ingress.fanout == 3 and not conds["ingress_raw"].ingress.assemble
-    assert conds["ingress"].ingress.fanout == 3 and conds["ingress"].ingress.requery
+    assert conds["routing"].ingress.deliver == "forward" and not conds["routing"].ingress.reveal_holders
+    assert conds["routing_reveal"].ingress.reveal_holders
+    assert conds["ingress_read"].ingress.deliver == "read"
     sel, ing = conds["ingress_sel"].ingress, conds["ingress"].ingress
-    assert (sel.fanout, sel.assemble) == (ing.fanout, ing.assemble), "조회·fan-out·조립은 Ingress와 같다"
-    assert not (sel.requery or sel.boundary_state or sel.version_marks) and ing.boundary_state and ing.version_marks
+    assert sel.deliver == ing.deliver == conds["i_e"].ingress.deliver == "assemble"
+    assert not (sel.requery or sel.boundary_state or sel.version_marks) and ing.requery and ing.boundary_state and ing.version_marks
+    assert {n for n, c in conds.items() if c.blocked} == {"direct_dyncard", "routing_reveal", "ingress_read", "ingress_sel"}
+    assert "ingress_raw" not in conds, "새 Routing과 같아져서 없앴다"
     assert conds["i_e"].agent_tool == "ask" and conds["i_e"].egress.history
     assert conds["direct_dyncard"].card_mode == "dynamic" and conds["direct_dyncard"].blocked
     assert all(c.card_mode == "static" for n, c in conds.items() if n != "direct_dyncard")
@@ -253,9 +257,10 @@ def test_unknown_condition_name_errors():
     {"egress": {"history": True}},                                             # Egress는 ask 도구에서만
     {"card_mode": "live"},
     {"cache": True},                                                           # 선언 밖 키
-    {"ingress": {"fanout": 0, "assemble": False, "requery": False, "reveal_holders": False}},   # fanout 0은 reveal만
-    {"ingress": {"fanout": 3, "assemble": False, "requery": False, "reveal_holders": True}},    # reveal은 fanout 0만
-    {"ingress": {"fanout": 3, "assemble": False, "requery": False, "version_marks": True}},     # 버전 표시는 조립하는 게이트웨이만
+    {"ingress": {"deliver": "assemble", "reveal_holders": True}},                      # 담당자 공개는 forward만
+    {"ingress": {"deliver": "read", "version_marks": True}},                          # 버전 표시는 조립하는 게이트웨이만
+    {"ingress": {"deliver": "forward", "requery": True}},                             # 재질의도 조립하는 게이트웨이만
+    {"ingress": {"deliver": "forward", "fanout": 3}},                                 # 인원 상한 없음 (과제 예산이 상한)
     {"budget": {"calls": 10, "tokens": 1000}},                                 # 예산은 조건별로 못 바꾼다
     {"responder_session": "shared"},
 ])
@@ -304,17 +309,23 @@ def access() -> AccessTable:
     ("agent", "r", "private", "any", False),
 ])
 def test_access_table_matches_plan(access, subject, action, resource, scope, expected):
-    for cond in ("direct", "routing", "routing_reveal", "ingress_raw", "ingress_sel", "ingress", "i_e"):
+    for cond in ("direct", "routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load"):
+        if cond == "full_load" and subject == "agent" and scope == "other" and resource in ("db", "rulebook", "group_history"):
+            continue                                                       # full_load만 다른 그룹 조회 허용 (아래 테스트)
         assert access.allows(subject, action, resource, scope, cond) is expected
 
 
-def test_group_history_is_gateway_only(access):
-    """그룹 이력 전체는 게이트웨이(ingress_raw · ingress_sel · Ingress · I+E)만 읽는다. 라우터는 색인·catalog·DB만."""
-    for cond, allowed in [("ingress_raw", True), ("ingress_sel", True), ("ingress", True), ("i_e", True),
-                          ("routing", False), ("routing_reveal", False), ("direct", False)]:
-        assert access.allows("boundary", "r", "group_history", "own", cond) is allowed, cond
+def test_boundary_search_is_same_for_all_boundary_conditions(access):
+    """담당자 선택용 검색(색인 + catalog + 그룹 이력)은 모든 경계 조건이 같다. 에이전트는 다른 그룹 이력을 못 읽는다."""
+    for cond in ("routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e"):
+        assert access.allows("boundary", "r", "group_history", "own", cond), cond
         assert access.allows("boundary", "r", "index", "own", cond), cond
         assert access.allows("boundary", "r", "db", "own", cond), cond
+    for cond in ("direct", "routing", "ingress", "i_e"):
+        assert not access.allows("agent", "r", "group_history", "other", cond), cond
+    for res in ("db", "rulebook", "group_history"):
+        assert access.allows("agent", "r", res, "other", "full_load"), res
+    assert not access.allows("agent", "r", "index", "other", "full_load"), "색인은 경계 모듈 전용"
 
 
 def test_access_unknown_names_rejected(access):
@@ -330,7 +341,7 @@ def test_access_unknown_names_rejected(access):
     lambda raw: raw["rules"].append({"subject": "agent", "resource": "shard", "scope": "own", "perm": "r"}),
     lambda raw: raw["rules"].append({"subject": "agent", "resource": "private", "scope": "any", "perm": "r"}),
     lambda raw: raw["rules"].append({"subject": "agent", "resource": "obs", "scope": "own", "perm": "r"}),
-    lambda raw: raw["overrides"].update({"full_load": [{"subject": "agent", "resource": "group_history", "scope": "other", "perm": "r"}]}),
+    lambda raw: raw["overrides"].update({"oracle_load": [{"subject": "agent", "resource": "group_history", "scope": "other", "perm": "r"}]}),
     lambda raw: raw["rules"].append({"subject": "agent", "resource": "db", "scope": "own", "perm": "x"}),
 ])
 def test_bad_access_table_rejected_at_load(tmp_path, mutate):

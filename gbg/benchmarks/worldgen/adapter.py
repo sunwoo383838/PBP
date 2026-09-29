@@ -217,7 +217,8 @@ class WorldgenAdapter:
         members = [m.agent_id for g in self._groups if g.id == group for m in g.members]
         tag = self._tagger[group].tag
         histories = {a: [HistoryEntry(seq=i, day=x["day"], role=x["role"], text=x["text"], tokens=x["tok"],
-                                      entities=tag(x["text"]), digest=x["summary"])
+                                      entities=tag(x["text"]), digest=x["summary"],
+                                      round=x.get("round"))
                          for i, x in enumerate(self._transcripts[a], 1)]
                      for a in members if a in self._transcripts}
         entry = lambda x: IndexEntry(day=x["day"], agent=x["agent"], text=x.get("text") or x.get("trace") or "",

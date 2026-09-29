@@ -188,14 +188,11 @@ def test_results_never_cross_group_boundary():
 def test_retrieval_authorization_follows_access_table():
     conds = load_conditions(ROOT / "configs" / "conditions.yaml")
     access = load_access(ROOT / "configs" / "access.yaml", conds)
-    for cond in ("ingress_raw", "ingress", "i_e"):                              # 게이트웨이만 그룹 이력 검색
+    for cond in ("routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e"):   # 경계 조건 모두 같은 검색
         guard = AccessGuard(access, cond)
         assert authorize(guard, "boundary:FIN-SEL", "FIN-SEL", "FIN-SEL")["allowed"]
         with pytest.raises(RetrievalDenied):
             authorize(guard, "boundary:FIN-SEL", "FIN-SEL", "HR-SEL")
-    for cond in ("routing", "routing_reveal"):                                  # 라우터는 색인·catalog만
-        with pytest.raises(RetrievalDenied):
-            authorize(AccessGuard(access, cond), "boundary:FIN-SEL", "FIN-SEL", "FIN-SEL")
     for cond in conds:
         guard = AccessGuard(access, cond)
         with pytest.raises(RetrievalDenied):
