@@ -55,4 +55,6 @@ def proposal_uptake(events: list[dict], wid: str, answer: dict | None) -> dict:
             rows.append({"item": x["item"], "proposed": x["value"], "member_values": mv, "refs": x["refs"],
                          "followed": "both" if fp and fm else "proposal" if fp else "member" if fm else "neither"})
     counts = {k: sum(r["followed"] == k for r in rows) for k in ("proposal", "member", "both", "neither")}
-    return {"n": len(rows), **counts, "rows": rows}
+    dropped = sum(len(e["payload"].get("proposals_dropped") or []) for e in events if e["type"] == "boundary_decision"
+                  and e["payload"].get("task_id") == wid and e["payload"].get("stage") == "ingress")
+    return {"n": len(rows), **counts, "dropped": dropped, "rows": rows}             # dropped: 근거가 풀리지 않아 코드가 버린 제안

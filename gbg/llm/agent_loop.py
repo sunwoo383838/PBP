@@ -64,6 +64,46 @@ def slot_schema(s: Slot) -> dict:
     return sch
 
 
+_FORMAT_TEXT = {"id": "an ID, copied exactly", "department": "a department name, copied exactly"}
+
+
+def _item_text(spec: dict | None, plural: bool = True) -> str:
+    """배열 원소 형식을 말로 (worldgen 원소 형식 명세)."""
+    if not spec:
+        return "values" if plural else "value"
+    t = spec.get("type")
+    if t == "integer":
+        return "integers" if plural else "integer"
+    if t == "boolean":
+        return "true/false values" if plural else "true/false"
+    if t == "string":
+        if plural:
+            return {"id": "IDs (each copied exactly)", "department": "department names (each copied exactly)"}.get(
+                spec.get("format"), "strings")
+        return f"string ({_FORMAT_TEXT.get(spec.get('format'), 'text')})"
+    if t == "enum":
+        return "values from: " + " | ".join(map(str, spec.get("values", [])))
+    if t == "tuple":
+        inner = ", ".join(n or _item_text(x, False) for n, x in zip(spec.get("names") or [None] * len(spec["items"]),
+                                                                    spec["items"]))
+        return f"lists [{inner}]"
+    return "values"
+
+
+def render_slot(s: Slot) -> str:
+    """과제 프롬프트의 슬롯 한 줄: 이름과 값의 형식을 말로 (예: "dept: string (a department name, copied exactly)").
+    타입 이름과 형식 설명을 괄호에 나란히 찍으면 필드 여러 개로 읽힌다(pilot18 dept(id, department) → 객체 제출)."""
+    if s.type == "enum":
+        body = "one of: " + " | ".join(map(str, s.options))
+    elif s.type in ("set", "list"):
+        body = f"list of {_item_text(s.items)}, " + ("any order" if s.type == "set" else "in order")
+    elif s.type == "id":
+        body = f"string ({_FORMAT_TEXT.get(s.format, 'text')})"
+    else:
+        body = {"int": "integer", "number": "number", "bool": "true/false"}[s.type]
+    return f"{s.name}: {body}" + (", or null" if s.nullable else "")
+
+
 def submit_tool(schema: OutputSchema) -> dict:
     return {"name": "submit", "description": "Submit the final answer to the task.",
             "parameters": {"type": "object", "properties": {s.name: slot_schema(s) for s in schema.slots},
@@ -259,10 +299,8 @@ class LLMAgent:
         lines = [f"Today is day {ctx.day}.", f"[Task {task.task_id}] {task.text}"]
         if task.request:
             lines.append(f"Request: {_dumps(task.request)}")
-        slots = ", ".join(f"{s.name}({s.type}{': ' + '|'.join(map(str, s.options)) if s.options else ''}"
-                          f"{', ' + s.format if s.format else ''}{', nullable' if s.nullable else ''})"
-                          for s in task.output_schema.slots)
-        lines.append(f"Output format: submit({slots})")
+        lines.append("Output format: submit with these slots:\n" + "\n".join(f"- {render_slot(s)}"
+                                                                           for s in task.output_schema.slots))
         if task.output_schema.conventions:                                 # 답 작성 규칙 (모든 조건 동일)
             conv = task.output_schema.conventions
             lines.append("Answer conventions:\n" + (conv if isinstance(conv, str) else _dumps(conv)))

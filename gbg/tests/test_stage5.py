@@ -281,7 +281,7 @@ def test_ingress_requery_version_marks_and_boundary_state(tmp_path):
     follow = [e["payload"]["request"]["question"] for e in ev if e["type"] == "message"
               and e["payload"]["kind"] == "request" and e["actor"].startswith("boundary:")]
     assert any(q.startswith("Follow-up from your group's intake desk") and "settlement due day 8" in q for q in follow)
-    assert any("Database versions:\n[D1]" in p for p in prompts), "버전 표시: DB 키·버전 번호"
+    assert any("Database versions:\n[V1]" in p for p in prompts), "버전 표시: DB 키·버전 번호 (V, 담당자 D#와 겹치지 않게)"
     assert any("Earlier exchanges of this desk:\n[S1]" in p for p in prompts), "경계 상태: 같은 엔티티의 과거 문답"
 
 
@@ -685,34 +685,37 @@ def test_gateway_items_get_source_and_day_from_cited_evidence(tmp_path):
 
 # ─────────────────────────── 조립 단조성 · 공통 지식 ───────────────────────────
 def test_assembly_passes_member_items_unchanged_and_adds_cited_notes(tmp_path):
-    """담당자 items는 그대로 전달하고, 게이트웨이는 additions·conflicts·proposals만 더한다. 제안은 근거 인용 필수,
-    없는 인용은 형식 오류로 되돌린다 (format_retries 1회)."""
-    tries = {"KRW 1,850,000": 0, "KRW 2,300,000": 0}
-    good = {"additions": [], "missing": [],
-            "conflicts": [{"item": "available budget", "note": "reply and record differ", "refs": ["[R1]", "[E1]"]}],
-            "proposals": [{"item": "available budget", "value": "999", "refs": ["[E1]"], "rationale": "newer record"}]}
-    bad = {"KRW 1,850,000": [],  "KRW 2,300,000": ["[E99]"]}                  # 근거 없음 / 없는 인용
+    """담당자 items는 그대로 전달하고, 게이트웨이는 additions·conflicts·proposals만 더한다. 근거(refs)가 실제 증거·DB 버전·
+    규정·항목 있는 응답으로 풀리지 않는 제안은 코드가 버리고 그 항목을 missing으로 둔다(형식 오류가 아니다)."""
+    calls = []
+    grounded = {"item": "available budget", "value": "999", "refs": ["[E1]"], "rationale": "newer record"}
 
     def script(req):
         tools, user = _tools(req), req["messages"][1]["content"]
-        mark = next((m for m in tries if "answer" in tools and m in user.split("Replies:", 1)[0]), None)
-        if mark:
-            tries[mark] += 1
-            if tries[mark] == 1:
-                return _call("answer", {**good, "proposals": [{**good["proposals"][0], "refs": bad[mark]}]})
-            return _call("answer", good)
+        if "answer" in tools and "KRW 1,850,000" in user.split("Replies:", 1)[0]:
+            calls.append(user)
+            return _call("answer", {"additions": [], "missing": [],
+                                    "conflicts": [{"item": "available budget", "note": "reply and record differ", "refs": ["[R1]", "[E1]"]}],
+                                    "proposals": [grounded,
+                                                  {"item": "earmark end day", "value": "5", "refs": [], "rationale": "x"},
+                                                  {"item": "settlement day", "value": "9", "refs": ["[E99]"], "rationale": "x"},
+                                                  {"item": "approver", "value": "cfo", "refs": ["no_such_rule"], "rationale": "x"}]})
         return oracle(req)
     _, ev = run(tmp_path, "ingress", script=script)
-    assert tries == {"KRW 1,850,000": 2, "KRW 2,300,000": 2}, "근거 없는 제안·없는 인용은 되돌린다"
+    assert len(calls) >= 1
     inner = [e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
              and e["payload"]["task_id"] == "W-002" and e["actor"].startswith("agent:") and e["payload"].get("serving")]
     resp = next(e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
                 and e["payload"]["task_id"] == "W-002" and e["actor"].startswith("boundary:"))
+    d = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["task_id"] == "W-002"
+             and e["payload"]["stage"] == "ingress" and e["payload"].get("action") == "select")
     member = [x for r in inner for x in r["items"]]
     passed = [x for x in resp["items"] if x["ref"].startswith("Reply ")]
     assert member and [(x["entity"], x["value"], x["day"]) for x in passed] == \
         [(x["entity"], x["value"], x["day"]) for x in member], "담당자 답은 그대로"
-    assert resp["proposals"] == good["proposals"] and resp["conflicts"][0]["refs"] == ["[R1]", "[E1]"]
+    assert resp["proposals"] == [grounded] and resp["conflicts"][0]["refs"] == ["[R1]", "[E1]"]
+    assert [x["item"] for x in d["proposals_dropped"]] == ["earmark end day", "settlement day", "approver"]
+    assert {"earmark end day", "settlement day", "approver"} <= set(resp["missing"]), "버린 제안의 항목은 missing"
 
 
 def test_common_knowledge_is_in_every_role_and_gateway_uses_the_same_sentences(tmp_path):
@@ -748,3 +751,15 @@ def test_oldest_tool_results_are_elided_when_the_prompt_would_overflow():
     tools = [m["content"] for m in msgs if m["role"] == "tool"]
     assert tools[0] == LLMAgent.ELIDED and tools[-1] == "x" * 1000
     assert len(json.dumps(msgs, ensure_ascii=False, sort_keys=True)) <= int((2600 - 100) * 0.9)
+
+
+def test_output_format_names_each_slot_with_its_value_type():
+    """답 형식 표기: 이름과 값의 형식을 말로. 타입 이름과 형식 설명을 괄호에 나란히 찍지 않는다 (dept(id, department) → 객체 제출)."""
+    from gbg.contracts.schemas import Slot
+    from gbg.llm.agent_loop import render_slot
+    assert render_slot(Slot(name="dept", type="id", format="department")) == "dept: string (a department name, copied exactly)"
+    assert render_slot(Slot(name="option", type="id", format="id", nullable=True)) == "option: string (an ID, copied exactly), or null"
+    assert render_slot(Slot(name="assets", type="set", items={"type": "string", "format": "id"})) == \
+        "assets: list of IDs (each copied exactly), any order"
+    assert render_slot(Slot(name="approver", type="enum", options=["team_lead", "cfo"])) == "approver: one of: team_lead | cfo"
+    assert render_slot(Slot(name="grade", type="int")) == "grade: integer"

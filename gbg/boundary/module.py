@@ -404,18 +404,30 @@ class BoundaryModule:
             if uncovered:
                 parts.append("Evidence not covered by any reply: " + ", ".join(f"[{c}]" for c in uncovered))
             if versions:
-                parts.append("Database versions:\n" + "\n".join(f"[D{i}] {v}" for i, v in enumerate(versions, 1)))
+                parts.append("Database versions:\n" + "\n".join(f"[V{i}] {v}" for i, v in enumerate(versions, 1)))
             if state:
                 parts.append("Earlier exchanges of this desk:\n" + "\n".join(f"[S{i}] {s}" for i, s in enumerate(state, 1)))
             return "\n\n".join(parts)
 
+        # 인용 표기: 응답 [R#], 그룹 기록 [E#], DB 버전 [V#], 과거 문답 [S#]. 버전을 V로 쓰는 것은 담당자 항목의
+        # ref(자기 조회 결과 D#)와 겹치지 않게 하려는 것이다 (pilot18: 담당자 D1과 버전 [D1]을 같은 것으로 읽어 가짜 충돌)
+        rule_ids = {r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
+                    for r in stores.rulebook.read_all(self.group)}
+
         def exists(c: str) -> bool:                                        # 인용이 실제로 있는 응답·기록·버전·과거 문답인가
             k, n = c[0], int(c[1:])
             return {"R": lambda: 0 < n <= len(replies), "E": lambda: c in {e.cite for e in ev.items},
-                    "D": lambda: 0 < n <= len(versions), "S": lambda: 0 < n <= len(state)}[k]()
+                    "V": lambda: 0 < n <= len(versions), "S": lambda: 0 < n <= len(state)}[k]()
+
+        def grounded(ref: str) -> bool:
+            """제안의 근거 하나가 실제로 풀리는가: 증거·DB 버전·과거 문답이 있거나, 항목이 있는 응답이거나, 이 그룹 규정 id."""
+            cs = re.findall(r"[REVS]\d+", ref)
+            if not cs:
+                return ref.strip().strip("[]").strip() in rule_ids
+            return all(exists(c) and (c[0] != "R" or bool(replies[int(c[1:]) - 1][1].items)) for c in cs)
 
         def cites_ok(refs) -> str | None:
-            cs = [c for r in refs for c in re.findall(r"[REDS]\d+", r)]
+            cs = [c for r in refs for c in re.findall(r"[REVS]\d+", r)]
             if not cs:
                 return "cite the reply or record, for example [R1] or [E3]"
             bad = [c for c in cs if not exists(c)]
@@ -423,7 +435,7 @@ class BoundaryModule:
 
         def resolve(x):                                                    # ref를 따라가 source·day (코드가 채움)
             by_cite = {e.cite: e for e in ev.items}
-            for kind, n in re.findall(r"([REDS])(\d+)", x["ref"]):
+            for kind, n in re.findall(r"([REVS])(\d+)", x["ref"]):
                 i = int(n) - 1
                 if kind == "R" and 0 <= i < len(replies):
                     its = replies[i][1].items
@@ -436,7 +448,7 @@ class BoundaryModule:
                         return its[0].source, its[0].day
                 elif kind == "E" and f"E{n}" in by_cite:
                     return "history", str(by_cite[f"E{n}"].day)
-                elif kind == "D" and 0 <= i < len(versions):
+                elif kind == "V" and 0 <= i < len(versions):
                     if m := re.search(r"registered day (-?\d+)", versions[i]):
                         return "db", m.group(1)
                 elif kind == "S" and 0 <= i < len(state):
@@ -465,17 +477,20 @@ class BoundaryModule:
                 if err := cites_ok(x["refs"]):
                     return False, f"conflicts[{i}].refs: {err}"
                 conflicts.append(Conflict(item=x["item"], note=x["note"], refs=x["refs"]))
+            dropped = []
             for i, x in enumerate(props):
                 if not (isinstance(x, dict) and all(isinstance(x.get(k), str) for k in ("item", "value", "rationale"))
                         and x["value"].strip() and isinstance(x.get("refs"), list) and all(isinstance(r, str) for r in x["refs"])):
                     return False, f"proposals[{i}] needs item, value, refs and rationale"
-                if err := cites_ok(x["refs"]):
-                    return False, f"proposals[{i}].refs: {err} (a proposal must cite what it rests on)"
+                if not x["refs"] or not all(grounded(r) for r in x["refs"]):    # 근거가 풀리지 않는 제안은 버린다 (코드)
+                    dropped.append({"item": x["item"], "value": x["value"], "refs": x["refs"]})
+                    continue
                 proposals.append(Proposal(item=x["item"], value=x["value"], refs=x["refs"], rationale=x["rationale"]))
-            return True, (answer, items, conflicts, proposals, miss)
+            miss = list(dict.fromkeys([*miss, *(d["item"] for d in dropped)]))   # 버린 제안의 항목은 missing으로
+            return True, (answer, items, conflicts, proposals, miss, dropped)
 
         def draft_text(out) -> str:
-            _, items, cons, props, miss = out
+            _, items, cons, props, miss, _ = out
             lines = [render_items(items) if items else "additions: (none)"]
             lines += [f"conflict: {c.item}: {c.note} ({' '.join(c.refs)})" for c in cons]
             lines += [f"proposed: {x.item} = {x.value} ({' '.join(x.refs)}) — {x.rationale}" for x in props]
@@ -483,6 +498,7 @@ class BoundaryModule:
 
         out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer)
         requeried = []
+        first_dropped = list(out[5]) if out is not None else []
         if out is not None and out[4] and cfg.requery:                     # 빠진 항목만 1회 재질의
             more = await self._requery(bctx, req, out[4], replies, ev, stores, trace)
             requeried = [a for a, _ in more]
@@ -494,14 +510,15 @@ class BoundaryModule:
         if out is None:
             return Response(rid=req.rid, status="error", answer="assembly_failed", items=[], missing=[],
                             referral_to=None, need=[], as_of=bctx.day)
-        answer, additions, conflicts, proposals, missing = out
+        answer, additions, conflicts, proposals, missing, dropped = out
+        trace["proposals_dropped"] = first_dropped + ([d for d in dropped if d not in first_dropped] if requeried else [])
         # 최종 메시지 = 담당자 items(그대로) + additions + conflicts + proposals (코드가 조립)
         member = [x.model_copy(update={"ref": f"Reply {i}: {x.ref}"}) for i, (_, r) in enumerate(replies, 1) for x in r.items]
         items = member + additions
-        cited = sorted({c for x in additions for c in re.findall(r"[REDS]\d+", x.ref)}
-                       | {c for y in [*conflicts, *proposals] for r in y.refs for c in re.findall(r"[REDS]\d+", r)})
+        cited = sorted({c for x in additions for c in re.findall(r"[REVS]\d+", x.ref)}
+                       | {c for y in [*conflicts, *proposals] for r in y.refs for c in re.findall(r"[REVS]\d+", r)})
         trace.update(sources=cited, versions_given=[versions[int(s[1:]) - 1].split(" (")[0] for s in cited
-                                                    if s[:1] == "D" and s[1:].isdigit() and 0 < int(s[1:]) <= len(versions)],
+                                                    if s[:1] == "V" and s[1:].isdigit() and 0 < int(s[1:]) <= len(versions)],
                      answer=answer or "; ".join([*(f"{x.entity} {x.attribute}: {x.value}" for x in additions),   # 경계 상태용 요약
                                                  *(f"proposed {x.item} = {x.value}" for x in proposals)]),
                      additions=[x.model_dump() for x in additions],

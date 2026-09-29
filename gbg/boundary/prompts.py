@@ -45,9 +45,9 @@ ROUTE_TOOL = {
         "required": ["action", "agents"], "additionalProperties": False}}
 
 ASSEMBLE_SYSTEM = """You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
-- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1]{state_cite}.
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1]{state_cite}.
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
-- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]{state_cite}), and give a one-sentence rationale.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]{state_cite}), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
 - When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.{version_rule}
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
@@ -59,13 +59,13 @@ VERSION_RULE = """
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12")."""
 STATE_CITE = ", an earlier exchange of this desk as [S1]"
 
-_CITES = {"type": "array", "items": {"type": "string"}, "description": "Citations such as \"[R1]\", \"[E3]\", \"[D2]\"."}
+_CITES = {"type": "array", "items": {"type": "string"}, "description": "Citations such as \"[R1]\", \"[E3]\", \"[V2]\"."}
 ANSWER_TOOL = {
     "name": "answer", "description": "Send the group's additions, conflict notes, proposed values and what could not be "
                                      "confirmed. The members' replies are sent as they are.",
     "parameters": {"type": "object", "properties": {
         "additions": answer_parameters("The citation of the record the value is taken from, for example \"[E3]\" or "
-                                       "\"[D2]\".")["properties"]["items"],
+                                       "\"[V2]\".")["properties"]["items"],
         "conflicts": {"type": "array", "items": {"type": "object", "properties": {
             "item": {"type": "string"}, "note": {"type": "string", "description": "What disagrees."}, "refs": _CITES},
             "required": ["item", "note", "refs"], "additionalProperties": False}},

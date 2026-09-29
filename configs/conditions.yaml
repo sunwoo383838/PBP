@@ -7,7 +7,8 @@ defaults:
   final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
   requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
 
-# 본 실행 조건: direct, routing, ingress, i_e, full_load.
+# 본 실행 조건: direct, routing, ingress, full_load. i_e(Egress)는 실험축에서 뺌 (2026-09-30 사용자 결정: 증명 범위가 좁고
+# 논문 범위를 벗어남). i_e 코드·테스트는 남겨 두지만 본 실행·파일럿 집계에 넣지 않는다.
 # 기준 셀(D5, T30)에서만: ingress_read, ingress_sel, gateway_rag (사다리 중간 단계와 담당자 없는 게이트웨이).
 # 후속(코드만 두고 실행하지 않음): ingress_no_requery, egress_no_history, retrieval_oracle. sidecar도 후속.
 # 뺀 조건: routing_reveal(새 Routing과 사실상 같음), direct_dyncard(이탈·합류 갱신은 이미 모든 조건에 적용, 그 이상은

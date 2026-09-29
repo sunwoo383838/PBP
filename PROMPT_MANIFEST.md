@@ -286,7 +286,9 @@ Skills: budgeting: Budget lines, allocations, and balances
 Today is day 1.
 [Task W-001] Check the current department and grade of 하린 과장.
 Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
-Output format: submit(dept(id, department), grade(int))
+Output format: submit with these slots:
+- dept: string (a department name, copied exactly)
+- grade: integer
 ```
 
 **도구**
@@ -445,7 +447,9 @@ Members of your group (FIN-SEL), reachable with ask_agent:
 Today is day 1.
 [Task W-001] Check the current department and grade of 하린 과장.
 Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
-Output format: submit(dept(id, department), grade(int))
+Output format: submit with these slots:
+- dept: string (a department name, copied exactly)
+- grade: integer
 ```
 
 **도구**
@@ -704,7 +708,9 @@ Members of your group (FIN-SEL), reachable with ask_agent:
 Today is day 1.
 [Task W-001] Check the current department and grade of 하린 과장.
 Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
-Output format: submit(dept(id, department), grade(int))
+Output format: submit with these slots:
+- dept: string (a department name, copied exactly)
+- grade: integer
 ```
 
 **도구**
@@ -899,9 +905,9 @@ Group records found:
 **system**
 ```text
 You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
-- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1].
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
-- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
 - When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
@@ -949,7 +955,7 @@ Group records:
   [Tool result] Recorded: E-SEL-1003 grade 2.
 
 Database versions:
-[D1] HR-SEL/emp/E-SEL-1000/profile v1 (registered day -20): {"contract": "regular", "dept": "영업1팀", "grade": 3, "hire_day": -300, "status": "active"}
+[V1] HR-SEL/emp/E-SEL-1000/profile v1 (registered day -20): {"contract": "regular", "dept": "영업1팀", "grade": 3, "hire_day": -300, "status": "active"}
 ```
 
 **도구**
@@ -964,9 +970,9 @@ Database versions:
 **system**
 ```text
 You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
-- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1].
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
-- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
 - When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
@@ -1152,7 +1158,9 @@ Members of your group (FIN-SEL), reachable with ask_agent:
 Today is day 1.
 [Task W-001] Check the current department and grade of 하린 과장.
 Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
-Output format: submit(dept(id, department), grade(int))
+Output format: submit with these slots:
+- dept: string (a department name, copied exactly)
+- grade: integer
 ```
 
 **도구**
@@ -1350,9 +1358,9 @@ Group records found:
 **system**
 ```text
 You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
-- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1].
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
-- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
 - When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
@@ -1401,7 +1409,7 @@ Group records:
   [Tool result] Recorded: E-SEL-1003 grade 2.
 
 Database versions:
-[D1] HR-SEL/emp/E-SEL-1000/profile v1 (registered day -20): {"contract": "regular", "dept": "영업1팀", "grade": 3, "hire_day": -300, "status": "active"}
+[V1] HR-SEL/emp/E-SEL-1000/profile v1 (registered day -20): {"contract": "regular", "dept": "영업1팀", "grade": 3, "hire_day": -300, "status": "active"}
 ```
 
 **도구**
@@ -1416,9 +1424,9 @@ Database versions:
 **system**
 ```text
 You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
-- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1].
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
-- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
 - When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
@@ -1647,7 +1655,9 @@ Skills: budgeting: Budget lines, allocations, and balances
 Today is day 1.
 [Task W-001] Check the current department and grade of 하린 과장.
 Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
-Output format: submit(dept(id, department), grade(int))
+Output format: submit with these slots:
+- dept: string (a department name, copied exactly)
+- grade: integer
 ```
 
 **도구**
