@@ -19,6 +19,7 @@ How to work on a task
 - Do not keep searching your own tools for information your area does not hold. If a lookup finds nothing, ask instead.
 - Apply the rules that govern each piece (your area's rules are listed below; other areas' rules come from the parties you ask), then work out the answer step by step. Do not guess.
 - You can call several tools in one step when you need several lookups or questions.
+- When you ask, name the subject in the question: the names, IDs and amounts it is about. Do not use task IDs (such as W-00070); other parts of the company do not have them in their records. If the task refers to an earlier task by its ID, find what that task was about in your own records and ask about its subject.
 - Give your final answer to a task with the submit tool, and your answer to another agent's question with the reply tool. Do not answer in any other form.
 - Each submit slot must follow the task's output format exactly.
 - Write every question, reply, and answer in English. Copy names of people and departments exactly as they are written.
@@ -39,9 +40,13 @@ _ASK = """- First decide what information the answer needs and who is likely to 
 _ASK_FULL = """- First decide what information the answer needs. Then look up each piece yourself."""
 _RULES = """- Apply the rules that govern each piece (your area's rules are listed below; other areas' rules come from the parties you ask), then work out the answer step by step. Do not guess."""
 _RULES_FULL = """- Apply the rules that govern each piece (the rules of every group are listed below), then work out the answer step by step. Do not guess."""
+_NAME = """- When you ask, name the subject in the question: the names, IDs and amounts it is about. Do not use task IDs (such as W-00070); other parts of the company do not have them in their records. If the task refers to an earlier task by its ID, find what that task was about in your own records and ask about its subject.
+"""
+_NAME_FULL = """- If the task refers to an earlier task by its ID, find what that task was about in your own records and search for its subject (names, IDs and amounts), not the task ID.
+"""
 COMMON_FULL_LOAD = (COMMON.replace(_HAVE, _HAVE_FULL).replace(_LOOK, _LOOK_FULL).replace(_ASK, _ASK_FULL)
-                    .replace(_RULES, _RULES_FULL))
-assert all(x not in COMMON_FULL_LOAD for x in (_HAVE, _LOOK, _ASK, _RULES))
+                    .replace(_RULES, _RULES_FULL).replace(_NAME, _NAME_FULL))
+assert all(x not in COMMON_FULL_LOAD for x in (_HAVE, _LOOK, _ASK, _RULES, _NAME))
 
 COMM_TOOLS = {
     "ask_agent": ("ask_agent", "Ask one agent in the directory (by its id) a question. The agent answers from its own "
@@ -109,6 +114,14 @@ def render_members(cards: list[AgentCard], group: str) -> str:
 
 
 PERIOD_NOTE = "- Periods: anything recorded as lasting \"until day N\" (a hold, reservation, exclusion, delay or exception) is still in effect on day N."
+# 기록과 DB의 관계 (worldgen 정답 기준, 모든 조건·모든 역할의 모든 LLM 호출에 같은 문장). Direct에 그룹 개념을
+# 드러내지 않도록 "group" 대신 공통 프롬프트와 같은 "area"를 쓴다.
+RECORDS_NOTE = ("- Records and the database: database registration can lag by a few days. A record made while processing "
+                "work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a "
+                "status change such as a confirmed exit or cancellation) can be newer than the database version and "
+                "still counts, within its stated period or from its effective day; informal remarks or undecided "
+                "suggestions do not change anything. Colleagues in the same area read the same database, so identical "
+                "database values from several of them are one source, not independent confirmations.")
 
 
 def render_rules(rules, label: str | None = None) -> str:
@@ -118,7 +131,7 @@ def render_rules(rules, label: str | None = None) -> str:
         rid = r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
         lines.append(f"- {rid}{f' ({r.title})' if r.title else ''}: {r.body}")
     head = f"[Rules of {label}]" if label else "[Rules of your area]"
-    lines.append(PERIOD_NOTE)                                             # 기간 해석 (worldgen 정답 기준, 모든 호출 동일)
+    lines += [PERIOD_NOTE, RECORDS_NOTE]                                 # 기간 해석·기록과 DB (worldgen 정답 기준, 모든 호출 동일)
     return head + "\n" + "\n".join(lines)
 
 

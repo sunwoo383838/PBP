@@ -529,3 +529,57 @@ def test_gateway_conditions_can_ask_own_group_members_only(tmp_path):
     asks = [e["payload"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"
             and e["payload"].get("to_agent") and not e["actor"].startswith("boundary:")]
     assert asks and all(a["to_group"] == a["request"]["from_group"] for a in asks if a["delivered"]), "경계를 넘는 직접 질의는 없다"
+
+
+def test_every_llm_call_gets_own_rules_period_and_records_notes(tmp_path):
+    """G6: 경계 모듈의 모든 LLM 호출(해석·선택·조립·재조립·Egress 정리)과 요청자·응답자 호출이 자기 그룹 규정 블록,
+    'until day N' 규약, 기록과 DB 문장을 받는다 (모든 조건 같은 문장)."""
+    from gbg.agents.prompts import PERIOD_NOTE, RECORDS_NOTE
+    for cond in ("i_e", "direct", "routing"):
+        seen: dict[str, list[str]] = {}
+
+        def script(req):
+            name = next((n for n in ("interpret", "route", "answer", "dispatch", "reply", "submit") if n in _tools(req)), "?")
+            seen.setdefault(name, []).append(req["messages"][0]["content"])
+            return oracle(req)
+        run(tmp_path / cond, cond, script=script, max_day=1)
+        want = {"i_e": {"interpret", "route", "answer", "dispatch", "reply", "submit"}, "direct": {"reply", "submit"},
+                "routing": {"interpret", "route", "reply", "submit"}}[cond]
+        assert want <= set(seen), (cond, set(seen))
+        for name, systems in seen.items():
+            assert all(re.search(r"\[Rules of [^\]]+\]", s) and PERIOD_NOTE in s and RECORDS_NOTE in s for s in systems), (cond, name)
+    assert "group" not in RECORDS_NOTE.lower(), "Direct에 그룹 개념을 드러내지 않는다"
+
+
+def test_gateway_version_rule_and_request_wording():
+    from gbg.agents.prompts import COMMON, COMMON_FULL_LOAD
+    from gbg.boundary import prompts as BP
+    assert "Operational notes" not in BP.VERSION_RULE
+    assert "Do not use task IDs" in COMMON and "Do not use task IDs" not in COMMON_FULL_LOAD
+    assert "Do not add task IDs" in BP.DISPATCH_SYSTEM
+
+
+def test_requery_only_for_items_of_this_group_and_second_assembly_keeps_the_draft(tmp_path):
+    """재질의는 missing 항목이 이 그룹의 증거나 색인 엔티티에 걸릴 때만, 질문은 그 항목에 한정(원 요청은 맥락),
+    2차 조립은 1차 답을 초안으로 받는다."""
+    prompts, seen = [], set()
+
+    def script(req):
+        tools = _tools(req)
+        user = req["messages"][1]["content"]
+        if "answer" in tools:
+            prompts.append(user)
+            if "KRW 1,850,000" in user and "W-002" not in seen:
+                seen.add("W-002")                                          # 이 그룹 항목 + 다른 그룹 소관 항목
+                return oracle(req, assemble_missing=[["settlement day of the provisional approval",
+                                                      "favourite colour of the employee"]])
+        return oracle(req)
+    _, ev = run(tmp_path, "ingress", script=script)
+    w2 = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["stage"] == "ingress"
+              and e["payload"]["task_id"] == "W-002" and e["payload"].get("action") == "select")
+    assert w2["requery_items"] == ["settlement day of the provisional approval"], "걸리지 않는 항목은 missing으로 둔다"
+    follow = [e["payload"]["request"]["question"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"
+              and e["actor"].startswith("boundary:") and e["payload"]["task_id"] == "W-002"
+              and e["payload"]["request"]["question"].startswith("Follow-up")]
+    assert follow and all("For context, the original request was:" in q and "favourite colour" not in q for q in follow)
+    assert any("Your first answer to this request (draft):" in p and "missing: ['settlement day" in p for p in prompts)

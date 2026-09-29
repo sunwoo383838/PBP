@@ -14,6 +14,8 @@ need마다 결정 필수 조각을 차례로 보며, 전달되지 않은 첫 조
     L_sel.assembly Ingress: 증거 블록 또는 응답에 있었는데 조립 답에 빠짐
 
 "창"과 "증거"는 LLM 호출의 입력(캐시에 저장된 요청)에서 확인한다. 조각의 존재는 delivery.py와 같은 카나리/서명 기준.
+"보유자에 닿음"은 그 need에 관한 질문(need·조각의 엔티티 id나 이름이 질문에 있음)으로 닿은 경우만 센다. 다른 일로
+물은 접촉은 닿은 것이 아니다. 계산형 need가 중간값으로 전달됐으면(delivery의 computed) 조각 판정 없이 ok/L_use.
 """
 import json
 import re
@@ -44,8 +46,36 @@ def window_state(f: dict, prompt: str, names: dict) -> str:
     return "none"
 
 
+_ATTRS = {"profile", "budget_schedule", "next_reset", "approval", "license", "inventory", "stock", "assets", "status",
+          "result", "effective_status", "assignment_timeline", "eligibility", "seat_transfer_share", "seat_purchase_line",
+          "seat_price", "invoice_match_precedence", "planning_headcount", "planning_headcount-regular"}
+
+
+def need_surfaces(need: dict, fragments: dict, names: dict) -> list[str]:
+    """need에 관한 질문인지 가르는 표면형: sem의 엔티티 부분, 결정 필수 조각의 키 엔티티, 그 이름·별칭."""
+    ents = [x for x in need["sem"].split("/")[1:] if x not in _ATTRS]
+    for fid in need.get("critical_components") or []:
+        parts = (fragments.get(fid, {}).get("key") or "").split("/")
+        if len(parts) > 2:
+            ents.append(parts[2])
+    out = []
+    for e in dict.fromkeys(ents):
+        out += [e, *names.get(e, [])]
+    return [x for x in dict.fromkeys(_norm(x) for x in out) if len(x) > 1]
+
+
+def about(question: str | None, surfaces: list[str]) -> bool:
+    q = _norm(question or "")
+    return any(re.search(rf"(?<!\w){re.escape(x)}(?!\w)", q) for x in surfaces)
+
+
 def _group_of(agent: str) -> str:
     return agent.split(".")[0].upper() if agent and not agent.startswith("boundary:") else ""
+
+
+def _question(msg: dict) -> str:
+    r = msg.get("request") or {}
+    return msg.get("question") or r.get("question") or ""
 
 
 def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list[dict], prompts: dict,
@@ -74,18 +104,21 @@ def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list
     for row in delivery_rows:
         need = next(n for n in g["needs"] if n["sem"] == row["need"])
         grp = need["group"]
+        surf = need_surfaces(need, fragments, names)
         asked_group = any((a.get("to_group") == grp) or _group_of(a.get("to_agent") or "") == grp for a in asks) \
             or grp in egress_targets or searched
         verdict, detail = "ok", {}
-        for x in row["frags"]:
+        for x in ([] if row.get("delivered") else row["frags"]):             # 계산형 need는 중간값 전달로 충분
             if x["state"] == "delivered":
                 continue
             f = fragments[x["fid"]]
             holders = {f["agent"], *[h["agent"] for s in need["sources"] if s["type"] == "frag"
                                      and s["frag"]["fid"] == x["fid"] for h in s["frag"].get("holders", [])]}
-            direct_to = {a.get("to_agent") for a in asks if a.get("to_agent")}
-            selected = {a for d in ingress if d.get("group") == grp for a in d.get("selected", [])}
-            reached = (direct_to | selected | {m.get("to_agent") for m in inner}) & holders
+            # need에 관한 질문으로 닿은 경우만 (다른 일로 한 접촉은 도달이 아니다)
+            direct_to = {a.get("to_agent") for a in asks if a.get("to_agent") and about(_question(a), surf)}
+            selected = {a for d in ingress if d.get("group") == grp and about(d.get("question"), surf)
+                        for a in d.get("selected", [])}
+            reached = (direct_to | selected | {m.get("to_agent") for m in inner if about(_question(m), surf)}) & holders
             ev_prompts = [prompt_text(e) for e in llm if e["actor"] == f"boundary:{grp}"]
             in_evidence = any(present(f, p.split("Group records found:", 1)[-1] if "Group records found:" in p
                                       else p.split("Group records:", 1)[-1], names) for p in ev_prompts if "records" in p)

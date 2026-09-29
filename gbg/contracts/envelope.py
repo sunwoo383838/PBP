@@ -73,7 +73,8 @@ ITEM_FIELDS = {
     "entity": "The ID or name the value is about, copied exactly as it appears in the record.",
     "attribute": "What the value is (for example 'remaining capex budget', 'holder', 'status').",
     "value": "The value copied exactly as it appears in the record (do not reformat IDs or amounts).",
-    "status_or_as_of": "The record's status or the day/version it is valid for (for example 'pending', 'as of day 5').",
+    "status_or_as_of": "The record's status and the day it is valid from: for a database value its registered day (for "
+                       "example 'registered day 5'), for a record the day of the record (for example 'pending, day 7').",
     "source": "Where the value comes from: db (a database lookup), history (your records), rule (a rule).",
     "ref": "The exact location: the record type and key looked up, the day of the record, or the rule id.",
 }

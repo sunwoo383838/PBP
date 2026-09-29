@@ -14,7 +14,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from gbg.benchmarks.worldgen.adapter import WorldgenAdapter
+from gbg.benchmarks.worldgen.scoring import load_private
 from gbg.contracts.envelope import render_response
 from gbg.scoring.delivery import need_delivery
 from gbg.scoring.gates import need_gates, present, window_state
@@ -66,18 +66,9 @@ class Highlighter:
 
 
 def load(scenario: Path, max_day: int):
-    a = WorldgenAdapter()
-    a.load(scenario / "harness")
-    tasks = {e.task_id: e for e in a.events() if e.kind == "cross" and e.day <= max_day}
-    gold = {g["wid"]: g for g in map(json.loads, (scenario / "private" / "gold.jsonl").read_text(encoding="utf-8").splitlines())
-            if g["wid"] in tasks}
-    frags = {f["fid"]: f for f in map(json.loads, (scenario / "private" / "fragments.jsonl").read_text(encoding="utf-8").splitlines())}
-    names = {}
-    for items in json.loads((scenario / "harness" / "snapshot_day0" / "catalog.json").read_text(encoding="utf-8")).values():
-        for k, v in items.items():
-            if isinstance(v, dict):
-                names.setdefault(k.split("/", 1)[1], []).extend(x for x in (v.get("name"), v.get("alias")) if x)
-    return tasks, gold, frags, names
+    """채점기와 같은 private 적재 (이름: catalog·실행 중 catalog·조각 target, 계산형 need 중간값)."""
+    p = load_private(scenario, max_day)
+    return p.tasks, p.gold, p.fragments, p.names, p.computed
 
 
 def _norm_slot(slot, v):
@@ -90,7 +81,7 @@ def _norm_slot(slot, v):
     return json.dumps(v, sort_keys=True, ensure_ascii=False)
 
 
-def analyze(run_dir: Path, cache: Path | None, tasks, gold, frags, names) -> dict:
+def analyze(run_dir: Path, cache: Path | None, tasks, gold, frags, names, computed=None) -> dict:
     events = [json.loads(x) for x in (run_dir / "wal" / "events.jsonl").read_text(encoding="utf-8").splitlines()]
     by_task: dict[str, list] = {}
     for e in events:
@@ -99,7 +90,7 @@ def analyze(run_dir: Path, cache: Path | None, tasks, gold, frags, names) -> dic
             by_task.setdefault(t, []).append(e)
     keys = {e["payload"]["key"] for es in by_task.values() for e in es if e["type"] == "llm_call" and e["payload"].get("key")}
     prompts = _prompts(cache, keys)
-    delivery = need_delivery(events, {w: gold[w] for w in by_task}, frags, names=names)["needs"]
+    delivery = need_delivery(events, {w: gold[w] for w in by_task}, frags, names=names, computed=computed)["needs"]
     out = {}
     for wid, es in by_task.items():
         ans = next((e["payload"] for e in es if e["type"] == "answer"), None)
@@ -197,12 +188,12 @@ def main(argv=None):
     ap.add_argument("--max-day", type=int, default=10)
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args(argv)
-    tasks, gold, frags, names = load(args.scenario, args.max_day)
+    tasks, gold, frags, names, computed = load(args.scenario, args.max_day)
     runs = {}
     for spec in args.run:
         name, _, rest = spec.partition("=")
         rd, _, cache = rest.partition(",")
-        runs[name] = analyze(Path(rd), Path(cache) if cache else None, tasks, gold, frags, names)
+        runs[name] = analyze(Path(rd), Path(cache) if cache else None, tasks, gold, frags, names, computed)
     want = [t for t in args.tasks.split(",") if t] or sorted(gold)
     args.out.mkdir(parents=True, exist_ok=True)
     summary = {}

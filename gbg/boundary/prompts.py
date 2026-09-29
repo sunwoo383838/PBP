@@ -46,7 +46,7 @@ First work through the request, the replies and the records step by step in your
 This group: {group_desc}"""
 
 VERSION_RULE = """
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12"). Operational notes are separate facts; never merge them into a database version."""
+- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12")."""
 STATE_CITE = ", an earlier exchange of this desk as [S1]"
 
 ANSWER_TOOL = {
@@ -54,15 +54,19 @@ ANSWER_TOOL = {
     "parameters": answer_parameters("The citation of the reply or record the value is taken from, for example "
                                     "\"[R1]\", \"[E3]\", \"[D2]\" or \"[R1][E3]\".")}
 REQUERY_TEXT = """Follow-up from your group's intake desk on a request from another group.
-Original request: {question}
-Please confirm only these items: {missing}{excerpt}"""
+For context, the original request was: {question}
+Answer only these items, which are still open (do not answer the rest of the request again): {missing}{excerpt}"""
+
+DRAFT_TEXT = """Your first answer to this request (draft):
+{items}{missing}
+New replies have arrived since then. Keep every draft item unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed."""
 
 EXCERPT_TEXT = """
 Records of your group on these items (they may be yours or a former member's):
 {records}"""
 
 DISPATCH_SYSTEM = """You are the outgoing desk of a business group. A member of your group needs information from other groups.
-Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and number as written, and add what the related records below make clear (for example the group that handled this before).
+Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and amount of the subject as written, so that each rewritten question names what it is about, and add what the related records below make clear (for example the group that handled this before). Do not add task IDs (such as W-00070); other groups do not have them in their records.
 First think it through step by step in your reply text, then call the dispatch tool once.
 
 This group: {group_desc}

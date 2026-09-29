@@ -226,7 +226,10 @@ class LLMAgent:
                  "anyone else. Check your records once; list any part you cannot find there in missing and do not keep "
                  "searching. Your area's rules are in the system section above; do not search for them. "
                  "Answer with the reply tool: one item per value, with IDs, names and amounts copied exactly as they "
-                 "appear in the record.")
+                 "appear in the record. For a database value, put its registered day in status_or_as_of (for example "
+                 "'registered day 12'). If a record in your history on the same item is newer than that registered day, "
+                 "give both values as separate items, each with its day. When you give a calculated value, also give "
+                 "each input value as its own item.")
         answer, items, missing = await self._loop(ctx, text, REPLY_TOOL, check_reply)
         return Response(rid=request.rid, status="partial" if missing else "ok", answer=answer, items=items,
                         missing=missing, referral_to=None, need=[], as_of=ctx.day)

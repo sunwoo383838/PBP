@@ -349,10 +349,12 @@ class BoundaryModule:
         if out is not None and out[2] and cfg.requery:                     # 빠진 항목만 1회 재질의
             more = await self._requery(bctx, req, out[2], replies, ev, stores, trace)
             requeried = [a for a, _ in more]
-            if more:
+            if more:                                                       # 2차 조립: 1차 답을 초안으로 받아 병합
                 replies = replies + more
-                out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL,
-                                       check_answer) or out
+                draft = P.DRAFT_TEXT.format(items=render_items(out[1]) or "(no items)",
+                                            missing=f"\nmissing: {out[2]}" if out[2] else "")
+                out = await self._tool(bctx, step, "assemble", system, user_text(replies) + "\n\n" + draft,
+                                       P.ANSWER_TOOL, check_answer) or out
         trace["requery"] = requeried
         if out is None:
             return Response(rid=req.rid, status="error", answer="assembly_failed", items=[], missing=[],
@@ -367,28 +369,45 @@ class BoundaryModule:
 
     async def _requery(self, bctx, req, missing, replies, ev: Evidence, stores, trace):
         """새 정보가 있을 때만 재질의한다 (계획서 9단계).
-        (a) 아직 묻지 않은 보유자(검색된 처리자·증거 작성자 중 활동 중)가 있으면 그에게 빠진 항목만.
+        대상 항목: missing 중 이 그룹 기록에 걸리는 것만 (증거 에피소드에 그 항목의 낱말이 있거나, 그룹 색인의 엔티티
+        키가 항목에 있음). 다른 그룹 소관·요청자 쪽 정보처럼 걸리지 않는 항목은 재질의하지 않고 missing으로 둔다.
+        (a) 아직 묻지 않은 보유자(검색된 처리자·증거 작성자 중 활동 중)가 있으면 그에게 대상 항목만.
         (b) 증거에 그 항목의 이력 구간이 있으면 그 구간을 첨부해 현 역할 담당자(작성자, 떠났으면 같은 역할의
             활동 중 구성원)에게. 방금 missing이라고 답한 사람이어도 된다.
-        둘 다 없으면 재질의하지 않고 missing으로 남긴다."""
+        질문은 대상 항목에 한정하고 원 요청은 맥락으로 붙인다. 대상 항목이 없거나 (a)(b) 모두 없으면 재질의하지 않는다."""
         k = bctx.kernel
         asked = {a for a, _ in replies}
         role_of = {a: r for a, (g, r) in stores.members.items() if g == self.group}
+        keys = [x for x in (normalize(e) for e in stores.index.entities(self.group)) if len(x) > 2]
 
         def current(a):                                                    # 현 역할 담당자
             if k.is_active(a):
                 return a
             return next((x for x, r in sorted(role_of.items()) if r == role_of.get(a) and k.is_active(x)), None)
 
-        excerpts: dict[str, str] = {}
-        for m in missing:
+        def ev_hits(m):                                                    # 그 항목의 낱말이 든 증거 에피소드
             words = {w for w in normalize(m).split() if len(w) > 3}
-            for it in ev.items:
-                t = normalize(it.text)
-                if it.agent in role_of and (sum(w in t for w in words) >= 2 or (len(words) == 1 and words <= set(t.split()))):
+            return [it for it in ev.items if (t := normalize(it.text)) and
+                    (sum(w in t for w in words) >= 2 or (len(words) == 1 and words <= set(t.split())))]
+
+        def indexed(m):
+            nm = normalize(m)
+            return any(re.search(rf"(?<!\w){re.escape(x)}(?!\w)", nm) for x in keys)
+
+        hits = {m: ev_hits(m) for m in missing}
+        items = [m for m in missing if hits[m] or indexed(m)]
+        trace["requery_items"] = items
+        if not items:
+            trace["requery_basis"] = {"unasked_holders": [], "with_excerpt": []}
+            return []
+        excerpts: dict[str, str] = {}
+        for m in items:
+            for it in hits[m]:
+                if it.agent in role_of:
                     who = current(it.agent)
-                    if who:
-                        excerpts[who] = excerpts.get(who, "") + f"- day {it.day}: {it.text}\n"
+                    line = f"- day {it.day}: {it.text}\n"
+                    if who and line not in excerpts.get(who, ""):
+                        excerpts[who] = excerpts.get(who, "") + line
         holders = [a for a in dict.fromkeys([*ev.log.get("holders", []), *(it.agent for it in ev.items)])
                    if a in role_of and k.is_active(a) and a not in asked]
         targets = {a: "" for a in holders}
@@ -396,7 +415,7 @@ class BoundaryModule:
             targets[a] = rec
         trace["requery_basis"] = {"unasked_holders": holders, "with_excerpt": sorted(excerpts)}
         return await self._ask_all(bctx, [(a, P.REQUERY_TEXT.format(
-            question=req.question, missing="; ".join(missing),
+            question=req.question, missing="; ".join(items),
             excerpt=P.EXCERPT_TEXT.format(records=records.rstrip()) if records else "")) for a, records in targets.items()], req)
 
     @staticmethod

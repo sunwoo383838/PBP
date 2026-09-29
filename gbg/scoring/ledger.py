@@ -54,7 +54,8 @@ def build(events: list[dict], priv, verify, strata, prompts: dict | None = None)
         t = e["payload"].get("task_id")
         if t in priv.gold:
             by_task[t].append(e)
-    delivery = need_delivery(events, {w: priv.gold[w] for w in by_task}, priv.fragments, names=priv.names)["needs"]
+    delivery = need_delivery(events, {w: priv.gold[w] for w in by_task}, priv.fragments, names=priv.names,
+                             computed=getattr(priv, "computed", None))["needs"]
     unreach = unreachable([priv.gold[w] for w in by_task])
     tasks, needs = [], []
     for wid in sorted(by_task):
