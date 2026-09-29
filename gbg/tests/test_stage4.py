@@ -382,3 +382,18 @@ def test_long_texts_are_clipped_for_the_embedding_model():
     e = DeepInfraEmbedder(P.llm, "m", api_key="k", transport=httpx.MockTransport(handler))
     out = asyncio.run(e.embed(["x" * 40000, "short"]))
     assert out.shape == (2, 2) and sent == [[16000, 5], [8000, 5], [4000, 5]]
+
+
+def test_long_documents_are_clipped_for_the_reranker():
+    import httpx
+    from gbg.retrieval.rerank import DeepInfraReranker
+    sent = []
+
+    def handler(req):
+        body = json.loads(req.content)
+        sent.append(max(len(d) for d in body["documents"]))
+        if sent[-1] > 5000:
+            return httpx.Response(400, json={"detail": "This model's maximum context length is 40960 tokens (parameter=input_tokens)"})
+        return httpx.Response(200, json={"scores": [0.5] * len(body["documents"])})
+    r = DeepInfraReranker(P.llm, "m", api_key="k", transport=httpx.MockTransport(handler))
+    assert r.score("q", ["x" * 50000, "short"]) == [0.5, 0.5] and sent == [16000, 8000, 4000]

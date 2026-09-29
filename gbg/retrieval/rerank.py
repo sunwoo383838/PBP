@@ -45,7 +45,23 @@ class DeepInfraReranker:
         self.api_key = api_key or os.environ.get(llm.api_key_env) or _local_key()
         self.api_calls = 0
 
+    MAX_CHARS = 16000                          # 문서 하나의 앞부분만 (Qwen3-Reranker-8B 입력 한도 40,960토큰)
+    MAX_QUERY = 2000
+
     def _post(self, client: httpx.Client, query: str, docs: list[str]) -> list[float]:
+        """긴 에피소드(과제를 이어 풀 때 생기는 긴 문답)는 앞부분으로 재정렬한다. 한도 초과로 거부되면 절반씩 줄여 재시도."""
+        from gbg.llm.backend import LLMError
+        cap = self.MAX_CHARS
+        for _ in range(4):
+            try:
+                return self._post_once(client, query[:self.MAX_QUERY], [d[:cap] for d in docs])
+            except LLMError as e:
+                if "context length" not in str(e) and "input_tokens" not in str(e):
+                    raise
+                cap //= 2
+        return self._post_once(client, query[:self.MAX_QUERY], [d[:cap] for d in docs])
+
+    def _post_once(self, client: httpx.Client, query: str, docs: list[str]) -> list[float]:
         from gbg.llm.backend import Backoff, LLMError
         r, last = self.llm.retry, ""
         bo, attempt = Backoff(r), 0
