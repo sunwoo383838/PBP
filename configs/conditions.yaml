@@ -3,7 +3,7 @@
 # budget: 과제 전체의 LLM 호출 수·토큰 상한. 요청자·응답자(중첩 포함)·경계 모듈 합산. 모든 조건 동일 (조건별로 바꿀 수 없다).
 # card_mode: static | dynamic, responder_session: persistent | ephemeral (기본 persistent)
 defaults:
-  budget: {calls: 500, tokens: 6700000}      # 파일럿 상한 (2026-09-29, 사용자 지시 500회. 토큰은 120회:1.6M과 같은 비율). 본 실행 = 가장 비싼 조건의 과제당 호출 p95를 10 단위로 올린 값
+  budget: {calls: 300, tokens: 4000000}      # 본 실행 (2026-09-30 사용자 결정 300회. 파일럿 관측 최대 ingress 198, 150이면 ingress만 잘림). 토큰은 파일럿과 같은 비율(120회:1.6M)
   final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
   requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
 
