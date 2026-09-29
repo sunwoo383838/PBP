@@ -79,19 +79,19 @@ class EgressConfig(Contract):
 
 
 class Condition(Contract):
-    agent_tool: Literal["ask_agent", "ask_group", "ask", "load_group_history"]
+    agent_tool: Literal["ask_agent", "ask_group", "ask", "search_memory"]
     directory: Literal["agent_cards", "group_cards"]
     card_mode: Literal["static", "dynamic"] = "static"
     responder_session: Literal["persistent", "ephemeral"] = "persistent"
     ingress: IngressConfig | None
     egress: EgressConfig | None
     blocked: str | None = None                  # 설정에는 있지만 실행기가 거부하는 조건 (사유)
-    budget_limit: bool = True                   # False = 과제 예산 상한 미적용(참조 행 full_load), 소비량만 기록
+    budget_limit: bool = True                   # False = 과제 예산 상한 미적용, 소비량만 기록 (지금은 쓰는 조건 없음)
 
     @model_validator(mode="after")
     def _consistent(self):
         direct = self.agent_tool == "ask_agent"
-        load = self.agent_tool == "load_group_history"                 # full_load: 통신 대신 상대 그룹 이력을 컨텍스트로
+        load = self.agent_tool == "search_memory"                      # full_load: 분할 없는 단일 에이전트, 묻지 않는다
         if direct != (self.directory == "agent_cards"):
             raise ValueError("ask_agent는 에이전트 card 디렉터리와, 그룹 도구는 그룹 card 디렉터리와 짝이다")
         if (direct or load) and (self.ingress or self.egress):

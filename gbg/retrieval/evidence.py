@@ -62,7 +62,21 @@ def render_item(it: EvidenceItem) -> str:
     return f"[{it.cite}] {it.agent} · day {it.day} · " + "\n  ".join(lines)
 
 
-async def build_evidence(retriever: GroupRetriever, query: str, entities: list[str], mode: Mode = "hybrid") -> Evidence:
+@dataclass
+class _Pool:
+    """한 그룹의 후보와 재정렬 점수. rows = (재정렬, day, agent, seq, 원문, 토큰, 출처, 제목)."""
+    group: str
+    rows: list[tuple]
+    fused: dict
+    entities: list[str]
+    expanded: list[str]
+    holders: list[str]
+    t_cand: float
+    t_rr: float
+
+
+async def _pool(retriever: GroupRetriever, query: str, entities: list[str], mode: Mode) -> _Pool:
+    """후보(하이브리드 ∪ 태그 일치 ∪ 색인 조회)를 모으고 재정렬한다. 게이트웨이와 full_load가 같은 절차를 쓴다."""
     p: RetrievalParams = retriever.p
     stores, group = retriever.stores, retriever.group
     t0 = time.perf_counter()
@@ -108,38 +122,79 @@ async def build_evidence(retriever: GroupRetriever, query: str, entities: list[s
                 add(retriever.of_line[(x.agent, e.seq)], "index")
     t_cand = time.perf_counter()
 
-    # 재정렬: 에피소드 원문(일지 항목은 그 원문)
+    # 재정렬: 에피소드 원문(일지 항목은 그 원문). 점수는 (질의, 문서) 쌍마다 독립이다
     docs = list(source)
     texts = [eps[d].text for d in docs] + [x.text for x in journal_units]
     scores = await asyncio.to_thread(retriever.reranker.score, q, texts)
     t_rr = time.perf_counter()
-    pool = [(scores[i], eps[d].day, d[0], d[1], eps[d].text, eps[d].tokens, "+".join(sorted(source[d])), eps[d].title)
+    rows = [(scores[i], eps[d].day, d[0], d[1], eps[d].text, eps[d].tokens, "+".join(sorted(source[d])), eps[d].title)
             for i, d in enumerate(docs)]
-    pool += [(scores[len(docs) + i], x.day, x.agent, None, x.text, stores.history.tokens(x.text), "journal", "")
+    rows += [(scores[len(docs) + i], x.day, x.agent, None, x.text, stores.history.tokens(x.text), "journal", "")
              for i, x in enumerate(journal_units)]
-    # 같은 점수면 하이브리드 점수, 그다음 최신
-    pool.sort(key=lambda t: (-t[0], -fused.get((t[2], t[3]), 0.0), -t[1], -(t[3] or 0), t[2]))
+    return _Pool(group, rows, fused, list(entities), ents, list(lk.holders), t_cand - t0, t_rr - t_cand)
 
-    # 상한: 점수 순으로 채우고 넘치는 것은 뺀다
+
+def _select(pools: list[_Pool], cap: int):
+    """점수 순으로 상한까지 채우고(넘치는 것은 점수 낮은 것부터 뺀다) 시간순으로 돌려준다. 행 앞에 그룹을 붙인다."""
+    fused = {(pl.group, *d): v for pl in pools for d, v in pl.fused.items()}
+    pool = [(pl.group, *r) for pl in pools for r in pl.rows]
+    # 같은 점수면 하이브리드 점수, 그다음 최신
+    pool.sort(key=lambda t: (-t[1], -fused.get((t[0], t[3], t[4]), 0.0), -t[2], -(t[4] or 0), t[3], t[0]))
     chosen, total, capped = [], 0, False
     for t in pool:
-        if total + t[5] > p.evidence_cap:
+        if total + t[6] > cap:
             capped = True
             continue
         chosen.append(t)
-        total += t[5]
-    chosen.sort(key=lambda t: (t[1], t[2], t[3] is None, t[3] or 0))                 # 표시는 시간순
+        total += t[6]
+    chosen.sort(key=lambda t: (t[2], t[0], t[3], t[4] is None, t[4] or 0))       # 표시는 시간순
+    return pool, chosen, total, capped, fused
 
+
+async def build_evidence(retriever: GroupRetriever, query: str, entities: list[str], mode: Mode = "hybrid") -> Evidence:
+    p: RetrievalParams = retriever.p
+    t0 = time.perf_counter()
+    pl = await _pool(retriever, query, entities, mode)
+    pool, chosen, total, capped, fused = _select([pl], p.evidence_cap)
+    q = " ".join(dict.fromkeys(x for x in [query, *entities] if x)).strip()
     items = [EvidenceItem(f"E{i}", a, s, day, text, tok, src, title, round(sc, 4))
-             for i, (sc, day, a, s, text, tok, src, title) in enumerate(chosen, 1)]
+             for i, (_, sc, day, a, s, text, tok, src, title) in enumerate(chosen, 1)]
     rendered = "\n".join(render_item(it) for it in items)
-    log = {"group": group, "query": q, "entities": list(entities), "expanded": ents, "holders": list(lk.holders),
+    log = {"group": retriever.group, "query": q, "entities": list(entities), "expanded": pl.expanded, "holders": pl.holders,
            "mode": mode, "reranker": retriever.reranker.name,
-           "candidates": [{"agent": t[2], "seq": t[3], "day": t[1], "source": t[6], "rerank": round(t[0], 4),
-                           "hybrid": fused.get((t[2], t[3])), "tokens": t[5]} for t in pool],
+           "candidates": [{"agent": t[3], "seq": t[4], "day": t[2], "source": t[7], "rerank": round(t[1], 4),
+                           "hybrid": fused.get((t[0], t[3], t[4])), "tokens": t[6]} for t in pool],
            "selected": [{"cite": it.cite, "agent": it.agent, "seq": it.seq, "source": it.source, "rerank": it.score}
                         for it in items],
            "tokens": total, "cap_reached": capped}
-    secs = {"candidates": round(t_cand - t0, 3), "rerank": round(t_rr - t_cand, 3),
-            "total": round(time.perf_counter() - t0, 3)}
-    return Evidence(items, rendered, total, capped, log, [t[4] for t in pool], secs)
+    secs = {"candidates": round(pl.t_cand, 3), "rerank": round(pl.t_rr, 3), "total": round(time.perf_counter() - t0, 3)}
+    return Evidence(items, rendered, total, capped, log, [t[5] for t in pool], secs)
+
+
+async def org_evidence(retrievers: dict, query: str, entities_of, label, episode_entities,
+                       mode: Mode = "hybrid") -> tuple[str, dict, list[dict]]:
+    """full_load의 조직 전체 기억 검색. 그룹마다 게이트웨이와 같은 후보·재정렬을 돌리고, 한 증거 상한으로 고른다.
+    entities_of(group) = 그 그룹에서 질의가 가리키는 엔티티, label(agent) = 표시용 에이전트 id,
+    episode_entities(group, agent, seq) = 에피소드의 엔티티 키. 돌려주는 것: (표시 문자열, 로그, 선택 항목)."""
+    groups = sorted(retrievers)
+    t0 = time.perf_counter()
+    pools = await asyncio.gather(*[_pool(retrievers[g], query, entities_of(g), mode) for g in groups])
+    cap = retrievers[groups[0]].p.evidence_cap
+    pool, chosen, total, capped, fused = _select(list(pools), cap)
+    out, sel = [], []
+    for i, (g, sc, day, a, s, text, tok, src, title) in enumerate(chosen, 1):
+        keys = episode_entities(g, a, s)
+        tail = f" · entities: {', '.join(keys)}" if keys else ""
+        lines = text.split("\n")
+        if s is None:
+            out.append(f"[E{i}] {g} · {label(a)} · day {day} · journal{tail}\n  {text}")
+        else:
+            head = lines[0] if title else ""
+            body = lines[1:] if title else lines
+            out.append(f"[E{i}] {g} · {label(a)} · day {day}" + (f" · {head}" if head else "") + tail
+                       + "".join(f"\n  {x}" for x in body))
+        sel.append({"cite": f"E{i}", "group": g, "agent": a, "seq": s, "source": src, "rerank": round(sc, 4)})
+    log = {"query": query, "entities": {pl.group: pl.entities for pl in pools if pl.entities},
+           "candidates": len(pool), "selected": sel, "tokens": total, "cap_reached": capped,
+           "seconds": round(time.perf_counter() - t0, 3)}
+    return "\n".join(out), log, chosen

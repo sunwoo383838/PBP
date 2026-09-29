@@ -40,11 +40,10 @@ context:
 
 agent:
   max_steps: null                           # 단계 상한 없음: 과제 예산(호출 60회)이 실제 상한. 모든 조건 동일
-  safety_steps: 200                         # 예산 상한이 없는 조건(full_load)의 무한 루프 방지. 닿으면 제출 전용 호출 1회
+  safety_steps: 200                         # 예산 상한이 없는 조건(budget_limit: false, 지금은 없음)의 무한 루프 방지. 닿으면 제출 전용 호출 1회
   responder_max_steps: 10                   # 응답자 루프 상한 (모든 조건 동일, 한 단계의 여러 도구 호출 허용). 닿으면 reply 전용 호출 1회
   responder_exclude_tools: [entity.search]  # 응답자는 db.query에 이름·별칭·ID를 바로 넣는다 (검색 낭비 방지, 모든 조건 동일)
   format_retries: 1
-  full_load_tokens: 40000                   # full_load: 상대 그룹 이력을 이어 붙여 이 토큰에서 자름 (오래된 줄부터)
 
 retrieval:
   embed_model: BAAI/bge-m3                  # DeepInfra, 1024차원. 텍스트 해시로 SQLite 캐시

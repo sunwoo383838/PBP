@@ -19,7 +19,7 @@ ingress_read:    {agent_tool: ask_group, directory: group_cards, ingress: {deliv
 ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble}, egress: null}   # 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
 ingress:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: null}
 i_e:             {agent_tool: ask,       directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: true}}
-full_load:       {agent_tool: load_group_history, directory: group_cards, ingress: null, egress: null, budget_limit: false}   # 권한을 풀어 준 참조(상한 아님): 모든 그룹의 조회 도구 + 그룹 이력 원문 전체
+full_load:       {agent_tool: search_memory, directory: group_cards, ingress: null, egress: null}   # 권한 분할 없는 단일 에이전트(참조): 조직 전체 DB 조회(group 인자 없음) + 전 그룹 규정 + 조직 전체 이력 검색(게이트웨이와 같은 검색기). 과제 예산 동일
 gateway_rag:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, internal_query: false, boundary_state: true, version_marks: true}, egress: null}   # 담당자에게 묻지 않고 그룹 기록만으로 답하는 게이트웨이 (Ingress의 6·9단계 생략)
 ingress_no_requery: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: false, boundary_state: true, version_marks: true}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Ingress의 9단계(재질의) 끔
 egress_no_history: {agent_tool: ask, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: false}, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Egress 1단계에 기록 대신 요청자 자신의 이력과 card

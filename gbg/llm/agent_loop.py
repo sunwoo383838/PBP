@@ -119,8 +119,9 @@ class LLMAgent:
         self.agent_id, self.rt = agent_id, rt
 
     def env(self, ctx_or_group) -> list[ToolSpec]:
-        """환경 도구 명세. full_load는 모든 그룹의 도구를 group 인자 하나로 합친다. 응답 중에는 responder_exclude_tools를 뺀다."""
-        if self.rt.condition.agent_tool == "load_group_history" and isinstance(ctx_or_group, AgentContext):
+        """환경 도구 명세. full_load는 모든 그룹의 도구를 조직 전체 도구 하나로 합친다(group 인자 없음). 응답 중에는
+        responder_exclude_tools를 뺀다."""
+        if self.rt.condition.agent_tool == "search_memory" and isinstance(ctx_or_group, AgentContext):
             from gbg.kernel.full_load import merge_specs
             return merge_specs({g: self.rt.env_specs(g) for g in ctx_or_group.kernel.stores.cards.group_cards})
         specs = self.rt.env_specs(ctx_or_group.group if isinstance(ctx_or_group, AgentContext) else ctx_or_group)
@@ -153,18 +154,18 @@ class LLMAgent:
         if cond.directory == "agent_cards" and ctx.serving is None:         # Direct: 디렉터리에 없는 자기 그룹 동료도 (그룹 표시 없음)
             listed = {c.occupant for c in entries}
             entries += [c for c in self.members(ctx) if c.occupant not in listed]
-        directory = render_directory(entries) if self.comm(ctx) else "(none)"   # 응답 중에는 아무에게도 묻지 않는다
+        directory = render_directory(entries) if self._can_ask(ctx) else "(none)"   # 응답 중·full_load는 아무에게도 묻지 않는다
         if self._member_only(ctx):                                          # 그룹 추상화 조건: 자기 그룹 구성원 (그룹 표시만)
             directory += "\n\n" + render_members(self.members(ctx), ctx.group)
         tools = [(s.name, s.description) for s in self.env(ctx)] + [(COMM_TOOLS[t][0], COMM_TOOLS[t][1]) for t in self.comm(ctx)]
         rb = ctx.kernel.stores.rulebook                                     # 자기 그룹 규정 고정 (full_load는 전 그룹)
-        if self.rt.condition.agent_tool == "load_group_history":
+        if self.rt.condition.agent_tool == "search_memory":
             rules = "\n\n".join(render_rules(rb.read_all(g), g) for g in sorted(cards.group_cards))
         else:
             rules = render_rules(rb.read_all(ctx.group))
         if ctx.serving is not None and (scope := self.records_scope(ctx)):   # 응답자 자신의 system에만 (card에는 없음)
             rules = rules + "\n\n" + scope
-        return (render_system(own, tools, directory, rules, full_load=cond.agent_tool == "load_group_history"),
+        return (render_system(own, tools, directory, rules, full_load=cond.agent_tool == "search_memory"),
                 self.rt.builder.count(directory))
 
     def comm(self, ctx=None) -> list[str]:
@@ -177,13 +178,16 @@ class LLMAgent:
         c = self.rt.condition
         if c.agent_tool == "ask_agent":
             return ["ask_agent"]
-        if c.agent_tool == "load_group_history":                          # full_load: 경계 없음, 다른 도구를 가리키지 않는 설명
-            return ["load_group_history", "ask_member_full"]
+        if c.agent_tool == "search_memory":                               # full_load: 묻지 않는다. 조직 전체 기억 검색만
+            return ["search_memory"]
         return [c.agent_tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
 
     def _member_only(self, ctx) -> bool:
         """ask_agent가 자기 그룹 구성원 한정인가 (Direct가 아닌 조건)."""
-        return bool({"ask_member", "ask_member_full"} & set(self.comm(ctx)))
+        return "ask_member" in self.comm(ctx)
+
+    def _can_ask(self, ctx) -> bool:
+        return any(t != "search_memory" for t in self.comm(ctx))
 
     def members(self, ctx: AgentContext) -> list[AgentCard]:
         """자기 그룹의 활동 중인 다른 구성원 전원의 card (디렉터리에 오르지 않는 구성원은 역할 card). 구성원은
@@ -355,8 +359,8 @@ class LLMAgent:
             if not isinstance(args.get("group"), str) or not isinstance(args.get("question"), str):
                 return {"ok": False, "error": "bad_arguments"}
             r = await ctx.ask_group(args["group"], args["question"])
-        elif tool == "load_group_history":                                 # full_load: 자기 그룹 포함 모든 그룹
-            out = await ctx.call_tool("load_group_history", **args)
+        elif tool == "search_memory":                                      # full_load: 조직 전체 이력 검색
+            out = await ctx.call_tool("search_memory", **args)
             return {"ok": out["ok"], **(out.get("result") or {"error": out.get("error")})}
         elif tool == "ask":
             if not isinstance(args.get("question"), str) or not isinstance(args.get("purpose"), str):

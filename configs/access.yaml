@@ -41,7 +41,7 @@ rules:
   # private: 규칙 없음 (누구도 불가)
 
 # 조건별 차이: 조건 이름 → 추가 허용 규칙
-# full_load: 요청자가 모든 그룹의 DB·catalog(db 자원)·규정을 자기 그룹과 똑같이 조회하고, 그룹 이력 원문을 불러온다.
+# full_load: 권한 분할 없는 단일 에이전트. 조직 전체의 DB·catalog(db 자원)·규정을 조회하고, 조직 전체 이력(자기 그룹 포함)을 검색한다.
 overrides:
   full_load:
     - {subject: agent, resource: db,            scope: other, perm: r}

@@ -95,7 +95,7 @@ def test_rules_are_fixed_in_system_prompt_own_group_only_without_group_ids(tmp_p
     own = [sm for sm, _ in systems if "transfer_effective_day" in sm]
     assert own and all(g.id not in sm for sm in own for g in a.groups()), "Direct: 그룹 id 없이"
     run(tmp_path / "f", "full_load", script=script, max_day=1)
-    fl = [sm for sm, tools in systems if "load_group_history" in tools]
+    fl = [sm for sm, tools in systems if "search_memory" in tools]
     assert fl and all(f"[Rules of {g}]" in fl[0] for g in ("FIN-SEL", "HR-SEL", "HR-TYO", "FIN-TYO"))
 
 

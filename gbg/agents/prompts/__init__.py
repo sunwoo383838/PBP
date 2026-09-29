@@ -26,22 +26,22 @@ How to work on a task
 [Your role]
 {card}"""
 
-# full_load(참조 행, 정의: 경계 없이 모든 권한을 가진 단일 에이전트): "직접 볼 수 없다, 물어볼 수만 있다" 문구를 뺀다.
-# 나머지 문장은 COMMON과 같다.
+# full_load(참조 행, 정의: 권한 분할이 없는 단일 에이전트): 조직의 모든 기록을 자기 기억처럼 쓴다. 묻는 상대가 없다.
+# 격리·질의 문장 넷만 바꾸고 나머지 문장은 COMMON과 같다.
 _HAVE = """- Your own records (shown to you with each task) and the database and rulebook you can access. They cover only your own area of work. The database shows only values registered as of today.
 - Other parts of the company hold everything else: their records, their databases and their rules. You cannot look these up yourself; you can only ask for them with the communication tool listed below (if there is one)."""
 _HAVE_FULL = """- Your own records (shown to you with each task).
-- Direct access to every group's data: the database and catalog tools take a group argument (a group id from the directory, or omit it for your own group), and the rules of every group are listed below. The database shows only values registered as of today.
-- The full records of every group, including your own, with load_group_history(group). They include the records of members who have left."""
+- You have direct access to all records of the organization: database, rules and the full history of every group. Look things up yourself; there is no one to ask.
+- The database tools cover the whole organization at once and show only values registered as of today. The rules of every group are listed below. search_memory searches the full history of every group, including members who have left."""
 _LOOK = """- Do not keep searching your own tools for information your area does not hold. If a lookup finds nothing, ask instead."""
-_LOOK_FULL = """- Look information up directly in the group that holds it (use the group argument), and load that group's records with load_group_history when the database does not show it. You may also ask members of your own group."""
+_LOOK_FULL = """- If the database does not show what you need, search the history with search_memory."""
 _ASK = """- First decide what information the answer needs and who is likely to hold each piece. Look up what your own area holds, and ask early for the rest. You may ask several times and ask several parties."""
-_ASK_FULL = """- First decide what information the answer needs and which group is likely to hold each piece. Then look it up there directly."""
+_ASK_FULL = """- First decide what information the answer needs. Then look up each piece yourself."""
 _RULES = """- Apply the rules that govern each piece (your area's rules are listed below; other areas' rules come from the parties you ask), then work out the answer step by step. Do not guess."""
 _RULES_FULL = """- Apply the rules that govern each piece (the rules of every group are listed below), then work out the answer step by step. Do not guess."""
 COMMON_FULL_LOAD = (COMMON.replace(_HAVE, _HAVE_FULL).replace(_LOOK, _LOOK_FULL).replace(_ASK, _ASK_FULL)
                     .replace(_RULES, _RULES_FULL))
-assert COMMON_FULL_LOAD.count("You cannot look these up") == 0 and COMMON_FULL_LOAD != COMMON
+assert all(x not in COMMON_FULL_LOAD for x in (_HAVE, _LOOK, _ASK, _RULES))
 
 COMM_TOOLS = {
     "ask_agent": ("ask_agent", "Ask one agent in the directory (by its id) a question. The agent answers from its own "
@@ -65,17 +65,13 @@ COMM_TOOLS = {
                                 "through the other communication tool.",
                    {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
                     "required": ["agent_id", "question"], "additionalProperties": False}),
-    "ask_member_full": ("ask_agent", "Ask a member of your own group (listed under 'Members of your group' in the "
-                                     "directory, by id) a question. The member answers from their own records, database "
-                                     "and rules only.",
-                        {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
-                         "required": ["agent_id", "question"], "additionalProperties": False}),
-    "load_group_history": ("load_group_history", "Load the full records of all members of a group (including members "
-                                                 "who have left), oldest first, into your context. Works for any group, "
-                                                 "including your own. If they are too long, the oldest are cut.",
-                           {"type": "object", "properties": {"group": {
-                               "type": "string", "description": "Group id: a group from the directory, or your own group's id."}},
-                            "required": ["group"], "additionalProperties": False}),
+    "search_memory": ("search_memory", "Search the full history of the whole organization (every group, including "
+                                       "members who have left) for records relevant to a query. Returns the most relevant "
+                                       "work episodes, oldest first, each headed by its group, member, day, task title and "
+                                       "entity keys.",
+                      {"type": "object", "properties": {"query": {
+                          "type": "string", "description": "What to look for: names, IDs, and the fact you need."}},
+                       "required": ["query"], "additionalProperties": False}),
 }
 
 

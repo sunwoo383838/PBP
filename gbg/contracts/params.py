@@ -55,11 +55,10 @@ class ContextParams(Contract):
 
 class AgentParams(Contract):
     max_steps: int | None = Field(default=None, ge=1)   # None = 단계 상한 없음 (과제 예산이 상한)
-    safety_steps: int = Field(default=200, ge=1)        # 예산 상한이 없는 조건(full_load)의 무한 루프 방지
+    safety_steps: int = Field(default=200, ge=1)        # 예산 상한이 없는 조건(budget_limit: false)의 무한 루프 방지
     responder_max_steps: int = Field(default=10, ge=1)  # 응답자 루프 상한 (모든 조건 동일). 닿으면 reply 전용 호출 1회
     responder_exclude_tools: list[str] = []            # 응답자에게 주지 않는 환경 도구 (모든 조건 동일)
     format_retries: int = Field(ge=0)
-    full_load_tokens: int = Field(default=40000, ge=1)  # full_load의 load_group_history 상한 (넘으면 오래된 줄부터)
 
 
 class BM25Params(Contract):

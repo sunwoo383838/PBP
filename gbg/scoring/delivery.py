@@ -3,7 +3,7 @@
 정답률과 달리 추론 난이도와 무관하게 조건 차이를 보는 지표다.
 
     도착      과제 수행 중 요청자가 받은 것: 자기 질의에 온 응답(에이전트·경계 모듈), 자기 도구 호출 결과
-              (full_load의 그룹 이력 포함). 과제 시작 전부터 요청자 이력에 있던 것은 prior로 따로 센다.
+              (full_load의 기억 검색 결과는 에피소드 하나가 한 메시지). 과제 시작 전부터 요청자 이력에 있던 것은 prior로 따로 센다.
     판정      카나리 조각: 원문의 카나리 형태 값(쉼표를 뺀 4자리 이상 정수, 1000의 배수 제외)이 모두 도착했으면 delivered.
               버전(같은 키·같은 카나리, 예: 가승인 상태)이 있으면 카나리가 든 메시지에 버전을 가르는 값(상태 등)도
               있어야 delivered, 옛 버전 값만 있으면 stale. 같은 키라도 카나리가 다르면 다른 항목(예치 건 여럿)이다.
@@ -91,7 +91,11 @@ def _received(events: list[dict], task: str, requester: str) -> list[str]:
             else:                                                          # 항목 도입 전 기록
                 parts.append(json.dumps(r, ensure_ascii=False))
         elif e["type"] == "tool_result" and p.get("agent") == requester and p.get("serving") is None:
-            parts.append(json.dumps(p.get("result"), ensure_ascii=False))
+            res = p.get("result")
+            if p.get("tool") == "search_memory" and isinstance(res, dict) and isinstance(res.get("records"), str):
+                parts += re.split(r"\n(?=\[E\d+\] )", res["records"])     # full_load 기억 검색: 에피소드 하나가 한 메시지
+            else:
+                parts.append(json.dumps(res, ensure_ascii=False))
     return parts
 
 

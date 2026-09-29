@@ -205,7 +205,7 @@ def test_conditions_load_ladder_and_reference_rows():
                            "ingress_no_requery", "egress_no_history", "retrieval_oracle"]
     assert not {"routing_reveal", "direct_dyncard", "direct_ephemeral", "ingress_raw", "coordinator"} & set(conds)
     fl = conds["full_load"]
-    assert fl.agent_tool == "load_group_history" and fl.ingress is None and not fl.budget_limit, "참조 행: 예산 상한 없음"
+    assert fl.agent_tool == "search_memory" and fl.ingress is None and fl.budget_limit, "참조 행: 과제 예산은 다른 조건과 같다"
     assert conds["direct"].agent_tool == "ask_agent" and conds["direct"].directory == "agent_cards"
     assert conds["direct"].ingress is None and conds["direct"].egress is None
     assert conds["routing"].ingress.deliver == "forward" and not conds["routing"].ingress.reveal_holders

@@ -12,6 +12,11 @@ class AccessGuard:
         """판정 기록을 돌려준다. record["allowed"]가 결과다."""
         kind, _, sid = subject.partition(":")
         unit = self.table.spec.resources[resource.name]
+        if resource.target == "*" and unit == "group":                   # 조직 전체(full_load): 자기 그룹과 다른 그룹 둘 다
+            allowed = all(self.table.allows(kind, resource.action, resource.name, sc, self.condition)
+                          for sc in ("own", "other"))
+            return {"subject": subject, "tool": tool, "action": resource.action, "resource": resource.name,
+                    "scope": "all", "target": "*", "condition": self.condition, "allowed": allowed}
         target = args.get(resource.target) if resource.target else None
         if unit == "global":
             scope, target = "any", None

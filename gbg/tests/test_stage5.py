@@ -312,108 +312,76 @@ def test_boundary_budget_exhaustion_sends_requester_to_final_answer(tmp_path):
 
 
 # ─────────────────────────── full_load (참조 행) ───────────────────────────
-def _full_load_script(loads):
-    """요청자: 필요한 그룹의 이력을 두 번 불러오고(두 번째는 캐시), 다른 그룹 DB도 조회한 뒤 제출."""
-    def script(req):
-        tools, msgs = _tools(req), req["messages"]
-        if "submit" in tools and "load_group_history" in tools:
-            g = _task(msgs[1]["content"])
-            n = sum(1 for m in msgs if m["role"] == "tool")
-            if g and n < loads:
-                return _call("load_group_history", {"group": g["needs"][0]["group"]})
-            if g and n == loads and "db.query" in tools:
-                return _call("db.query", {"group": g["needs"][0]["group"], "entity": "영업1팀",
-                                          "record_type": tools["db.query"]["parameters"]["properties"]["record_type"]["enum"][0]})
-        return oracle(req)
-    return script
-
-
-def test_full_load_tools_history_cache_and_no_budget_cap(tmp_path):
+def _full_load_run(tmp_path):
+    """요청자: 조직 전체 DB 조회(group 인자 없음) → 같은 질의로 기억 검색 두 번(두 번째는 캐시) → 제출."""
     sent = []
-    inner = _full_load_script(2)
-
-    def script(req):
-        sent.append(_tools(req))
-        return inner(req)
-    r, ev = run(tmp_path, "full_load", script=script)
-    schemas = next(t for t in sent if "submit" in t)
-    assert "group" in schemas["db.query"]["parameters"]["properties"] and "load_group_history" in schemas
-    types = schemas["db.query"]["parameters"]["properties"]["record_type"]["enum"]
-    assert set(r.adapter.group_tools("HR-SEL")[0].parameters["properties"]["record_type"]["enum"]) < set(types), \
-        "모든 그룹의 기록 종류"
-    fl = [json.loads(x) for x in (tmp_path / "obs" / "full_load.jsonl").read_text(encoding="utf-8").splitlines()]
-    first, again = fl[0], fl[1]
-    assert not first["cached"] and again["cached"], "같은 과제 안에서 같은 그룹 재호출은 캐시"
-    results = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "load_group_history"]
-    w5 = next(p for p in results if p["task_id"] == "W-005")
-    assert FRAGS["FR-C1"]["text"] in w5["result"]["records"], "이탈자(fin-sel.a2)의 이력도 포함"
-    assert public_id("fin-sel.a2") in w5["result"]["records"] and "fin-sel" not in w5["result"]["records"]
-    days = [int(m) for m in re.findall(r"^\(day (-?\d+) ·", w5["result"]["records"], re.M)]
-    assert days == sorted(days), "시간순"
-    llm = [json.loads(x) for x in (tmp_path / "obs" / "llm.jsonl").read_text(encoding="utf-8").splitlines()]
-    assert any(x["cached_tool_result"] for x in llm), "캐시된 결과가 들어간 호출은 따로 표시"
-    assert all(x["tokens"] == x["usage"]["prompt_tokens"] + x["usage"]["completion_tokens"] for x in llm)
-    answers = [e["payload"] for e in ev if e["type"] == "answer"]
-    assert all(a["budget"]["limit"] == {"calls": None, "tokens": None} for a in answers), "참조 행: 상한 미적용"
-    q = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "db.query"]
-    assert q and all(x["ok"] for x in q), "다른 그룹 DB 조회 허용"
-
-
-def test_full_load_is_unbounded_own_group_history_prompt_and_group_hint(tmp_path):
-    """full_load 정의("경계 없이 모든 권한을 가진 단일 에이전트") 준수: 자기 그룹 이력도 불러오고, "직접 볼 수 없다" 문구가
-    없으며, 다른 그룹 기록 종류를 group 없이 조회하면 group 인자를 쓰라는 힌트. 다른 조건의 문구는 그대로."""
-    systems = []
 
     def script(req):
         tools, msgs = _tools(req), req["messages"]
-        systems.append(msgs[0]["content"])
-        if "submit" in tools and "load_group_history" in tools:
-            own = re.search(r"Members of your group \(([^)]+)\)", msgs[0]["content"]).group(1)
+        sent.append((msgs[0]["content"], tools))
+        if "submit" in tools and "search_memory" in tools:
             n = sum(1 for m in msgs if m["role"] == "tool")
             if n == 0:
-                return _call("load_group_history", {"group": own})
-            if n == 1:
-                return _call("db.query", {"entity": "영업1팀", "record_type": "no_such_type"})
+                return _call("db.query", {"entity": "E-SEL-1000", "record_type": "employee_profile"})
+            if n in (1, 2):
+                return _call("search_memory", {"query": "CMT-00001 provisional approval settlement"})
         return oracle(req)
-    _, ev = run(tmp_path / "f", "full_load", script=script, max_day=1)
-    loads = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "load_group_history"]
-    assert loads and all(x["ok"] and x["result"]["records"] for x in loads), "자기 그룹 이력도 적재"
+    r, ev = run(tmp_path, "full_load", script=script)
+    return r, ev, sent
+
+
+def test_full_load_is_one_agent_over_the_whole_organization(tmp_path):
+    """정의: 권한 분할이 없는 단일 에이전트. 도구에 group 인자가 없고, 조회는 조직 전체에서 출처 그룹만 표시, 묻는
+    도구·디렉터리 없음, 전 그룹 규정, 다른 조건과 같은 과제 예산."""
+    r, ev, sent = _full_load_run(tmp_path)
+    system, schemas = next((sm, t) for sm, t in sent if "submit" in t)
+    assert "group" not in schemas["db.query"]["parameters"]["properties"]
+    assert "group" not in schemas["entity.search"]["parameters"]["properties"]
+    types = schemas["db.query"]["parameters"]["properties"]["record_type"]["enum"]
+    assert set(r.adapter.group_tools("HR-SEL")[0].parameters["properties"]["record_type"]["enum"]) < set(types)
+    assert not {"ask_agent", "ask_group", "ask", "load_group_history"} & set(schemas)
+    assert "there is no one to ask" in system and "You cannot look these up" not in system
+    assert "<<DIRECTORY>>\n(none)" in system
+    assert all(f"[Rules of {g}]" in system for g in ("FIN-SEL", "HR-SEL", "HR-TYO", "FIN-TYO"))
     q = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "db.query"]
-    assert q and all("group argument" in (x.get("result") or {}).get("hint", "") for x in q)
-    req_sys = [x for x in systems if "load_group_history" in x]
-    assert req_sys and all("You cannot look these up" not in x and "other communication tool" not in x for x in req_sys)
-    direct = []
-    run(tmp_path / "d", "direct", script=lambda req: (direct.append(req["messages"][0]["content"]), oracle(req))[1], max_day=1)
-    assert direct and all("You cannot look these up" in x for x in direct if "[Your role]" in x), "다른 조건은 그대로"
+    assert q and all(x["ok"] and x["result"]["status"] == "HIT" for x in q)
+    assert all([h["group"] for h in x["result"]["results"]] == ["HR-SEL"] for x in q), "출처 그룹만 표시"
+    answers = [e["payload"] for e in ev if e["type"] == "answer"]
+    lim = T.CONDITIONS.defaults.budget
+    assert answers and all(a["budget"]["limit"] == {"calls": lim.calls, "tokens": lim.tokens} for a in answers), \
+        "다른 조건과 같은 과제 예산"
 
 
-def test_full_load_truncates_oldest_lines_at_limit(tmp_path):
-    from gbg.kernel.full_load import load_history_tool
-    from gbg.kernel.tools import ToolCall
-    from gbg.stores import Stores
-    s = Stores.from_adapter(load_adapter("worldgen_mini"), card_mode="static", rounds_per_day=3)
-    cache = {}
-    full = load_history_tool(s, T.TOK.count, 10**9, lambda: cache).fn(ToolCall("hr-sel.a1", "HR-SEL", 1, 1, {"group": "FIN-SEL"}))
-    cache.clear()
-    cut = load_history_tool(s, T.TOK.count, 200, lambda: cache).fn(ToolCall("hr-sel.a1", "HR-SEL", 1, 1, {"group": "FIN-SEL"}))
-    assert not full.result["truncated"] and cut.result["truncated"]
-    rec = cut.obs[0][1]
-    assert rec["tokens"] <= 200 and rec["dropped_tokens"] > 0 and rec["truncated"]
-    assert full.result["records"].endswith(cut.result["records"]), "오래된 줄부터 버린다"
+def test_full_load_search_memory_is_gateway_search_over_the_whole_organization(tmp_path):
+    r, ev, _ = _full_load_run(tmp_path)
+    res = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "search_memory"]
+    assert res and all(x["ok"] for x in res)
+    first = res[0]["result"]["records"]
+    assert FRAGS["FR-C1"]["text"] in first, "떠난 구성원(fin-sel.a2)의 이력도 검색된다"
+    heads = [x for x in first.splitlines() if x.startswith("[E")]
+    assert any(re.match(rf"\[E\d+\] FIN-SEL · {public_id('fin-sel.a2')} · day -?\d+", x) for x in heads), \
+        "머리: 그룹 · 에이전트(공개 id) · day"
+    assert "entities: " in first, "에피소드 머리에 엔티티 키"
+    assert len({x.split(" · ")[0].split(" ")[1] for x in heads}) > 1, "여러 그룹에서"
+    fl = [json.loads(x) for x in (tmp_path / "obs" / "full_load.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert any(not x["cached"] for x in fl) and any(x["cached"] for x in fl), "같은 과제 안 같은 질의는 캐시"
+    acc = [json.loads(x) for x in (tmp_path / "obs" / "access.jsonl").read_text(encoding="utf-8").splitlines()]
+    mem = [x for x in acc if x.get("tool") == "search_memory"]
+    assert mem and all(x["allowed"] and x["scope"] == "all" for x in mem)
+    retr = [json.loads(x) for x in (tmp_path / "obs" / "retrievals.jsonl").read_text(encoding="utf-8").splitlines()]
+    org = [x for x in retr if x.get("org")]
+    assert org and org[0]["tokens"] <= T.P.retrieval.evidence_cap, "게이트웨이와 같은 증거 상한 하나"
 
 
-def test_full_load_orders_by_day_round_and_wal_seq(tmp_path):
-    """같은 날 안에서는 (라운드, WAL 순번)으로 섞는다: 에이전트 이름 순으로 묶지 않는다."""
-    r, ev = run(tmp_path, "direct", max_day=2)
-    from gbg.kernel.full_load import load_history_tool
-    from gbg.kernel.tools import ToolCall
-    out = load_history_tool(r.stores, T.TOK.count, 10**9, lambda: {}).fn(ToolCall("hr-sel.a1", "HR-SEL", 2, 1, {"group": "FIN-SEL"}))
-    entries = sorted(((e.day, e.round, e.order, a) for a, (g, _) in r.stores.members.items() if g == "FIN-SEL"
-                      for e in r.stores.history.entries(a) if e.day >= 1), key=lambda x: (x[0], x[1], x[2]))
-    assert entries and all(o is not None for _, _, o, _ in entries), "실행 중 항목은 WAL 순번을 가진다"
-    shown = [public_id(a) for *_, a in entries]
-    got = [m for m in re.findall(r"^\(day \d+ · (agent-\w+)\)", out.result["records"], re.M)]
-    assert got[-len(shown):] == shown
+def test_full_load_miss_hint_does_not_point_to_groups(tmp_path):
+    def script(req):
+        tools, msgs = _tools(req), req["messages"]
+        if "submit" in tools and "search_memory" in tools and not any(m["role"] == "tool" for m in msgs):
+            return _call("db.query", {"entity": "없는 사람", "record_type": "employee_profile"})
+        return oracle(req)
+    _, ev = run(tmp_path, "full_load", script=script, max_day=1)
+    q = [e["payload"]["result"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "db.query"]
+    assert q and all(x["status"] == "NOT_FOUND" and "group" not in x["hint"] and "area" not in x["hint"] for x in q)
 
 
 def test_several_tool_calls_in_one_step_all_run(tmp_path):
