@@ -190,10 +190,22 @@ def test_backoff_on_429_and_5xx(tmp_path):
     waits = []
     async def sleep(s):
         waits.append(s)
-    server = FakeDeepInfra(fail_first=[429, 503])
+    server = FakeDeepInfra(fail_first=[429, 503, 429, 429, 503])
     b = backend("LIVE", ResponseCache(tmp_path / "c.sqlite"), server.transport(), params=P.llm, sleep=sleep)
     res = asyncio.run(b.complete([{"role": "user", "content": "x"}], []))
-    assert res.attempts == 3 and server.calls == 3 and waits == [1.0, 2.0]
+    assert res.attempts == 6 and server.calls == 6
+    assert waits == [3.0, 1.0, 6.0, 12.0, 2.0], "429는 3초부터 두 배씩, 5xx는 따로 1초부터"
+
+
+def test_rate_limit_backoff_outlasts_5xx_limit_and_caps(tmp_path):
+    """429는 5xx 시도 한도(6회)를 쓰지 않고 계속 늘어난 간격으로 재시도한다 (상한 600초)."""
+    waits = []
+    async def sleep(s):
+        waits.append(s)
+    server = FakeDeepInfra(fail_first=[429] * 10)
+    b = backend("LIVE", ResponseCache(tmp_path / "c.sqlite"), server.transport(), params=P.llm, sleep=sleep)
+    res = asyncio.run(b.complete([{"role": "user", "content": "x"}], []))
+    assert res.attempts == 11 and waits == [3.0, 6.0, 12.0, 24.0, 48.0, 96.0, 192.0, 384.0, 600.0, 600.0]
 
 
 def test_backoff_gives_up_and_4xx_is_fatal(tmp_path):

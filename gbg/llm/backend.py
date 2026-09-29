@@ -40,6 +40,27 @@ class LLMError(FatalError):
     """API가 재시도 후에도 실패하거나 요청이 잘못됨. 런을 멈추고, WAL 체크포인트에서 재개한다."""
 
 
+class Backoff:
+    """DeepInfra 재시도 대기. 429(동시 요청 한도, Retry-After 없음)는 rate_limit_base_delay_s부터 두 배씩
+    rate_limit_max_delay_s까지, rate_limit_max_attempts회. 5xx·연결 오류는 base_delay_s부터 max_attempts회.
+    두 횟수는 따로 센다. next()는 대기 초, 포기면 None."""
+
+    def __init__(self, r):
+        self.r, self.n429, self.nother = r, 0, 0
+
+    def next(self, status: int | None) -> float | None:
+        r = self.r
+        if status == 429:
+            self.n429 += 1
+            if self.n429 >= r.rate_limit_max_attempts:
+                return None
+            return min(r.rate_limit_max_delay_s, r.rate_limit_base_delay_s * 2 ** (self.n429 - 1))
+        self.nother += 1
+        if self.nother >= r.max_attempts:
+            return None
+        return min(r.max_delay_s, r.base_delay_s * 2 ** (self.nother - 1))
+
+
 class ReplayMiss(FatalError):
     """REPLAY 모드에서 캐시에 없는 요청."""
 
@@ -155,12 +176,14 @@ class LLMBackend:
             raise LLMError(f"API 키가 없다 (환경 변수 {self.params.api_key_env})")
         r = self.params.retry
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
-        last = ""
+        last, bo, attempt = "", Backoff(r), 0
         async with self._semaphore():
             async with httpx.AsyncClient(base_url=self.params.base_url, transport=self.transport,
                                          timeout=self.params.timeout_s, headers=headers) as client:
-                for attempt in range(1, r.max_attempts + 1):
+                while True:
+                    attempt += 1
                     self.api_calls += 1
+                    status = None
                     try:
                         body = {**req, "service_tier": self.params.service_tier} if self.params.service_tier else req
                         resp = await client.post("/chat/completions", json=body)
@@ -169,9 +192,10 @@ class LLMBackend:
                     else:
                         if resp.status_code == 200:
                             return normalize(resp.json()), attempt
-                        last = f"HTTP {resp.status_code}: {resp.text[:300]}"
+                        status, last = resp.status_code, f"HTTP {resp.status_code}: {resp.text[:300]}"
                         if resp.status_code != 429 and resp.status_code < 500:
                             raise LLMError(f"요청 거부 {last}")
-                    if attempt < r.max_attempts:
-                        await self.sleep(min(r.max_delay_s, r.base_delay_s * 2 ** (attempt - 1)))
-        raise LLMError(f"{r.max_attempts}회 시도 후 실패: {last}")
+                    if (wait := bo.next(status)) is None:
+                        break
+                    await self.sleep(wait)
+        raise LLMError(f"{attempt}회 시도 후 실패: {last}")

@@ -46,10 +46,13 @@ class DeepInfraReranker:
         self.api_calls = 0
 
     def _post(self, client: httpx.Client, query: str, docs: list[str]) -> list[float]:
-        from gbg.llm.backend import LLMError
+        from gbg.llm.backend import Backoff, LLMError
         r, last = self.llm.retry, ""
-        for attempt in range(1, r.max_attempts + 1):
+        bo, attempt = Backoff(r), 0
+        while True:
+            attempt += 1
             self.api_calls += 1
+            status = None
             try:
                 resp = client.post(f"/v1/inference/{self.name}", json={"queries": [query], "documents": docs})
             except httpx.TransportError as e:
@@ -60,12 +63,13 @@ class DeepInfraReranker:
                     if len(scores) != len(docs):
                         raise LLMError(f"재정렬 점수 수가 다르다 ({len(scores)} != {len(docs)})")
                     return [float(x) for x in scores]
-                last = f"HTTP {resp.status_code}: {resp.text[:300]}"
+                status, last = resp.status_code, f"HTTP {resp.status_code}: {resp.text[:300]}"
                 if resp.status_code != 429 and resp.status_code < 500:
                     raise LLMError(f"재정렬 요청 거부 {last}")
-            if attempt < r.max_attempts:
-                time.sleep(min(r.max_delay_s, r.base_delay_s * 2 ** (attempt - 1)))
-        raise LLMError(f"재정렬 {r.max_attempts}회 시도 후 실패: {last}")
+            if (wait := bo.next(status)) is None:
+                break
+            time.sleep(wait)
+        raise LLMError(f"재정렬 {attempt}회 시도 후 실패: {last}")
 
     def score(self, query: str, docs: Sequence[str]) -> list[float]:
         if not docs:
@@ -82,7 +86,7 @@ class DeepInfraReranker:
 class RerankCache:
     def __init__(self, path: Path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)   # 재정렬은 작업 스레드에서 돈다
+        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False, timeout=60)   # 재정렬은 작업 스레드에서 돈다
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("CREATE TABLE IF NOT EXISTS rerank (model TEXT NOT NULL, key TEXT NOT NULL, "
                         "score REAL NOT NULL, PRIMARY KEY (model, key))")

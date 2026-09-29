@@ -60,14 +60,16 @@ class DeepInfraEmbedder:
         self.api_calls = 0
 
     async def embed(self, texts: Sequence[str]) -> np.ndarray:
-        from gbg.llm.backend import LLMError
+        from gbg.llm.backend import Backoff, LLMError
         r = self.llm.retry
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
-        last = ""
+        last, bo, attempt = "", Backoff(r), 0
         async with httpx.AsyncClient(base_url=self.llm.base_url, transport=self.transport, timeout=self.llm.timeout_s,
                                      headers=headers) as client:
-            for attempt in range(1, r.max_attempts + 1):
+            while True:
+                attempt += 1
                 self.api_calls += 1
+                status = None
                 try:
                     resp = await client.post("/embeddings", json={"model": self.name, "input": list(texts),
                                                                   "encoding_format": "float"})
@@ -77,19 +79,20 @@ class DeepInfraEmbedder:
                     if resp.status_code == 200:
                         data = sorted(resp.json()["data"], key=lambda d: d["index"])
                         return _unit(np.array([d["embedding"] for d in data], dtype=np.float32))
-                    last = f"HTTP {resp.status_code}: {resp.text[:300]}"
+                    status, last = resp.status_code, f"HTTP {resp.status_code}: {resp.text[:300]}"
                     if resp.status_code != 429 and resp.status_code < 500:
                         raise LLMError(f"임베딩 요청 거부 {last}")
-                if attempt < r.max_attempts:
-                    import asyncio
-                    await asyncio.sleep(min(r.max_delay_s, r.base_delay_s * 2 ** (attempt - 1)))
-        raise LLMError(f"임베딩 {r.max_attempts}회 시도 후 실패: {last}")
+                if (wait := bo.next(status)) is None:
+                    break
+                import asyncio
+                await asyncio.sleep(wait)
+        raise LLMError(f"임베딩 {attempt}회 시도 후 실패: {last}")
 
 
 class EmbeddingCache:
     def __init__(self, path: Path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, isolation_level=None)
+        self.db = sqlite3.connect(path, isolation_level=None, timeout=60)
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("CREATE TABLE IF NOT EXISTS embeddings (model TEXT NOT NULL, key TEXT NOT NULL, "
                         "vec BLOB NOT NULL, PRIMARY KEY (model, key))")

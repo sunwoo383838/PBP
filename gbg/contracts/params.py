@@ -18,6 +18,11 @@ class RetryParams(Contract):
     max_attempts: int = Field(ge=1)
     base_delay_s: float = Field(ge=0)
     max_delay_s: float = Field(ge=0)
+    # 429(Rate limited)는 따로: 첫 대기 rate_limit_base_delay_s에서 매번 두 배, rate_limit_max_delay_s에서 멈춤.
+    # 429 재시도는 max_attempts(5xx·연결 오류용)를 쓰지 않는다
+    rate_limit_base_delay_s: float = Field(default=3.0, ge=0)
+    rate_limit_max_delay_s: float = Field(default=600.0, ge=0)
+    rate_limit_max_attempts: int = Field(default=20, ge=1)
 
 
 class LLMParams(Contract):
