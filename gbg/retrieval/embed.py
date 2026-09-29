@@ -169,5 +169,7 @@ class VectorIndex:
     def scores(self, qvec: np.ndarray) -> dict[Hashable, float]:
         if self.matrix is None:
             return {}
-        sims = self.matrix @ qvec
+        # float64로 계산한다: float32 행렬 곱은 행렬 크기·행 배치에 따라 끝자리가 달라져(약 1e-7), 증분으로 쌓은 색인과
+        # 재개 때 새로 만든 색인이 반올림(소수 9자리) 뒤 순위가 갈린다 (dry15b: 재개 뒤 검색 결과가 연속 실행과 다름)
+        sims = self.matrix.astype(np.float64) @ np.asarray(qvec, dtype=np.float64)
         return {i: float(s) for i, s in zip(self.ids, sims)}

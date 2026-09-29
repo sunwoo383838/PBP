@@ -418,3 +418,20 @@ def test_retriever_sync_lock_works_across_event_loops():
         await asyncio.gather(r.sync(), r.sync(), r.sync())
     for _ in range(3):
         asyncio.run(contended())
+
+
+def test_vector_scores_do_not_depend_on_index_history():
+    """같은 문서 집합이면 쌓은 순서·교체 이력과 상관없이 유사도가 같아야 한다 (재개 뒤 색인 = 연속 실행 색인)."""
+    import numpy as np
+    from gbg.retrieval.embed import VectorIndex
+    rng = np.random.default_rng(0)
+    vecs = {f"d{i}": rng.standard_normal(1024).astype(np.float32) for i in range(300)}
+    q = rng.standard_normal(1024).astype(np.float32)
+    a = VectorIndex()
+    for k in vecs:                                                         # 하나씩, 중간에 교체도
+        a.add([k], np.stack([vecs[k] * 0.5]))
+        a.add([k], np.stack([vecs[k]]))
+    b = VectorIndex()
+    b.add(list(reversed(list(vecs))), np.stack([vecs[k] for k in reversed(list(vecs))]))
+    sa, sb = a.scores(q), b.scores(q)
+    assert all(round(sa[k], 9) == round(sb[k], 9) for k in vecs)
