@@ -43,6 +43,21 @@ class Redirect(Contract):
     reason: Literal["out_of_scope", "ownership_exception"]
 
 
+class Conflict(Contract):
+    """접수부 조립의 충돌 표시: 응답끼리 또는 응답과 그룹 기록이 다른 항목."""
+    item: str
+    note: str
+    refs: list[str]
+
+
+class Proposal(Contract):
+    """접수부 조립의 제안 값: 담당자 답과 다른 값을 근거(refs 필수)와 함께 제안한다. 담당자 답은 바꾸지 않는다."""
+    item: str
+    value: str
+    refs: list[str] = Field(min_length=1)
+    rationale: str
+
+
 def render_items(items) -> str:
     """사람·LLM이 읽는 한 줄씩의 표기. 항목은 dict 또는 Item (옛 기록의 status_or_as_of도 읽는다)."""
     rows = [x.model_dump() if isinstance(x, Item) else x for x in items]
@@ -57,6 +72,10 @@ def render_response(r: dict) -> str:
         parts.append(render_items(r["items"]))
     if r.get("missing"):
         parts.append("missing: " + "; ".join(r["missing"]))
+    for x in r.get("conflicts") or []:
+        parts.append(f"conflict: {x['item']}: {x['note']} ({' '.join(x['refs'])})")
+    for x in r.get("proposals") or []:
+        parts.append(f"proposed: {x['item']} = {x['value']} ({' '.join(x['refs'])}) — {x['rationale']}")
     for x in r.get("redirects") or []:
         parts.append(f"not handled there: {x['entity']} {x['attribute']} → ask {x['referral_to']}")
     return "\n".join(p for p in parts if p)
@@ -72,6 +91,8 @@ class Response(Contract):
     need: list[str]                             # need_more일 때 보완이 필요한 항목
     as_of: int                                  # 응답 기준 일차
     redirects: list[Redirect] = []              # 소관 밖 항목 안내 (missing에도 들어 있다)
+    conflicts: list[Conflict] = []              # 접수부 조립 (Ingress·I+E): 충돌 표시
+    proposals: list[Proposal] = []              # 접수부 조립: 제안 값 (근거 필수)
 
     @model_validator(mode="after")
     def _status_fields(self):

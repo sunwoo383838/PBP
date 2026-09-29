@@ -231,7 +231,9 @@ class LLMAgent:
             return ["ask_agent"]
         if c.agent_tool == "search_memory":                               # full_load: 묻지 않는다. 조직 전체 기억 검색만
             return ["search_memory"]
-        return [c.agent_tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
+        tool = ("ask_group_forward" if c.agent_tool == "ask_group" and c.ingress is not None
+                and c.ingress.deliver in ("forward", "read") else c.agent_tool)   # Routing: 응답 원문만 돌려준다
+        return [tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
 
     def _member_only(self, ctx) -> bool:
         """ask_agent가 자기 그룹 구성원 한정인가 (Direct가 아닌 조건)."""
@@ -438,6 +440,10 @@ class LLMAgent:
                "items": [x.model_dump(mode="json") for x in r.items], "missing": r.missing}
         if r.referral_to:
             out["referral_to"] = r.referral_to
+        if r.conflicts:                                                    # 접수부 조립: 충돌 표시·제안 값 (담당자 답은 items에 그대로)
+            out["conflicts"] = [x.model_dump(mode="json") for x in r.conflicts]
+        if r.proposals:
+            out["proposals"] = [x.model_dump(mode="json") for x in r.proposals]
         if r.redirects:                                                    # 소관 밖 항목: 어느 그룹에 물을지 (그룹 이름만)
             out["not_handled_here"] = [{"item": f"{x.entity} {x.attribute}".strip(), "ask": x.referral_to}
                                        for x in r.redirects]

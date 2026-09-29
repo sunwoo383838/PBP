@@ -180,3 +180,15 @@ def test_redirect_metrics_target_follow_delivery_and_day_unknown():
     assert (m["guided"], m["target_correct"], m["followed"], m["delivered_after"], m["rejected"]) == (1, 1, 1, 1, {"evidence": 1})
     s = summarize([m])
     assert s["target_accuracy"] == 1.0 and s["day_unknown_rate"] == 0.5
+
+
+def test_proposal_uptake_classifies_what_the_requester_followed():
+    from gbg.scoring.proposals import proposal_uptake
+    resp = {"items": [{"entity": "Dev Team 1", "attribute": "available budget", "value": "2,000,000", "ref": "Reply 1: D1"}],
+            "proposals": [{"item": "Dev Team 1 available budget", "value": "1,634,468 KRW", "refs": ["[E3]"], "rationale": "r"}]}
+    ev = [{"type": "task_delivered", "payload": {"task_id": "W-1", "agent": "a1"}},
+          {"type": "message", "payload": {"task_id": "W-1", "kind": "response", "from_agent": "a1", "response": resp}}]
+    assert proposal_uptake(ev, "W-1", {"available": 1634468})["proposal"] == 1
+    m = proposal_uptake(ev, "W-1", {"available": 2000000})
+    assert m["member"] == 1 and m["rows"][0]["member_values"] == ["2,000,000"]
+    assert proposal_uptake(ev, "W-1", {"available": 5})["neither"] == 1

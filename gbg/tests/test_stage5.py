@@ -58,14 +58,16 @@ def oracle(req, *, route_referral: dict | None = None, assemble_missing: list | 
         records = user.split("Group records found:\n", 1)[1]
         agents = [a for a in members if f"] {a} · " in records]
         return _call("route", {"action": "select", "agents": agents or members[:1]})
-    if "answer" in tools:
+    if "answer" in tools:                                                  # 담당자 답은 코드가 그대로 전달: 증거 줄을 additions로
         records = user.split("Group records:\n", 1)[1].split("\n\n", 1)[0] if "Group records:\n" in user else ""
-        body = "\n".join([*re.findall(r"^\[R\d+\] .*$", user, re.M), records])      # 증거는 에피소드 전체(여러 줄)
         missing = assemble_missing.pop(0) if assemble_missing else []
-        items = [{"entity": "record", "attribute": "text", "value": l, "status": "",
-                  "ref": re.match(r"\[([RE]\d+)\]", l).group(0) if re.match(r"\[[RE]\d+\]", l) else "[E1]"}
-                 for l in body.splitlines() if l.strip()]
-        return _call("answer", {"answer": "", "items": items, "missing": missing or ([] if items else ["nothing"])})
+        adds, cur = [], None
+        for l in records.splitlines():                                     # 증거는 에피소드 전체(여러 줄)
+            if m := re.match(r"\[(E\d+)\]", l):
+                cur = m.group(1)
+            if l.strip() and cur:
+                adds.append({"entity": "record", "attribute": "text", "value": l, "status": "", "ref": f"[{cur}]"})
+        return _call("answer", {"additions": adds, "conflicts": [], "proposals": [], "missing": missing})
     if "dispatch" in tools:
         q = user.split("Question: ", 1)[1].split("\nPurpose:", 1)[0]
         g = next((GOLD[w] for w, surf in SURFACE.items() if surf in q), None)
@@ -583,7 +585,7 @@ def test_requery_only_for_items_of_this_group_and_second_assembly_keeps_the_draf
               and e["actor"].startswith("boundary:") and e["payload"]["task_id"] == "W-002"
               and e["payload"]["request"]["question"].startswith("Follow-up")]
     assert follow and all("For context, the original request was:" in q and "favourite colour" not in q for q in follow)
-    assert any("Your first answer to this request (draft):" in p and "missing: ['settlement day" in p for p in prompts)
+    assert any("Your first additions, conflicts and proposals for this request (draft):" in p and "missing: ['settlement day" in p for p in prompts)
 
 
 # ─────────────────────────── 소관 밖 재라우팅 (out_of_scope) ───────────────────────────
@@ -679,3 +681,56 @@ def test_gateway_items_get_source_and_day_from_cited_evidence(tmp_path):
              and e["actor"].startswith("boundary:") for x in e["payload"]["response"]["items"]]
     cited_e = [x for x in items if re.match(r"\[E\d+\]", x["ref"])]
     assert cited_e and all(x["source"] == "history" and re.fullmatch(r"-?\d+", x["day"]) for x in cited_e)
+
+
+# ─────────────────────────── 조립 단조성 · 공통 지식 ───────────────────────────
+def test_assembly_passes_member_items_unchanged_and_adds_cited_notes(tmp_path):
+    """담당자 items는 그대로 전달하고, 게이트웨이는 additions·conflicts·proposals만 더한다. 제안은 근거 인용 필수,
+    없는 인용은 형식 오류로 되돌린다 (format_retries 1회)."""
+    tries = {"KRW 1,850,000": 0, "KRW 2,300,000": 0}
+    good = {"additions": [], "missing": [],
+            "conflicts": [{"item": "available budget", "note": "reply and record differ", "refs": ["[R1]", "[E1]"]}],
+            "proposals": [{"item": "available budget", "value": "999", "refs": ["[E1]"], "rationale": "newer record"}]}
+    bad = {"KRW 1,850,000": [],  "KRW 2,300,000": ["[E99]"]}                  # 근거 없음 / 없는 인용
+
+    def script(req):
+        tools, user = _tools(req), req["messages"][1]["content"]
+        mark = next((m for m in tries if "answer" in tools and m in user.split("Replies:", 1)[0]), None)
+        if mark:
+            tries[mark] += 1
+            if tries[mark] == 1:
+                return _call("answer", {**good, "proposals": [{**good["proposals"][0], "refs": bad[mark]}]})
+            return _call("answer", good)
+        return oracle(req)
+    _, ev = run(tmp_path, "ingress", script=script)
+    assert tries == {"KRW 1,850,000": 2, "KRW 2,300,000": 2}, "근거 없는 제안·없는 인용은 되돌린다"
+    inner = [e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+             and e["payload"]["task_id"] == "W-002" and e["actor"].startswith("agent:") and e["payload"].get("serving")]
+    resp = next(e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+                and e["payload"]["task_id"] == "W-002" and e["actor"].startswith("boundary:"))
+    member = [x for r in inner for x in r["items"]]
+    passed = [x for x in resp["items"] if x["ref"].startswith("Reply ")]
+    assert member and [(x["entity"], x["value"], x["day"]) for x in passed] == \
+        [(x["entity"], x["value"], x["day"]) for x in member], "담당자 답은 그대로"
+    assert resp["proposals"] == good["proposals"] and resp["conflicts"][0]["refs"] == ["[R1]", "[E1]"]
+
+
+def test_common_knowledge_is_in_every_role_and_gateway_uses_the_same_sentences(tmp_path):
+    from gbg.agents.prompts import COMM_TOOLS, KNOWLEDGE
+    from gbg.boundary import prompts as BP
+    seen = []
+
+    def script(req):
+        seen.append(req["messages"][0]["content"])
+        return oracle(req)
+    run(tmp_path, "i_e", script=script, max_day=1)
+    assert seen and all(k in s for s in seen for k in KNOWLEDGE), "모든 역할·모든 호출의 규정 블록"
+    body = lambda k: k[2:]
+    assert body(KNOWLEDGE[0]) in BP.ASSEMBLE_SYSTEM and body(KNOWLEDGE[2]) in BP.ASSEMBLE_SYSTEM
+    assert body(KNOWLEDGE[1]) in BP.VERSION_RULE and body(KNOWLEDGE[3]) in BP.DISPATCH_SYSTEM
+    assert all("group" not in k.lower() for k in KNOWLEDGE), "Direct에 그룹 개념을 드러내지 않는다"
+    assert "returns each member's reply as is." in COMM_TOOLS["ask_group_forward"][1]
+    assert "proposed values" in COMM_TOOLS["ask_group"][1] and "proposed values" in COMM_TOOLS["ask"][1]
+    r = LLMAgent("x", AgentRuntime(T.CONDITIONS["routing"], None, None, None, 1)).comm()
+    i = LLMAgent("x", AgentRuntime(T.CONDITIONS["ingress"], None, None, None, 1)).comm()
+    assert r[0] == "ask_group_forward" and i[0] == "ask_group"

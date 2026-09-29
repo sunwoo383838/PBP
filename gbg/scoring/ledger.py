@@ -15,6 +15,7 @@ from pathlib import Path
 from .delivery import need_delivery
 from .gates import need_gates
 from .reachability import unreachable
+from .proposals import proposal_uptake
 from .redirects import redirect_metrics
 
 
@@ -80,6 +81,7 @@ def build(events: list[dict], priv, verify, strata, prompts: dict | None = None)
                       **strata(g)})
         rows = [r for r in delivery if r["task_id"] == wid]
         tasks[-1]["redirects"] = redirect_metrics(es, g, priv.fragments, priv.names, rows)   # 소관 밖 안내·항목 시점
+        tasks[-1]["proposals"] = proposal_uptake(es, wid, answer)            # 접수부 제안 값을 따랐는가
         gates = {x["need"]: x for x in need_gates(es, g, priv.fragments, rows, prompts or {}, v["exact"], priv.names)}
         for r in rows:
             gt = gates.get(r["need"], {})

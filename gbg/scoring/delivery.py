@@ -117,6 +117,11 @@ def _received(events: list[dict], task: str, requester: str) -> list[Msg]:
                 for x in r["items"]:
                     by_ent.setdefault(_norm(x.get("entity", "")), []).append(x)
                 parts += [Msg(json.dumps(xs, ensure_ascii=False), xs, reply=True) for xs in by_ent.values()]
+                for x in r.get("proposals") or []:                         # 접수부 제안 값: 항목(엔티티 = 제안 대상)
+                    parts.append(Msg(json.dumps(x, ensure_ascii=False),
+                                     [{"entity": x["item"], "value": x["value"], "status": ""}], reply=True))
+                for x in r.get("conflicts") or []:                         # 충돌 표시: 문장
+                    parts.append(Msg(f"{x['item']}: {x['note']}", reply=True))
                 if r.get("answer"):
                     parts.append(Msg(r["answer"], reply=True))
             else:                                                          # 항목 도입 전 기록

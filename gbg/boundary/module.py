@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass, field
 
 from gbg.contracts.conditions import Condition
-from gbg.contracts.envelope import Redirect, Request, Response, check_items, render_items
+from gbg.contracts.envelope import Conflict, Proposal, Redirect, Request, Response, check_items, render_items
 from gbg.retrieval.evidence import Evidence, build_evidence
 from gbg.retrieval.hybrid import GroupRetriever, authorize
 from gbg.kernel.errors import FatalError
@@ -409,9 +409,17 @@ class BoundaryModule:
                 parts.append("Earlier exchanges of this desk:\n" + "\n".join(f"[S{i}] {s}" for i, s in enumerate(state, 1)))
             return "\n\n".join(parts)
 
-        def ref_ok(ref):                                                   # 게이트웨이 항목은 [R·E·D·S] 인용 필수
-            cites = re.findall(r"\[?([REDS]\d+)\]?", ref)
-            return None if cites else "cite the reply or record, for example [R1] or [E3]"
+        def exists(c: str) -> bool:                                        # 인용이 실제로 있는 응답·기록·버전·과거 문답인가
+            k, n = c[0], int(c[1:])
+            return {"R": lambda: 0 < n <= len(replies), "E": lambda: c in {e.cite for e in ev.items},
+                    "D": lambda: 0 < n <= len(versions), "S": lambda: 0 < n <= len(state)}[k]()
+
+        def cites_ok(refs) -> str | None:
+            cs = [c for r in refs for c in re.findall(r"[REDS]\d+", r)]
+            if not cs:
+                return "cite the reply or record, for example [R1] or [E3]"
+            bad = [c for c in cs if not exists(c)]
+            return f"unknown citation {bad[0]}" if bad else None
 
         def resolve(x):                                                    # ref를 따라가 source·day (코드가 채움)
             by_cite = {e.cite: e for e in ev.items}
@@ -437,30 +445,71 @@ class BoundaryModule:
             return "unknown", "unknown"
 
         def check_answer(a):
-            return check_items(a, ref_ok, resolve)
+            """additions(항목, 기록 인용 필수)·conflicts·proposals(근거 인용 필수)·missing. 담당자 답은 받지 않는다."""
+            adds, cons, props = a.get("additions", []), a.get("conflicts", []), a.get("proposals", [])
+            miss, answer = a.get("missing", []), a.get("answer", "")
+            if not all(isinstance(x, list) for x in (adds, cons, props, miss)) or not isinstance(answer, str) \
+                    or not all(isinstance(m, str) for m in miss):
+                return False, "additions, conflicts, proposals and missing must be lists, answer a string"
+            items = []
+            if adds:
+                ok, v = check_items({"items": adds, "missing": []}, lambda r: cites_ok([r]), resolve)
+                if not ok:
+                    return False, f"additions: {v}"
+                items = v[1]
+            conflicts, proposals = [], []
+            for i, x in enumerate(cons):
+                if not (isinstance(x, dict) and isinstance(x.get("item"), str) and isinstance(x.get("note"), str)
+                        and isinstance(x.get("refs"), list) and all(isinstance(r, str) for r in x["refs"])):
+                    return False, f"conflicts[{i}] needs item, note and refs"
+                if err := cites_ok(x["refs"]):
+                    return False, f"conflicts[{i}].refs: {err}"
+                conflicts.append(Conflict(item=x["item"], note=x["note"], refs=x["refs"]))
+            for i, x in enumerate(props):
+                if not (isinstance(x, dict) and all(isinstance(x.get(k), str) for k in ("item", "value", "rationale"))
+                        and x["value"].strip() and isinstance(x.get("refs"), list) and all(isinstance(r, str) for r in x["refs"])):
+                    return False, f"proposals[{i}] needs item, value, refs and rationale"
+                if err := cites_ok(x["refs"]):
+                    return False, f"proposals[{i}].refs: {err} (a proposal must cite what it rests on)"
+                proposals.append(Proposal(item=x["item"], value=x["value"], refs=x["refs"], rationale=x["rationale"]))
+            return True, (answer, items, conflicts, proposals, miss)
+
+        def draft_text(out) -> str:
+            _, items, cons, props, miss = out
+            lines = [render_items(items) if items else "additions: (none)"]
+            lines += [f"conflict: {c.item}: {c.note} ({' '.join(c.refs)})" for c in cons]
+            lines += [f"proposed: {x.item} = {x.value} ({' '.join(x.refs)}) — {x.rationale}" for x in props]
+            return P.DRAFT_TEXT.format(items="\n".join(lines), missing=f"\nmissing: {miss}" if miss else "")
 
         out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer)
         requeried = []
-        if out is not None and out[2] and cfg.requery:                     # 빠진 항목만 1회 재질의
-            more = await self._requery(bctx, req, out[2], replies, ev, stores, trace)
+        if out is not None and out[4] and cfg.requery:                     # 빠진 항목만 1회 재질의
+            more = await self._requery(bctx, req, out[4], replies, ev, stores, trace)
             requeried = [a for a, _ in more]
-            if more:                                                       # 2차 조립: 1차 답을 초안으로 받아 병합
+            if more:                                                       # 2차 조립: 1차 결과를 초안으로 받아 병합
                 replies = replies + more
-                draft = P.DRAFT_TEXT.format(items=render_items(out[1]) or "(no items)",
-                                            missing=f"\nmissing: {out[2]}" if out[2] else "")
-                out = await self._tool(bctx, step, "assemble", system, user_text(replies) + "\n\n" + draft,
+                out = await self._tool(bctx, step, "assemble", system, user_text(replies) + "\n\n" + draft_text(out),
                                        P.ANSWER_TOOL, check_answer) or out
         trace["requery"] = requeried
         if out is None:
             return Response(rid=req.rid, status="error", answer="assembly_failed", items=[], missing=[],
                             referral_to=None, need=[], as_of=bctx.day)
-        answer, items, missing = out
-        cited = sorted({c for x in items for c in re.findall(r"[REDS]\d+", x.ref)})
+        answer, additions, conflicts, proposals, missing = out
+        # 최종 메시지 = 담당자 items(그대로) + additions + conflicts + proposals (코드가 조립)
+        member = [x.model_copy(update={"ref": f"Reply {i}: {x.ref}"}) for i, (_, r) in enumerate(replies, 1) for x in r.items]
+        items = member + additions
+        cited = sorted({c for x in additions for c in re.findall(r"[REDS]\d+", x.ref)}
+                       | {c for y in [*conflicts, *proposals] for r in y.refs for c in re.findall(r"[REDS]\d+", r)})
         trace.update(sources=cited, versions_given=[versions[int(s[1:]) - 1].split(" (")[0] for s in cited
                                                     if s[:1] == "D" and s[1:].isdigit() and 0 < int(s[1:]) <= len(versions)],
-                     answer=answer, items=[x.model_dump() for x in items])
-        return Response(rid=req.rid, status="partial" if missing else "ok", answer=answer, items=items,
-                        missing=missing, referral_to=None, need=[], as_of=bctx.day)
+                     answer=answer or "; ".join([*(f"{x.entity} {x.attribute}: {x.value}" for x in additions),   # 경계 상태용 요약
+                                                 *(f"proposed {x.item} = {x.value}" for x in proposals)]),
+                     additions=[x.model_dump() for x in additions],
+                     conflicts=[x.model_dump() for x in conflicts], proposals=[x.model_dump() for x in proposals],
+                     items=[x.model_dump() for x in items])
+        return Response(rid=req.rid, status="partial" if missing or not items else "ok", answer=answer, items=items,
+                        missing=missing, referral_to=None, need=[], as_of=bctx.day, conflicts=conflicts,
+                        proposals=proposals)
 
     async def _requery(self, bctx, req, missing, replies, ev: Evidence, stores, trace):
         """새 정보가 있을 때만 재질의한다 (계획서 9단계).

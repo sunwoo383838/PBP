@@ -20,13 +20,13 @@
 ```diff
 --- direct
 +++ routing
-@@ -28,3 +28,4 @@
+@@ -32,3 +32,4 @@
  - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
 -- ask_agent: Ask one agent in the directory (by its id) a question. The agent answers from its own records, database and rules only. Choose the agent whose skills match the information you need; ask several agents if the information is spread across areas.
-+- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
++- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is. Ask each group whose area covers a piece you need.
 +- ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
  <</TOOLS>>
-@@ -32,15 +33,11 @@
+@@ -36,15 +37,11 @@
  <<DIRECTORY>>
 +- FIN-TYO | FIN group, region TYO | Skills: coordinator, budgeting, payables, closing, control
 +- HR-SEL | HR group, region SEL | Skills: records, payroll, recruiting, mobility
@@ -55,13 +55,13 @@
 ```diff
 --- direct
 +++ ingress
-@@ -28,3 +28,4 @@
+@@ -32,3 +32,4 @@
  - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
 -- ask_agent: Ask one agent in the directory (by its id) a question. The agent answers from its own records, database and rules only. Choose the agent whose skills match the information you need; ask several agents if the information is spread across areas.
-+- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
++- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask each group whose area covers a piece you need.
 +- ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
  <</TOOLS>>
-@@ -32,15 +33,11 @@
+@@ -36,15 +37,11 @@
  <<DIRECTORY>>
 +- FIN-TYO | FIN group, region TYO | Skills: coordinator, budgeting, payables, closing, control
 +- HR-SEL | HR group, region SEL | Skills: records, payroll, recruiting, mobility
@@ -90,13 +90,13 @@
 ```diff
 --- direct
 +++ i_e
-@@ -28,3 +28,4 @@
+@@ -32,3 +32,4 @@
  - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
 -- ask_agent: Ask one agent in the directory (by its id) a question. The agent answers from its own records, database and rules only. Choose the agent whose skills match the information you need; ask several agents if the information is spread across areas.
-+- ask: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it, sends them the request, and returns their answers. Ask separately for pieces held in different areas if that is clearer.
++- ask: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it and sends them the request. Each group's intake desk returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask separately for pieces held in different areas if that is clearer.
 +- ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
  <</TOOLS>>
-@@ -32,15 +33,11 @@
+@@ -36,15 +37,11 @@
  <<DIRECTORY>>
 +- FIN-TYO | FIN group, region TYO | Skills: coordinator, budgeting, payables, closing, control
 +- HR-SEL | HR group, region SEL | Skills: records, payroll, recruiting, mobility
@@ -159,7 +159,7 @@
 +[Rules of HR-TYO]
 +- transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
  - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
-@@ -26,5 +36,5 @@
+@@ -30,5 +40,5 @@
  <<TOOLS>>
 -- db.query: Look up one record type for an entity in the database. Returns the latest version registered as of today. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND. If a name matches several entities, the candidates are returned with their IDs.
 -- entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
@@ -168,7 +168,7 @@
 +- entity.search: Find entities anywhere in the organization by ID or name. Returns entity IDs you can use with db.query.
 +- search_memory: Search the full history of the whole organization (every group, including members who have left) for records relevant to a query. Returns the most relevant work episodes, oldest first, each headed by its group, member, day, task title and entity keys.
  <</TOOLS>>
-@@ -32,15 +42,3 @@
+@@ -36,15 +46,3 @@
  <<DIRECTORY>>
 -- agent-1c50742333 | Region: SEL | Skills: closing: Month-end closing and cancellations
 -- agent-48593e3d51 | Region: TYO | Skills: coordinator: Takes requests and assigns workers; budgeting: Budget line planning, adjustment and balance lookup; payables: Provisional approval review, registration and settlement; closing: Month-end close and cancellation confirmation; control: Spending controls and budget owner arrangements
@@ -244,6 +244,10 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 <<TOOLS>>
 - db.query: Look up one record type for an entity in the database. Returns the latest version registered as of today. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND. If a name matches several entities, the candidates are returned with their IDs.
@@ -328,6 +332,10 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 [Your area's records]
 Your area's records contain only: employee_profile (The employee's current department, grade (1-5), contract type, hire day, and employment status); department_employees (All employees whose latest registered profile lists this department, ordered by employee ID: grade, contract type, hire day and employment status of each. Nothing is filtered or counted; unregistered changes are not included); catalog_entry (The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval)). Anything else in the question is not in your records: list it under missing without looking it up.
@@ -398,11 +406,15 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 <<TOOLS>>
 - db.query: Look up one record type for an entity in the database. Returns the latest version registered as of today. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND. If a name matches several entities, the candidates are returned with their IDs.
 - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
-- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
+- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is. Ask each group whose area covers a piece you need.
 - ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 <</TOOLS>>
 
@@ -448,7 +460,7 @@ Output format: submit(dept(id, department), grade(int))
 - catalog_entry: The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval).
 - **entity.search**: Find entities by ID or name. Returns entity IDs you can use with db.query.
   - `query`: Part of an ID or a name.
-- **ask_group**: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
+- **ask_group**: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is. Ask each group whose area covers a piece you need.
 - **ask_agent**: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 - **submit**: Submit the final answer to the task.
 
@@ -480,6 +492,10 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 [Your area's records]
 Your area's records contain only: employee_profile (The employee's current department, grade (1-5), contract type, hire day, and employment status); department_employees (All employees whose latest registered profile lists this department, ordered by employee ID: grade, contract type, hire day and employment status of each. Nothing is filtered or counted; unregistered changes are not included); catalog_entry (The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval)). Anything else in the question is not in your records: list it under missing without looking it up.
@@ -537,6 +553,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -565,6 +585,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -641,11 +665,15 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 <<TOOLS>>
 - db.query: Look up one record type for an entity in the database. Returns the latest version registered as of today. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND. If a name matches several entities, the candidates are returned with their IDs.
 - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
-- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
+- ask_group: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask each group whose area covers a piece you need.
 - ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 <</TOOLS>>
 
@@ -691,7 +719,7 @@ Output format: submit(dept(id, department), grade(int))
 - catalog_entry: The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval).
 - **entity.search**: Find entities by ID or name. Returns entity IDs you can use with db.query.
   - `query`: Part of an ID or a name.
-- **ask_group**: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns the group's answer. Ask each group whose area covers a piece you need.
+- **ask_group**: Ask a group in the directory (by its id) a question. The group's intake desk finds the members who hold the information, has them answer from their records, database and rules, and returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask each group whose area covers a piece you need.
 - **ask_agent**: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 - **submit**: Submit the final answer to the task.
 
@@ -723,6 +751,10 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 [Your area's records]
 Your area's records contain only: employee_profile (The employee's current department, grade (1-5), contract type, hire day, and employment status); department_employees (All employees whose latest registered profile lists this department, ordered by employee ID: grade, contract type, hire day and employment status of each. Nothing is filtered or counted; unregistered changes are not included); catalog_entry (The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval)). Anything else in the question is not in your records: list it under missing without looking it up.
@@ -780,6 +812,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -808,6 +844,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -858,12 +898,14 @@ Group records found:
 
 **system**
 ```text
-You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1].
-- If sources disagree, use the most recent one and say which one you used.
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12").
-- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
-- List every requested item you could not confirm in missing. Do not guess.
+You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- missing: requested items that neither the replies nor the records confirm. Do not guess.
+- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
+- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 
 This group: HR-SEL (HR group, region SEL). Work: records: Look up and update employee department, grade, and contract type; payroll: Pay grades and grade adjustments; recruiting: Hiring, joining, and leaving; mobility: Personnel orders and department transfers
@@ -872,6 +914,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -908,21 +954,23 @@ Database versions:
 
 **도구**
 
-- **answer**: Send the group's answer: one item per value, and what could not be confirmed.
-  - `items`: One entry per value found. Give at least one item or one missing entry.
-  - `missing`: Requested items you could not confirm.
+- **answer**: Send the group's additions, conflict notes, proposed values and what could not be confirmed. The members' replies are sent as they are.
+  - `additions`: One entry per value found. Give at least one item or one missing entry.
+  - `missing`: Requested items not confirmed.
   - `answer`: Optional short summary.
 
 #### ingress · 경계: 재조립 (2차, 초안 포함)
 
 **system**
 ```text
-You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1].
-- If sources disagree, use the most recent one and say which one you used.
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12").
-- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
-- List every requested item you could not confirm in missing. Do not guess.
+You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- missing: requested items that neither the replies nor the records confirm. Do not guess.
+- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
+- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 
 This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allocations, and balances; payables: Review and register provisional approvals; closing: Month-end closing and cancellations; control: Spending controls and execution owner changes
@@ -931,6 +979,10 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -971,65 +1023,64 @@ Group records:
 [E6] fin-sel.a1 · day 1 · [Task W-001] Check the current department and grade of 하린 과장.
   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
   [Question to HR-SEL] Check the current department and grade of 하린 과장.
-  [Answer from HR-SEL] (ok) - record | text | [R1] (ok) |  | unknown, day unknown: [R1]
-  - record | text | [R2] (ok) |  | unknown, day unknown: [R2]
-  - record | text | [R3] (partial) |  | unknown, day unknown: [R3]
+  [Answer from HR-SEL] (ok) - record | text | E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | unknown, day unknown: Reply 1: own records
+  - record | text | E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | unknown, day unknown: Reply 1: own records
+  - record | text | E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | unknown, day unknown: Reply 2: own records
+  - record | text | E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | unknown, day unknown: Reply 2: own records
   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1]
   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1]
   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2]
-  - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E2]
   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3]
-  - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E3]
   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4]
-  - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E4]
   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5]
-  - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day -20: [E1]
+  - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day 1: [E5]
   [Submitted W-001] {"dept": "", "grade": 0}
 
 Evidence not covered by any reply: [E6]
 
-Your first answer to this request (draft):
-- record | text | [R1] (ok) |  | unknown, day unknown: [R1]
-- record | text | [R2] (ok) |  | unknown, day unknown: [R2]
-- record | text | [R3] (ok) |  | unknown, day unknown: [R3]
+Your first additions, conflicts and proposals for this request (draft):
 - record | text | [E1] fin-sel.a1 · day -20 · [Task] Check the 영업1팀 budget line |  | history, day -20: [E1]
 - record | text |   영업1팀 capex balance confirmed at KRW 3,120,400. |  | history, day -20: [E1]
 - record | text | [E2] fin-sel.a1 · day -20 · [Task] Check the 개발1팀 budget line |  | history, day -20: [E2]
-- record | text |   개발1팀 capex balance confirmed at KRW 2,874,300. |  | history, day -20: [E1]
+- record | text |   개발1팀 capex balance confirmed at KRW 2,874,300. |  | history, day -20: [E2]
 - record | text | [E3] fin-sel.a2 · day -3 · [Task] Review a provisional approval for 영업1팀 equipment |  | history, day -3: [E3]
-- record | text |   CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8. |  | history, day -20: [E1]
+- record | text |   CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8. |  | history, day -3: [E3]
 - record | text | [E4] fin-sel.a3 · day -1 · [Task] Review a provisional approval for 개발1팀 equipment |  | history, day -1: [E4]
-- record | text |   CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9. |  | history, day -20: [E1]
-- record | text |   Opened a review for CMT-00003 개발1팀 workstation. |  | history, day -20: [E1]
-- record | text |   That one is on hold until Friday; hold KRW 389,100 against the line. |  | history, day -20: [E1]
+- record | text |   CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9. |  | history, day -1: [E4]
+- record | text |   Opened a review for CMT-00003 개발1팀 workstation. |  | history, day -1: [E4]
+- record | text |   That one is on hold until Friday; hold KRW 389,100 against the line. |  | history, day -1: [E4]
 - record | text | [E5] fin-sel.a1 · day 0 · [Task] Adjust the 개발1팀 budget |  | history, day 0: [E5]
-- record | text |   개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). |  | history, day -20: [E1]
+- record | text |   개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). |  | history, day 0: [E5]
 - record | text | [E6] fin-sel.a1 · day 1 · [Task W-001] Check the current department and grade of 하린 과장. |  | history, day 1: [E6]
-- record | text |   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}} |  | history, day -20: [E1]
-- record | text |   [Question to HR-SEL] Check the current department and grade of 하린 과장. |  | history, day -20: [E1]
-- record | text |   [Answer from HR-SEL] (ok) - record | text | [R1] (ok) |  | unknown, day unknown: [R1] |  | history, day -20: [E1]
-- record | text |   - record | text | [R2] (ok) |  | unknown, day unknown: [R2] |  | history, day -20: [E1]
-- record | text |   - record | text | [R3] (partial) |  | unknown, day unknown: [R3] |  | history, day -20: [E1]
-- record | text |   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5] |  | history, day -20: [E1]
-- record | text |   - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   [Submitted W-001] {"dept": "", "grade": 0} |  | history, day -20: [E1]
+- record | text |   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}} |  | history, day 1: [E6]
+- record | text |   [Question to HR-SEL] Check the current department and grade of 하린 과장. |  | history, day 1: [E6]
+- record | text |   [Answer from HR-SEL] (ok) - record | text | E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | unknown, day unknown: Reply 1: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | unknown, day unknown: Reply 1: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | unknown, day unknown: Reply 2: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | unknown, day unknown: Reply 2: own records |  | history, day 1: [E6]
+- record | text |   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1] |  | history, day 1: [E6]
+- record | text |   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E2] |  | history, day 1: [E6]
+- record | text |   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E3] |  | history, day 1: [E6]
+- record | text |   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E4] |  | history, day 1: [E6]
+- record | text |   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5] |  | history, day 1: [E6]
+- record | text |   - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day 1: [E5] |  | history, day 1: [E6]
+- record | text |   [Submitted W-001] {"dept": "", "grade": 0} |  | history, day 1: [E6]
 missing: ['settlement day of the provisional approval']
-New replies have arrived since then. Keep every draft item unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed.
+New replies have arrived since then. Keep every draft entry unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed.
 ```
 
 **도구**
 
-- **answer**: Send the group's answer: one item per value, and what could not be confirmed.
-  - `items`: One entry per value found. Give at least one item or one missing entry.
-  - `missing`: Requested items you could not confirm.
+- **answer**: Send the group's additions, conflict notes, proposed values and what could not be confirmed. The members' replies are sent as they are.
+  - `additions`: One entry per value found. Give at least one item or one missing entry.
+  - `missing`: Requested items not confirmed.
   - `answer`: Optional short summary.
 
 ### 조건: i_e
@@ -1062,11 +1113,15 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 <<TOOLS>>
 - db.query: Look up one record type for an entity in the database. Returns the latest version registered as of today. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND. If a name matches several entities, the candidates are returned with their IDs.
 - entity.search: Find entities by ID or name. Returns entity IDs you can use with db.query.
-- ask: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it, sends them the request, and returns their answers. Ask separately for pieces held in different areas if that is clearer.
+- ask: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it and sends them the request. Each group's intake desk returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask separately for pieces held in different areas if that is clearer.
 - ask_agent: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 <</TOOLS>>
 
@@ -1112,7 +1167,7 @@ Output format: submit(dept(id, department), grade(int))
 - catalog_entry: The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval).
 - **entity.search**: Find entities by ID or name. Returns entity IDs you can use with db.query.
   - `query`: Part of an ID or a name.
-- **ask**: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it, sends them the request, and returns their answers. Ask separately for pieces held in different areas if that is clearer.
+- **ask**: State the information you need and why. Your outgoing desk decides which group(s) in the directory hold it and sends them the request. Each group's intake desk returns each member's reply as is, plus supplementary items, conflict notes and proposed values with their sources from the group's records. Ask separately for pieces held in different areas if that is clearer.
 - **ask_agent**: Ask a member of your own group (listed under 'Members of your group' in the directory, by id) a question. The member answers from their own records, database and rules only. Use this for information held by colleagues in your group; other groups are reached through the other communication tool.
 - **submit**: Submit the final answer to the task.
 
@@ -1144,6 +1199,10 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 [Your area's records]
 Your area's records contain only: employee_profile (The employee's current department, grade (1-5), contract type, hire day, and employment status); department_employees (All employees whose latest registered profile lists this department, ordered by employee ID: grade, contract type, hire day and employment status of each. Nothing is filtered or counted; unregistered changes are not included); catalog_entry (The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval)). Anything else in the question is not in your records: list it under missing without looking it up.
@@ -1202,6 +1261,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -1231,6 +1294,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -1282,12 +1349,14 @@ Group records found:
 
 **system**
 ```text
-You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1].
-- If sources disagree, use the most recent one and say which one you used.
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12").
-- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
-- List every requested item you could not confirm in missing. Do not guess.
+You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- missing: requested items that neither the replies nor the records confirm. Do not guess.
+- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
+- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 
 This group: HR-SEL (HR group, region SEL). Work: records: Look up and update employee department, grade, and contract type; payroll: Pay grades and grade adjustments; recruiting: Hiring, joining, and leaving; mobility: Personnel orders and department transfers
@@ -1296,6 +1365,10 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -1333,21 +1406,23 @@ Database versions:
 
 **도구**
 
-- **answer**: Send the group's answer: one item per value, and what could not be confirmed.
-  - `items`: One entry per value found. Give at least one item or one missing entry.
-  - `missing`: Requested items you could not confirm.
+- **answer**: Send the group's additions, conflict notes, proposed values and what could not be confirmed. The members' replies are sent as they are.
+  - `additions`: One entry per value found. Give at least one item or one missing entry.
+  - `missing`: Requested items not confirmed.
   - `answer`: Optional short summary.
 
 #### i_e · 경계: 재조립 (2차, 초안 포함)
 
 **system**
 ```text
-You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1].
-- If sources disagree, use the most recent one and say which one you used.
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12").
-- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
-- List every requested item you could not confirm in missing. Do not guess.
+You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1].
+- conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]), and give a one-sentence rationale.
+- missing: requested items that neither the replies nor the records confirm. Do not guess.
+- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
+- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 
 This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allocations, and balances; payables: Review and register provisional approvals; closing: Month-end closing and cancellations; control: Spending controls and execution owner changes
@@ -1356,6 +1431,10 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 ```
 
 **user (예시)**
@@ -1397,65 +1476,64 @@ Group records:
 [E6] fin-sel.a1 · day 1 · [Task W-001] Check the current department and grade of 하린 과장.
   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}}
   [Question to your group's boundary] Check the current department and grade of 하린 과장.
-  [Answer from your group's boundary] (ok) - record | text | [R1] (ok) |  | unknown, day unknown: [R1]
-  - record | text | [R2] (ok) |  | unknown, day unknown: [R2]
-  - record | text | [R3] (partial) |  | unknown, day unknown: [R3]
+  [Answer from your group's boundary] (ok) - record | text | E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | unknown, day unknown: Reply 1: own records
+  - record | text | E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | unknown, day unknown: Reply 1: own records
+  - record | text | E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | unknown, day unknown: Reply 2: own records
+  - record | text | E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | unknown, day unknown: Reply 2: own records
   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1]
   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1]
   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2]
-  - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E2]
   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3]
-  - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E3]
   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4]
-  - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E1]
+  - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E4]
   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5]
-  - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day -20: [E1]
+  - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day 1: [E5]
   [Submitted W-001] {"dept": "", "grade": 0}
 
 Evidence not covered by any reply: [E6]
 
-Your first answer to this request (draft):
-- record | text | [R1] (ok) |  | unknown, day unknown: [R1]
-- record | text | [R2] (ok) |  | unknown, day unknown: [R2]
-- record | text | [R3] (ok) |  | unknown, day unknown: [R3]
+Your first additions, conflicts and proposals for this request (draft):
 - record | text | [E1] fin-sel.a1 · day -20 · [Task] Check the 영업1팀 budget line |  | history, day -20: [E1]
 - record | text |   영업1팀 capex balance confirmed at KRW 3,120,400. |  | history, day -20: [E1]
 - record | text | [E2] fin-sel.a1 · day -20 · [Task] Check the 개발1팀 budget line |  | history, day -20: [E2]
-- record | text |   개발1팀 capex balance confirmed at KRW 2,874,300. |  | history, day -20: [E1]
+- record | text |   개발1팀 capex balance confirmed at KRW 2,874,300. |  | history, day -20: [E2]
 - record | text | [E3] fin-sel.a2 · day -3 · [Task] Review a provisional approval for 영업1팀 equipment |  | history, day -3: [E3]
-- record | text |   CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8. |  | history, day -20: [E1]
+- record | text |   CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8. |  | history, day -3: [E3]
 - record | text | [E4] fin-sel.a3 · day -1 · [Task] Review a provisional approval for 개발1팀 equipment |  | history, day -1: [E4]
-- record | text |   CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9. |  | history, day -20: [E1]
-- record | text |   Opened a review for CMT-00003 개발1팀 workstation. |  | history, day -20: [E1]
-- record | text |   That one is on hold until Friday; hold KRW 389,100 against the line. |  | history, day -20: [E1]
+- record | text |   CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9. |  | history, day -1: [E4]
+- record | text |   Opened a review for CMT-00003 개발1팀 workstation. |  | history, day -1: [E4]
+- record | text |   That one is on hold until Friday; hold KRW 389,100 against the line. |  | history, day -1: [E4]
 - record | text | [E5] fin-sel.a1 · day 0 · [Task] Adjust the 개발1팀 budget |  | history, day 0: [E5]
-- record | text |   개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). |  | history, day -20: [E1]
+- record | text |   개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). |  | history, day 0: [E5]
 - record | text | [E6] fin-sel.a1 · day 1 · [Task W-001] Check the current department and grade of 하린 과장. |  | history, day 1: [E6]
-- record | text |   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}} |  | history, day -20: [E1]
-- record | text |   [Question to your group's boundary] Check the current department and grade of 하린 과장. |  | history, day -20: [E1]
-- record | text |   [Answer from your group's boundary] (ok) - record | text | [R1] (ok) |  | unknown, day unknown: [R1] |  | history, day -20: [E1]
-- record | text |   - record | text | [R2] (ok) |  | unknown, day unknown: [R2] |  | history, day -20: [E1]
-- record | text |   - record | text | [R3] (partial) |  | unknown, day unknown: [R3] |  | history, day -20: [E1]
-- record | text |   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4] |  | history, day -20: [E1]
-- record | text |   - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5] |  | history, day -20: [E1]
-- record | text |   - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day -20: [E1] |  | history, day -20: [E1]
-- record | text |   [Submitted W-001] {"dept": "", "grade": 0} |  | history, day -20: [E1]
+- record | text |   Request: {"region": "SEL", "scope": {"contract_policy": false, "other_region_seats": false, "other_regions": false, "procurement": false, "residency_policy": false}, "subject": {"alias": "하린 과장", "employee_id": "E-SEL-1000"}} |  | history, day 1: [E6]
+- record | text |   [Question to your group's boundary] Check the current department and grade of 하린 과장. |  | history, day 1: [E6]
+- record | text |   [Answer from your group's boundary] (ok) - record | text | E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | unknown, day unknown: Reply 1: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | unknown, day unknown: Reply 1: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | unknown, day unknown: Reply 2: own records |  | history, day 1: [E6]
+- record | text |   - record | text | E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | unknown, day unknown: Reply 2: own records |  | history, day 1: [E6]
+- record | text |   - record | text | [E1] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1000 |  | history, day -20: [E1] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular. |  | history, day -20: [E1] |  | history, day 1: [E6]
+- record | text |   - record | text | [E2] hr-sel.a1 · day -20 · [Task] Check the HR record of E-SEL-1002 |  | history, day -20: [E2] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular. |  | history, day -20: [E2] |  | history, day 1: [E6]
+- record | text |   - record | text | [E3] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1001 |  | history, day -20: [E3] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular. |  | history, day -20: [E3] |  | history, day 1: [E6]
+- record | text |   - record | text | [E4] hr-sel.a2 · day -20 · [Task] Check the HR record of E-SEL-1003 |  | history, day -20: [E4] |  | history, day 1: [E6]
+- record | text |   - record | text |   E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular. |  | history, day -20: [E4] |  | history, day 1: [E6]
+- record | text |   - record | text | [E5] hr-sel.a3 · day 1 · [Task] Apply the grade adjustment for 지우 과장 |  | history, day 1: [E5] |  | history, day 1: [E6]
+- record | text |   - record | text |   [Tool result] Recorded: E-SEL-1003 grade 2. |  | history, day 1: [E5] |  | history, day 1: [E6]
+- record | text |   [Submitted W-001] {"dept": "", "grade": 0} |  | history, day 1: [E6]
 missing: ['settlement day of the provisional approval']
-New replies have arrived since then. Keep every draft item unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed.
+New replies have arrived since then. Keep every draft entry unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed.
 ```
 
 **도구**
 
-- **answer**: Send the group's answer: one item per value, and what could not be confirmed.
-  - `items`: One entry per value found. Give at least one item or one missing entry.
-  - `missing`: Requested items you could not confirm.
+- **answer**: Send the group's additions, conflict notes, proposed values and what could not be confirmed. The members' replies are sent as they are.
+  - `additions`: One entry per value found. Give at least one item or one missing entry.
+  - `missing`: Requested items not confirmed.
   - `answer`: Optional short summary.
 
 #### i_e · 경계: Egress 요청 정리
@@ -1463,7 +1541,7 @@ New replies have arrived since then. Keep every draft item unless a new reply or
 **system**
 ```text
 You are the outgoing desk of a business group. A member of your group needs information from other groups.
-Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and amount of the subject as written, so that each rewritten question names what it is about, and add what the related records below make clear (for example the group that handled this before). Do not add task IDs (such as W-00070); other groups do not have them in their records.
+Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and amount of the subject as written, so that each rewritten question names what it is about, and add what the related records below make clear (for example the group that handled this before). Do not add task IDs to the question. Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 First think it through step by step in your reply text, then call the dispatch tool once.
 
 This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allocations, and balances; payables: Review and register provisional approvals; closing: Month-end closing and cancellations; control: Spending controls and execution owner changes
@@ -1472,6 +1550,10 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 Groups you can ask:
 - FIN-TYO | FIN group, region TYO | work: coordinator, budgeting, payables, closing, control
@@ -1535,6 +1617,10 @@ Skills: budgeting: Budget lines, allocations, and balances
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
+- When sources disagree, the most recent record counts.
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
+- A reply covers only what its sender's records hold and can be incomplete.
+- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 
 <<TOOLS>>
 - db.query: Look up one record type for an entity across the whole organization's database. Returns, for every group that holds such a record, the latest version registered as of today, labelled with its group. The entity can be given directly as an ID or a name; use entity.search only if db.query returns NOT_FOUND.
@@ -1608,7 +1694,7 @@ Output format: submit(dept(id, department), grade(int))
 | reply·answer 형식 검사 | check_items | items must be a list and missing a list of strings / answer must be a string / give at least one item or one missing entry / items[i] must have exactly the fields [...] / items[i]: every field must be a string (copy numbers as text) / items[i].source must be one of [...] / items[i]: entity and value must not be empty / items[i].ref: cite the reply or record, for example [R1] or [E3] |
 | 경계 템플릿 | REQUERY_TEXT | Follow-up from your group's intake desk on a request from another group.\nFor context, the original request was: {question}\nAnswer only these items, which are still open (do not answer the rest of the request again): {missing}{excerpt} |
 | 경계 템플릿 | EXCERPT_TEXT | \nRecords of your group on these items (they may be yours or a former member's):\n{records} |
-| 경계 템플릿 | DRAFT_TEXT | Your first answer to this request (draft):\n{items}{missing}\nNew replies have arrived since then. Keep every draft item unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed. |
+| 경계 템플릿 | DRAFT_TEXT | Your first additions, conflicts and proposals for this request (draft):\n{items}{missing}\nNew replies have arrived since then. Keep every draft entry unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed. |
 | 경계 템플릿 | NOT_HERE_TEXT | Not handled by this group: {items}. |
 | 경계 템플릿 (I+E 재발신) | RESEND_TEXT | {question}\nFrom your group, only this part is needed: {item} |
 | 요청자가 받는 응답 | not_handled_here | \"not_handled_here\": [{\"item\": \"<entity> <attribute>\", \"ask\": \"<group>\"}] |

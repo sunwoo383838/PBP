@@ -44,37 +44,52 @@ ROUTE_TOOL = {
                       "required": ["entity", "attribute", "scope"]}}},
         "required": ["action", "agents"], "additionalProperties": False}}
 
-ASSEMBLE_SYSTEM = """You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1]{state_cite}.
-- If sources disagree, use the most recent one and say which one you used.{version_rule}
-- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
-- List every requested item you could not confirm in missing. Do not guess.
+ASSEMBLE_SYSTEM = """You are the intake desk of a business group. The replies of the members you asked go to the requesting group as they are; you cannot change or remove them. Using only those replies and the group records given below, add what they need:
+- additions: facts from the group records that the replies did not mention, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [D1]{state_cite}.
+- conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
+- proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [D1]{state_cite}), and give a one-sentence rationale.
+- missing: requested items that neither the replies nor the records confirm. Do not guess.
+- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.{version_rule}
+- Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 
 This group: {group_desc}"""
 
 VERSION_RULE = """
-- Database versions of the same key are the same fact: use the latest registered version and state it (for example "v3, registered day 12")."""
+- Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12")."""
 STATE_CITE = ", an earlier exchange of this desk as [S1]"
 
+_CITES = {"type": "array", "items": {"type": "string"}, "description": "Citations such as \"[R1]\", \"[E3]\", \"[D2]\"."}
 ANSWER_TOOL = {
-    "name": "answer", "description": "Send the group's answer: one item per value, and what could not be confirmed.",
-    "parameters": answer_parameters("The citation of the reply or record the value is taken from, for example "
-                                    "\"[R1]\", \"[E3]\", \"[D2]\" or \"[R1][E3]\".")}
+    "name": "answer", "description": "Send the group's additions, conflict notes, proposed values and what could not be "
+                                     "confirmed. The members' replies are sent as they are.",
+    "parameters": {"type": "object", "properties": {
+        "additions": answer_parameters("The citation of the record the value is taken from, for example \"[E3]\" or "
+                                       "\"[D2]\".")["properties"]["items"],
+        "conflicts": {"type": "array", "items": {"type": "object", "properties": {
+            "item": {"type": "string"}, "note": {"type": "string", "description": "What disagrees."}, "refs": _CITES},
+            "required": ["item", "note", "refs"], "additionalProperties": False}},
+        "proposals": {"type": "array", "items": {"type": "object", "properties": {
+            "item": {"type": "string"}, "value": {"type": "string", "description": "The proposed value, copied as written."},
+            "refs": _CITES, "rationale": {"type": "string", "description": "One sentence."}},
+            "required": ["item", "value", "refs", "rationale"], "additionalProperties": False}},
+        "missing": {"type": "array", "items": {"type": "string"}, "description": "Requested items not confirmed."},
+        "answer": {"type": "string", "description": "Optional short summary."}},
+        "required": ["additions", "conflicts", "proposals", "missing"], "additionalProperties": False}}
 REQUERY_TEXT = """Follow-up from your group's intake desk on a request from another group.
 For context, the original request was: {question}
 Answer only these items, which are still open (do not answer the rest of the request again): {missing}{excerpt}"""
 
-DRAFT_TEXT = """Your first answer to this request (draft):
+DRAFT_TEXT = """Your first additions, conflicts and proposals for this request (draft):
 {items}{missing}
-New replies have arrived since then. Keep every draft item unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed."""
+New replies have arrived since then. Keep every draft entry unless a new reply or record contradicts it, add what the new replies confirm, and remove from missing what is now confirmed."""
 
 EXCERPT_TEXT = """
 Records of your group on these items (they may be yours or a former member's):
 {records}"""
 
 DISPATCH_SYSTEM = """You are the outgoing desk of a business group. A member of your group needs information from other groups.
-Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and amount of the subject as written, so that each rewritten question names what it is about, and add what the related records below make clear (for example the group that handled this before). Do not add task IDs (such as W-00070); other groups do not have them in their records.
+Decide which group(s) to ask and rewrite the question so the receiving group can act on it: keep every name, ID and amount of the subject as written, so that each rewritten question names what it is about, and add what the related records below make clear (for example the group that handled this before). Do not add task IDs to the question. Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
 First think it through step by step in your reply text, then call the dispatch tool once.
 
 This group: {group_desc}

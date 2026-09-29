@@ -56,12 +56,21 @@ COMM_TOOLS = {
                    "required": ["agent_id", "question"], "additionalProperties": False}),
     "ask_group": ("ask_group", "Ask a group in the directory (by its id) a question. The group's intake desk finds the "
                                "members who hold the information, has them answer from their records, database and "
-                               "rules, and returns the group's answer. Ask each group whose area covers a piece you need.",
+                               "rules, and returns each member's reply as is, plus supplementary items, conflict notes "
+                               "and proposed values with their sources from the group's records. Ask each group whose "
+                               "area covers a piece you need.",
                   {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
                    "required": ["group", "question"], "additionalProperties": False}),
+    "ask_group_forward": ("ask_group", "Ask a group in the directory (by its id) a question. The group's intake desk finds "
+                                       "the members who hold the information, has them answer from their records, database "
+                                       "and rules, and returns each member's reply as is. Ask each group whose area covers "
+                                       "a piece you need.",
+                          {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
+                           "required": ["group", "question"], "additionalProperties": False}),
     "ask": ("ask", "State the information you need and why. Your outgoing desk decides which group(s) in the directory "
-                   "hold it, sends them the request, and returns their answers. Ask separately for pieces held in "
-                   "different areas if that is clearer.",
+                   "hold it and sends them the request. Each group's intake desk returns each member's reply as is, plus "
+                   "supplementary items, conflict notes and proposed values with their sources from the group's records. "
+                   "Ask separately for pieces held in different areas if that is clearer.",
             {"type": "object", "properties": {"question": {"type": "string"}, "purpose": {"type": "string"}},
              "required": ["question", "purpose"], "additionalProperties": False}),
     "ask_member": ("ask_agent", "Ask a member of your own group (listed under 'Members of your group' in the directory, "
@@ -125,6 +134,16 @@ RECORDS_NOTE = ("- Records and the database: database registration can lag by a 
                 "database values from several of them are one source, not independent confirmations.")
 
 
+# 공통 지식 (경계 모듈 전용 줄에서 끌어올림, 2026-09-30): 모든 조건·모든 역할의 규정 블록에 같은 문장.
+# 게이트웨이 프롬프트는 이 문장을 그대로 쓰고 자기 메커니즘 지시만 덧붙인다. Direct에 그룹 개념을 드러내지 않는다.
+KNOWLEDGE = (
+    "- When sources disagree, the most recent record counts.",
+    "- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.",
+    "- A reply covers only what its sender's records hold and can be incomplete.",
+    "- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.",
+)
+
+
 def record_kinds(specs) -> list[tuple[str, str]]:
     """도구 명세의 record_type 설명에서 (기록 종류, 뜻). 응답자 기록 범위와 접수부 소관 판정에 쓴다."""
     kinds = []
@@ -145,7 +164,7 @@ def render_rules(rules, label: str | None = None, notes: bool = True) -> str:
         lines.append(f"- {rid}{f' ({r.title})' if r.title else ''}: {r.body}")
     head = f"[Rules of {label}]" if label else "[Rules of your area]"
     if notes:                                                             # full_load는 마지막 그룹 뒤에 한 번만
-        lines += [PERIOD_NOTE, RECORDS_NOTE]                                 # 기간 해석·기록과 DB (worldgen 정답 기준, 모든 호출 동일)
+        lines += [PERIOD_NOTE, RECORDS_NOTE, *KNOWLEDGE]                                 # 기간 해석·기록과 DB (worldgen 정답 기준, 모든 호출 동일)
     return head + "\n" + "\n".join(lines)
 
 

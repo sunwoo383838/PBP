@@ -26,7 +26,7 @@ def _role(req) -> str | None:
         if name in tools:
             return {"reply": "responder", "submit": "requester"}.get(name, name)
     if "answer" in tools:
-        return "reassemble" if "Your first answer to this request (draft)" in user else "assemble"
+        return "reassemble" if "for this request (draft):" in user else "assemble"
     return None
 
 
