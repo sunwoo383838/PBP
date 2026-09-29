@@ -1,0 +1,114 @@
+{
+ "domains": [
+  "HR",
+  "FIN"
+ ],
+ "regions": [
+  "SEL",
+  "TYO"
+ ],
+ "groups": {
+  "HR-SEL": {
+   "domain": "HR",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "HR-TYO": {
+   "domain": "HR",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "FIN-SEL": {
+   "domain": "FIN",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "FIN-TYO": {
+   "domain": "FIN",
+   "region": "TYO",
+   "topology": "swarm"
+  }
+ },
+ "agent_cards": {
+  "hr-sel.a1": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade, and contract type"
+  },
+  "hr-sel.a2": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade, and contract type"
+  },
+  "hr-sel.a3": {
+   "group": "HR-SEL",
+   "name": "HR-SEL payroll",
+   "description": "Pay grades and grade adjustments"
+  },
+  "hr-sel.a4": {
+   "group": "HR-SEL",
+   "name": "HR-SEL recruiting",
+   "description": "Hiring, joining, and leaving"
+  },
+  "hr-sel.a5": {
+   "group": "HR-SEL",
+   "name": "HR-SEL mobility",
+   "description": "Personnel orders and department transfers"
+  },
+  "hr-tyo.a1": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade, and contract type"
+  },
+  "hr-tyo.a2": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade, and contract type"
+  },
+  "hr-tyo.a3": {
+   "group": "HR-TYO",
+   "name": "HR-TYO payroll",
+   "description": "Pay grades and grade adjustments"
+  },
+  "hr-tyo.a4": {
+   "group": "HR-TYO",
+   "name": "HR-TYO recruiting",
+   "description": "Hiring, joining, and leaving"
+  },
+  "hr-tyo.a5": {
+   "group": "HR-TYO",
+   "name": "HR-TYO mobility",
+   "description": "Personnel orders and department transfers"
+  },
+  "fin-sel.a1": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL budgeting",
+   "description": "Budget lines, allocations, and balances"
+  },
+  "fin-sel.a2": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Review and register provisional approvals"
+  },
+  "fin-sel.a3": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Review and register provisional approvals"
+  },
+  "fin-sel.a4": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL closing",
+   "description": "Month-end closing and cancellations"
+  },
+  "fin-sel.a5": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL control",
+   "description": "Spending controls and execution owner changes"
+  },
+  "fin-tyo.c0": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO coordinator",
+   "description": "Takes requests and assigns workers"
+  }
+ }
+}

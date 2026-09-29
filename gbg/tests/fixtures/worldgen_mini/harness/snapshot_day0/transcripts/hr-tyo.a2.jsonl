@@ -1,0 +1,2 @@
+{"i": 0, "day": -20, "round": 1, "role": "user", "text": "[Task] Check the HR record of E-TYO-1001", "tok": 44, "summary": "[Task] Check the HR record of E-TYO-1001"}
+{"i": 1, "day": -20, "round": 1, "role": "tool", "text": "E-TYO-1001 HR record confirmed: 開発1課, grade 2, regular.", "tok": 60, "summary": "E-TYO-1001 HR record confirmed: 開発1課, grade 2, regular."}

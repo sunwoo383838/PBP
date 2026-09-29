@@ -2,11 +2,11 @@
 
     uv run python -m gbg.tests.fixtures.build_fixtures
 
-worldgen_mini  도메인 2(HR, FIN) × 지역 2(SEL, TYO) = 그룹 4, 그룹당 3명, 5일, 교차 작업 10개.
-               상태 등급 A·B·C·D, db_pending/operational 조각, 이탈·인수인계, 등록 지연, db_query를 한 번씩 이상 담는다.
-silo_mini      에이전트 8명을 그룹 4개로, 전역 질문 2개. 조각은 소유자만 shard.read로 읽는다.
-
-모든 레코드는 계약 모델을 거쳐 쓰므로, 생성 자체가 스키마 검증이다.
+worldgen_mini  worldgen 4.2 산출물 형식(harness/ + private/)의 축소판. 도메인 2(HR, FIN) × 지역 2(SEL, TYO) = 그룹 4.
+               specialist 3개(5명: 서로 다른 역할 4 + 중복 1), swarm 1개(FIN-TYO: coordinator + 작업별 워커).
+               5일, 교차 과제 8개. 담는 상황: card 대상이 아닌 중복 담당, card 대상의 이탈과 후임 합류, 순서가
+               뒤섞인 DB 버전 등록, catalog 추가, 로컬 작업 재생 tx 줄, 하루 끝 색인, 발견성 H0/H1/H2 조각.
+silo_mini      공개 형식(public/ + private/). 에이전트 8명을 그룹 4개로, 전역 질문 2개.
 """
 import hashlib
 import json
@@ -14,22 +14,13 @@ from pathlib import Path
 
 from gbg.contracts.card import AgentCard, AgentSkill, GroupCard
 from gbg.contracts.schemas import (
-    ActivityRecord, DbQuerySource, DbRecord, DbSource, DbVersion, DbWrite, EgressRecord, FragHolder, FragSource,
-    GoldRecord, GroupSnapshot, GroupSpec, HistoryEntry, JournalRecord, Manifest, MemberSpec, Need, OutputSchema,
-    RenderedToolResult, RuleSource, RuleText, Slot, TimelineEvent, WorldInit,
+    FragHolder, FragSource, GoldRecord, GroupSnapshot, GroupSpec, HistoryEntry, Manifest, MemberSpec, Need,
+    OutputSchema, Slot, TimelineEvent, WorldInit,
 )
-
-CLASS_ORDER = "ABCD"
 
 
 def tokens(text):
-    return max(12, int(len(text) * 1.1))                # 근사치. 토크나이저 고정은 Stage 3
-
-
-def dump(model_or_list):
-    if isinstance(model_or_list, list):
-        return [x.model_dump(mode="json") for x in model_or_list]
-    return model_or_list.model_dump(mode="json")
+    return max(12, int(len(text) * 1.1))                # 근사치 (실제 worldgen은 Qwen3 토크나이저)
 
 
 def write_json(path, obj):
@@ -42,329 +33,271 @@ def write_jsonl(path, rows):
     path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
 
 
-def world_hash(public: Path):
-    h = hashlib.sha256()
-    for p in sorted(public.rglob("*")):
-        if p.is_file() and p.name != "manifest.json":
-            h.update(p.relative_to(public).as_posix().encode()); h.update(p.read_bytes())
-    return h.hexdigest()[:16]
-
-
-class Histories:
-    """에이전트별 이력 누적기."""
-    def __init__(self):
-        self.h = {}
-
-    def add(self, agent, day, role, text, entities, digest):
-        hist = self.h.setdefault(agent, [])
-        e = HistoryEntry(seq=len(hist) + 1, day=day, role=role, text=text, tokens=tokens(text), entities=entities, digest=digest)
-        hist.append(e)
-        return e.seq
-
-    def work(self, agent, day, task, result, entities, digest):
-        """워밍업 작업 하나 = 과제(user) + 처리 결과(assistant). 색인은 결과 항목을 가리킨다."""
-        self.add(agent, day, "user", "[Task] " + task, entities, digest)
-        return self.add(agent, day, "assistant", result, entities, digest)
-
-
-# ═════════════════════════════ worldgen_mini ═════════════════════════════
-REGIONS = ["SEL", "TYO"]
-ROLES = {"HR": ["records", "records", "payroll"], "FIN": ["budgeting", "budgeting", "payables"]}
-ROLE_DESC = {"records": ("HR records", "Look up and update employee department, grade, and contract type"),
-             "payroll": ("Payroll", "Pay grades and equipment support decisions"),
-             "budgeting": ("Budgeting", "Plan, adjust, and look up budget lines and balances"),
-             "payables": ("Payables", "Review and register provisional approvals, settlement")}
-GROUP_DESC = {"HR": "Human resources: employee department, grade, contract records, and payroll",
-              "FIN": "Finance: budget lines, provisional approvals, settlement"}
+# ═════════════════════════════ worldgen_mini (4.2 형식) ═════════════════════════════
+GROUPS = {"HR-SEL": ("HR", "SEL", "specialist"), "HR-TYO": ("HR", "TYO", "specialist"),
+          "FIN-SEL": ("FIN", "SEL", "specialist"), "FIN-TYO": ("FIN", "TYO", "swarm")}
+ROLES = {"HR": ["records", "records", "payroll", "recruiting", "mobility"],
+         "FIN": ["budgeting", "payables", "payables", "closing", "control"]}
+ROLE_DESC = {"records": "Look up and update employee department, grade, and contract type",
+             "payroll": "Pay grades and grade adjustments", "recruiting": "Hiring, joining, and leaving",
+             "mobility": "Personnel orders and department transfers",
+             "budgeting": "Budget lines, allocations, and balances", "payables": "Review and register provisional approvals",
+             "closing": "Month-end closing and cancellations", "control": "Spending controls and execution owner changes",
+             "coordinator": "Takes requests and assigns workers"}
+EMPS = {"SEL": [("E-SEL-1000", "김하린", "하린 과장"), ("E-SEL-1001", "박도윤", "도윤 대리"),
+                ("E-SEL-1002", "이서준", "서준 선임"), ("E-SEL-1003", "최지우", "지우 과장")],
+        "TYO": [("E-TYO-1000", "佐藤結衣", "佐藤さん"), ("E-TYO-1001", "小野健", "小野さん")]}
 DEPTS = {"SEL": ["영업1팀", "개발1팀"], "TYO": ["営業1課", "開発1課"]}
-EMPS = {  # id: (이름, 별칭, 부서 index, 직급, 계약)
-    "E-SEL-1000": ("김하린", "하린 과장", 0, 3, "regular"),
-    "E-SEL-1001": ("박도윤", "도윤 대리", 1, 2, "contractor"),
-    "E-SEL-1002": ("이서준", "서준 선임", 0, 4, "regular"),
-    "E-SEL-1003": ("최지우", "지우 과장", 1, 1, "regular"),
-    "E-TYO-1000": ("佐藤結衣", "佐藤さん", 0, 3, "regular"),
-    "E-TYO-1001": ("小野健", "小野さん", 1, 2, "regular"),
-    "E-TYO-1002": ("田中翔", "田中さん", 0, 5, "contractor"),
-    "E-TYO-1003": ("高橋美咲", "高橋さん", 1, 2, "regular"),
+ANSWER_TYPES = {                                        # worldgen 4.3 answer_types 형식 (템플릿마다 고정)
+    "lookup": {"dept": {"type": "string", "format": "department"}, "grade": {"type": "integer"}},
+    "budget": {"available": {"type": "integer"}, "n_deducted": {"type": "integer"}},
+    "conflict": {"status": {"type": "enum", "values": ["reviewing", "pending", "settled", "cancelled", "none"],
+                            "nullable": False}, "amount": {"type": "integer", "nullable": True}},
 }
-LINES = {("SEL", 0): 3_120_400, ("SEL", 1): 2_874_300, ("TYO", 0): 4_051_700, ("TYO", 1): 3_366_200}
-LOOKUP = OutputSchema(slots=[Slot(name="dept", type="id"), Slot(name="grade", type="number")])
-BUDGET = OutputSchema(slots=[Slot(name="decision", type="enum", options=["approve", "insufficient"]),
-                             Slot(name="available", type="number")])
+BUDGET_SCOPE = {"procurement": False, "contract_policy": False, "residency_policy": False, "other_regions": False,
+                "other_region_seats": False}
+FRAG_META: dict[str, tuple[str, str]] = {}              # fid → (발견성, 보유자)
 
 
-def agent_id(group, i):
-    return f"{group.lower()}.a{i + 1}"
+class World:
+    def __init__(self):
+        self.tx: dict[str, list[dict]] = {}
+        self.db: list[dict] = []
+        self.journal = {g: [] for g in GROUPS}
+        self.activity = {g: [] for g in GROUPS}
+        self.entity = {g: {} for g in GROUPS}
+        self.catalog = {g: {} for g in GROUPS}
+        self.timeline: list[dict] = []
+        self.work: list[dict] = []
+        self.gold: list[dict] = []
+        self.fragments: list[dict] = []
+        self.seq = 0
+
+    # ── 워밍업 ──
+    def line(self, agent, day, role, text):
+        rows = self.tx.setdefault(agent, [])
+        rows.append({"i": len(rows), "day": day, "round": 1, "role": role, "text": text, "tok": tokens(text),
+                     "summary": text[:60]})
+
+    def frag(self, fid, group, agent, day, text, disc, origin="operational", entity=None, also=()):
+        """entity와 also: 조각이 언급하는 엔티티 전부 (4.4 규칙: 색인 키에 모두 넣는다)."""
+        self.line(agent, day, "tool", text)
+        self.fragments.append({"fid": fid, "group": group, "agent": agent, "day": day, "origin": origin,
+                               "disc": disc, "text": text})
+        FRAG_META[fid] = (disc, agent)
+        ents = [e for e in (entity, *also) if e]
+        if disc == "H0":
+            self.journal[group].append({"day": day, "agent": agent, "text": text, "entities": ents})
+        elif disc == "H1":
+            self.activity[group].append({"day": day, "agent": agent, "trace": f"{agent} handled: {' '.join(ents)}",
+                                         "entities": ents})
+        for e in ents:
+            holders = self.entity[group].setdefault(e, [])
+            if agent not in holders:
+                holders.append(agent)
+
+    # ── 평가 기간 ──
+    def ev(self, day, rnd, type_, **kw):
+        self.seq += 1
+        self.timeline.append({"day": day, "round": rnd, "seq": self.seq, "type": type_, "phase": "eval", **kw})
+        return self.seq
+
+    def evtx(self, day, rnd, agent, role, text, eid=None):
+        self.ev(day, rnd, "tx", agent=agent, i=0, role=role, text=text, tokens=tokens(text), summary=text[:60], eid=eid)
+
+    def cross(self, day, rnd, wid, group, agent, surface, request, slots, schema, gold, needs, state_class):
+        s = self.ev(day, rnd, "cross", work=wid, group=group, assignee=agent, follows=None)
+        self.work.append({"wid": wid, "day": day, "round": rnd, "seq": s, "root": group, "assignee": agent,
+                          "surface": surface, "request": request, "follows": None, "answer_slots": slots,
+                          "answer_types": {k: ANSWER_TYPES[schema][k] for k in slots}})
+        self.gold.append({"wid": wid, "day": day, "round": rnd, "gold": gold, "needs": needs,
+                          "state_class": state_class, "c_ops": state_class == "C"})
 
 
-def region_of(e):
-    return e.split("-")[1]
+def agent_ids(g):
+    dom, _, top = GROUPS[g]
+    if top == "swarm":
+        return [(f"{g.lower()}.c0", "coordinator")]
+    return [(f"{g.lower()}.a{i + 1}", r) for i, r in enumerate(ROLES[dom])]
 
 
-def profile(e, dept=None, grade=None):
-    name, _, d, g, contract = EMPS[e]
-    return {"dept": dept or DEPTS[region_of(e)][d], "grade": grade or g, "contract": contract, "status": "active"}
-
-
-def records_agent(e):
-    """specialist 고정 담당: 엔티티 번호로 같은 역할 두 명 중 하나."""
-    return agent_id(f"HR-{region_of(e)}", int(e[-1]) % 2)
-
-
-def budgeting_agent(region, d):
-    return agent_id(f"FIN-{region}", d)
+def need(sem, group, fids, cls, sources=()):
+    frags = [{"type": "frag", "frag": {"fid": f, "disc": FRAG_META[f][0], "holders": [{"agent": FRAG_META[f][1]}]}}
+             for f in fids]
+    return {"sem": sem, "group": group, "role": "", "order": 1, "local": False, "class": cls,
+            "n_holders": len({FRAG_META[f][1] for f in fids}),
+            "min_cover": 1 if cls in ("A", "B") else (None if cls == "D" else 2),
+            "critical_components": list(fids), "sources": [*sources, *frags]}
 
 
 def build_worldgen(out: Path):
-    groups = [f"{d}-{r}" for d in ("HR", "FIN") for r in REGIONS]
+    w = World()
+    root = out / "worldgen_mini"
 
-    # ── 그룹 명세와 card ──
-    specs = []
-    for g in groups:
-        dom, reg = g.split("-")
-        members = []
-        for i, role in enumerate(ROLES[dom]):
-            label, desc = ROLE_DESC[role]
-            skill = AgentSkill(id=role, name=label, description=desc, tags=[dom.lower(), role], examples=[])
-            scope = f"{reg} {label}" if ROLES[dom].count(role) == 1 else f"{reg} {DEPTS[reg][i]} {label}"
-            members.append(MemberSpec(agent_id=agent_id(g, i), role=role, card=AgentCard(
-                name=f"{g} {label}", description=desc, version=1, skills=[skill], group=g, scope=scope,
-                occupant=agent_id(g, i))))
-        skills = list({m.role: m.card.skills[0] for m in members}.values())
-        specs.append(GroupSpec(id=g, members=members, card=GroupCard(
-            name=g, description=GROUP_DESC[dom], version=1, skills=skills, group=g,
-            service_scope=f"{reg} region: {', '.join(DEPTS[reg])}", endpoint=f"boundary:{g}")))
+    # ── 그룹, 명부, card ──
+    roster, agent_cards, targets = {}, {}, {}
+    for g, (dom, reg, top) in GROUPS.items():
+        targets[g] = {}
+        for aid, role in agent_ids(g):
+            roster[aid] = {"group": g, "role": role, "joined": -20, "left": None, "active": True}
+            agent_cards[aid] = {"group": g, "name": f"{g} {role}", "description": ROLE_DESC[role]}
+            if role not in targets[g]:
+                targets[g][role] = aid
+        if top == "swarm":
+            targets[g] = {r: f"{g.lower()}.c0" for r in sorted(set(ROLES[dom]))}
+    targets["HR-SEL"]["records"] = "hr-sel.a2"               # card 대상은 a2, a1은 중복 담당 (디렉터리에 없음)
+    roster["fin-sel.a6"] = {"group": "FIN-SEL", "role": "payables", "joined": -20, "left": -8, "active": False}
+    roster["fin-tyo.w00001"] = {"group": "FIN-TYO", "role": "worker", "joined": -3, "left": -3, "active": False}
 
-    # ── 규정 (본문 공개, 파라미터 비공개) ──
-    rules, params = [], {}
-    for r in REGIONS:
-        rules.append(RuleText(id=f"HR-{r}.transfer_effective", group=f"HR-{r}",
-                              body="A department transfer takes effect on its effective day. Before that day the employee belongs to the previous department."))
-        params[f"HR-{r}.transfer_effective"] = {"effective_inclusive": True}
-        rules.append(RuleText(id=f"FIN-{r}.pending_deducted", group=f"FIN-{r}",
-                              body="The available amount is the budget line balance minus the total of provisional approvals that are under review or pending."))
-        params[f"FIN-{r}.pending_deducted"] = {"deduct_status": ["reviewing", "pending"]}
+    # ── catalog, DB, 워밍업 이력, 색인 ──
+    for reg in ("SEL", "TYO"):
+        for eid, name, alias in EMPS[reg]:
+            w.catalog[f"HR-{reg}"][f"employees/{eid}"] = {"employee_id": eid, "name": name, "alias": alias, "region": reg}
+    grade = {"E-SEL-1000": 3, "E-SEL-1001": 2, "E-SEL-1002": 4, "E-SEL-1003": 1, "E-TYO-1000": 3, "E-TYO-1001": 2}
+    dept = {"E-SEL-1000": "영업1팀", "E-SEL-1001": "개발1팀", "E-SEL-1002": "영업1팀", "E-SEL-1003": "개발1팀",
+            "E-TYO-1000": "営業1課", "E-TYO-1001": "開発1課"}
+    for eid, g in grade.items():
+        reg = eid.split("-")[1]; grp = f"HR-{reg}"; rec = f"{grp.lower()}.a{1 + int(eid[-1]) % 2}"
+        prof = {"dept": dept[eid], "grade": g, "contract": "regular", "hire_day": -300, "status": "active"}
+        w.db.append({"key": f"{grp}/emp/{eid}/profile", "v": 1, "day": -20, "db_day": -20, "value": prof})
+        w.line(rec, -20, "user", f"[Task] Check the HR record of {eid}")
+        w.frag(f"FR-P{eid[2:5]}{eid[-1]}", grp, rec, -20,
+               f"{eid} HR record confirmed: {dept[eid]}, grade {g}, regular.", "H0", "db_pending", eid)
+    lines = {("SEL", 0): 3_120_400, ("SEL", 1): 2_874_300, ("TYO", 0): 4_051_700, ("TYO", 1): 3_366_200}
+    for (reg, d), v in lines.items():
+        g = f"FIN-{reg}"; dn = DEPTS[reg][d]
+        for attr in ("remaining", "base"):
+            w.db.append({"key": f"{g}/line/{dn}/{attr}", "v": 1, "day": -20, "db_day": -20, "value": v})
+        agent = "fin-sel.a1" if reg == "SEL" else "fin-tyo.c0"
+        w.line(agent, -20, "user", f"[Task] Check the {dn} budget line")
+        w.frag(f"FR-L{reg}{d}", g, agent, -20, f"{dn} capex balance confirmed at KRW {v:,}.", "H0", "db_pending", dn)
+    # 가승인: CMT-00001은 등록됨(catalog·DB), CMT-00002·00003은 이력에만 (operational)
+    w.catalog["FIN-SEL"]["commits/CMT-00001"] = {"commit_id": "CMT-00001", "department": "영업1팀", "item": "laptop", "work": None}
+    w.db.append({"key": "FIN-SEL/commit/CMT-00001/status", "v": 1, "day": -3, "db_day": -2,
+                 "value": {"status": "pending", "amount": 612_300, "expected_settle": 8}})
+    w.line("fin-sel.a2", -3, "user", "[Task] Review a provisional approval for 영업1팀 equipment")
+    w.frag("FR-C1", "FIN-SEL", "fin-sel.a2", -3,
+           "CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8.", "H1", entity="CMT-00001",
+           also=("영업1팀", "laptop"))
+    w.line("fin-sel.a3", -1, "user", "[Task] Review a provisional approval for 개발1팀 equipment")
+    w.frag("FR-C2", "FIN-SEL", "fin-sel.a3", -1,
+           "CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9.", "H1",
+           entity="CMT-00002", also=("개발1팀", "monitor"))
+    # H2: 선행 발화(대상) + 지시어 발화(값), 색인 없음
+    w.line("fin-sel.a3", -1, "assistant", "Opened a review for CMT-00003 개발1팀 workstation.")
+    w.line("fin-sel.a3", -1, "assistant", "That one is on hold until Friday; hold KRW 389,100 against the line.")
+    w.fragments.append({"fid": "FR-C3", "group": "FIN-SEL", "agent": "fin-sel.a3", "day": -1, "origin": "operational",
+                        "disc": "H2", "text": "That one is on hold until Friday; hold KRW 389,100 against the line."})
+    FRAG_META["FR-C3"] = ("H2", "fin-sel.a3")
+    # 0일차 개발1팀 잔액 조정 (2일차 등록) — 이력(H0 일지)에만
+    w.line("fin-sel.a1", 0, "user", "[Task] Adjust the 개발1팀 budget")
+    w.frag("FR-LADJ", "FIN-SEL", "fin-sel.a1", 0,
+           "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation).", "H0", "db_pending", "개발1팀")
+    w.line("fin-tyo.w00001", -3, "user", "[Task] Check 開発1課 closing items")
+    w.line("fin-tyo.c0", -3, "tool", "[Worker report] 開発1課 closing items processed (details omitted)")
 
-    # ── 워밍업 (0일 이하): DB, 이력, 색인 ──
-    H = {g: Histories() for g in groups}
-    db = {g: {} for g in groups}
-    journal = {g: [] for g in groups}
-    activity = {g: [] for g in groups}
+    # ── 평가 기간 타임라인 ──
+    S_LOOKUP, S_BUDGET, S_STATUS = "lookup", "budget", "conflict"
+    lookup_req = lambda reg, eid, alias: {"region": reg, "subject": {"employee_id": eid, "alias": alias}, "scope": dict(BUDGET_SCOPE)}
+    budget_req = lambda reg, dn: {"region": reg, "department": dn, "scope": dict(BUDGET_SCOPE)}
+    db_src = lambda key: [{"type": "db", "key": key, "v": 1}]
+    # 1일차
+    w.ev(1, 0, "db_register", key="HR-SEL/emp/E-SEL-1003/profile", v=3,          # 버전 3이 2보다 먼저 등록된다
+         value={"dept": "개발1팀", "grade": 3, "contract": "regular", "hire_day": -300, "status": "active"})
+    w.ev(1, 0, "catalog_upsert", group="FIN-SEL", key="commits/CMT-00004",
+         value={"commit_id": "CMT-00004", "department": "개발1팀", "item": "laptop", "work": None})
+    w.ev(1, 0, "db_register", key="FIN-SEL/commit/CMT-00004/status", v=1,
+         value={"status": "pending", "amount": 301_200, "expected_settle": 6})
+    w.ev(1, 1, "local", eid="L-001", group="HR-SEL", assignee="hr-sel.a3")
+    w.evtx(1, 1, "hr-sel.a3", "user", "[Task] Apply the grade adjustment for 지우 과장", "L-001")
+    w.evtx(1, 1, "hr-sel.a3", "tool", "[Tool result] Recorded: E-SEL-1003 grade 2.", "L-001")
+    w.cross(1, 1, "W-001", "FIN-SEL", "fin-sel.a1", "Check the current department and grade of 하린 과장.",
+            lookup_req("SEL", "E-SEL-1000", "하린 과장"), ["dept", "grade"], S_LOOKUP, {"dept": "영업1팀", "grade": 3},
+            [need("HR-SEL/E-SEL-1000/profile", "HR-SEL", [], "A", db_src("HR-SEL/emp/E-SEL-1000/profile"))], "A")
+    w.ev(1, 1, "spawn", group="FIN-TYO", agent="fin-tyo.w00002")
+    w.ev(1, 1, "local", eid="L-002", group="FIN-TYO", assignee="fin-tyo.w00002")
+    w.evtx(1, 1, "fin-tyo.w00002", "user", "[Task] Check the 営業1課 budget line", "L-002")
+    w.evtx(1, 1, "fin-tyo.c0", "tool", "[Worker report] 営業1課 budget line checked (details omitted)", "L-002")
+    w.cross(1, 2, "W-002", "HR-SEL", "hr-sel.a3",
+            "하린 과장 needs equipment for KRW 1,850,000. How much can their department spend right now, after deductions?",
+            budget_req("SEL", "영업1팀"), ["available", "n_deducted"], S_BUDGET, {"available": 2_508_100, "n_deducted": 1},
+            [need("FIN-SEL/영업1팀/budget_schedule", "FIN-SEL", ["FR-C1"], "B")], "B")
+    w.ev(1, 4, "index_batch", entries=[{"group": "FIN-SEL", "index": "activity", "agent": "fin-sel.a3",
+                                        "trace": "fin-sel.a3 handled: CMT-00004 개발1팀 provisional approval",
+                                        "entities": ["CMT-00004", "개발1팀"]}])
+    w.ev(1, 4, "despawn", agent="fin-tyo.w00002")
+    # 2일차
+    w.ev(2, 0, "db_register", key="HR-SEL/emp/E-SEL-1003/profile", v=2,          # 늦게 온 버전 2: 현재값은 여전히 3
+         value={"dept": "개발1팀", "grade": 2, "contract": "regular", "hire_day": -300, "status": "active"})
+    w.ev(2, 0, "db_register", key="FIN-SEL/line/개발1팀/remaining", v=2, value=2_417_900)
+    w.cross(2, 1, "W-003", "HR-SEL", "hr-sel.a3",
+            "지우 과장 needs a monitor for KRW 2,300,000. How much can their department spend right now, after deductions?",
+            budget_req("SEL", "개발1팀"), ["available", "n_deducted"], S_BUDGET, {"available": 1_660_700, "n_deducted": 2},
+            [need("FIN-SEL/개발1팀/budget_schedule", "FIN-SEL", ["FR-C2", "FR-C3"], "C")], "C")
+    w.ev(2, 4, "index_batch", entries=[{"group": "FIN-SEL", "index": "journal", "agent": "fin-sel.a1",
+                                        "text": "개발1팀 capex balance registered at KRW 2,417,900.",
+                                        "entities": ["개발1팀"]}])
+    # 3일차: payables card 대상(fin-sel.a2)이 떠난다
+    w.ev(3, 0, "agent_leave", group="FIN-SEL", agent="fin-sel.a2", handover=True)
+    w.cross(3, 1, "W-004", "FIN-SEL", "fin-sel.a1", "Check the current department and grade of 도윤 대리.",
+            lookup_req("SEL", "E-SEL-1001", "도윤 대리"), ["dept", "grade"], S_LOOKUP, {"dept": "개발1팀", "grade": 2},
+            [need("HR-SEL/E-SEL-1001/profile", "HR-SEL", [], "A", db_src("HR-SEL/emp/E-SEL-1001/profile"))], "A")
+    w.ev(3, 2, "world", event="budget_reset", regions=["SEL"])
+    w.cross(3, 2, "W-005", "HR-SEL", "hr-sel.a3", "Is CMT-00001 still alive, and what is its status?",
+            {"region": "SEL", "commit_id": "CMT-00001", "scope": dict(BUDGET_SCOPE)}, ["status", "amount"], S_STATUS,
+            {"status": "pending", "amount": 612_300},
+            [need("FIN-SEL/CMT-00001/effective_status", "FIN-SEL", ["FR-C1"], "D")], "D")
+    w.ev(3, 4, "index_batch", entries=[])
+    # 4일차: 후임 합류, 인수인계 줄
+    w.ev(4, 0, "agent_join", group="FIN-SEL", agent="fin-sel.n0001", role="payables", handover=True,
+         **{"from": "fin-sel.a2"})
+    w.evtx(4, 0, "fin-sel.n0001", "user", "[Handover] CMT-00001 영업1팀 provisional approval pending, settlement due day 8.")
+    w.cross(4, 1, "W-006", "HR-TYO", "hr-tyo.a3",
+            "小野さん needs equipment for KRW 3,100,000. How much can their department spend right now, after deductions?",
+            budget_req("TYO", "開発1課"), ["available", "n_deducted"], S_BUDGET, {"available": 3_366_200, "n_deducted": 0},
+            [need("FIN-TYO/開発1課/budget_schedule", "FIN-TYO", ["FR-LTYO1"], "A")], "A")
+    w.ev(4, 4, "index_batch", entries=[])
+    # 5일차
+    w.cross(5, 1, "W-007", "FIN-TYO", "fin-tyo.c0", "Check the current department and grade of 佐藤さん.",
+            lookup_req("TYO", "E-TYO-1000", "佐藤さん"), ["dept", "grade"], S_LOOKUP, {"dept": "営業1課", "grade": 3},
+            [need("HR-TYO/E-TYO-1000/profile", "HR-TYO", [], "A", db_src("HR-TYO/emp/E-TYO-1000/profile"))], "A")
+    w.cross(5, 2, "W-008", "HR-SEL", "hr-sel.a1",
+            "서준 선임 needs equipment for KRW 2,700,000. How much can their department spend right now, after deductions?",
+            budget_req("SEL", "영업1팀"), ["available", "n_deducted"], S_BUDGET, {"available": 2_508_100, "n_deducted": 1},
+            [need("FIN-SEL/영업1팀/budget_schedule", "FIN-SEL", ["FR-C1"], "B")], "B")
+    w.ev(5, 4, "index_batch", entries=[])
 
-    def put(g, key, day, db_day, value):
-        vs = db[g].setdefault(key, [])
-        vs.append(DbVersion(v=len(vs) + 1, day=day, db_day=db_day, value=value))
-        return len(vs)
+    rule = lambda g, rid, title, text: {"id": f"{g}.{rid}", "title": title, "text": text}
+    rulebook = {g: [rule(g, "transfer_effective_day", "Transfer effective day",
+                         "A department transfer takes effect on its effective day.")] if g.startswith("HR") else
+                   [rule(g, "pending_deduction", "Pending deduction",
+                         "The available amount is the line balance minus provisional approvals under review or pending.")]
+                for g in GROUPS}
 
-    for e, (name, alias, d, grade, contract) in EMPS.items():
-        g, a = f"HR-{region_of(e)}", records_agent(e)
-        p = profile(e)
-        put(g, f"{g}/emp/{e}/profile", -5, -5, p)
-        seq = H[g].work(a, -5, f"Check {name}'s HR record", f"{name} HR record confirmed: {p['dept']}, grade {grade}, {contract}.",
-                        [e], f"Day -5: confirmed HR record ({e})")
-        journal[g].append(JournalRecord(entity=e, agent=a, seq=seq))
-
-    for (r, d), v in LINES.items():
-        g, a, dept = f"FIN-{r}", budgeting_agent(r, d), DEPTS[r][d]
-        put(g, f"{g}/line/{dept}/remaining", -5, -5, v)
-        seq = H[g].work(a, -5, f"Check the {dept} budget line", f"{dept} capex balance confirmed at KRW {v:,}.", [dept],
-                        f"Day -5: confirmed budget balance ({dept})")
-        journal[g].append(JournalRecord(entity=dept, agent=a, seq=seq))
-
-    # db_pending 조각: 0일차 개발1팀 잔액 조정, DB 등록은 2일차
-    put("FIN-SEL", "FIN-SEL/line/개발1팀/remaining", 0, 2, 2_417_900)
-    seq = H["FIN-SEL"].work("fin-sel.a2", 0, "Adjust the 개발1팀 budget", "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). Registered in the DB on day 2.",
-                            ["개발1팀"], "Day 0: adjusted budget (개발1팀)")
-    journal["FIN-SEL"].append(JournalRecord(entity="개발1팀", agent="fin-sel.a2", seq=seq))
-
-    # 부서 이동 승인 (db_pending): 0일차 승인, 2일차 등록, 3일차 발효
-    put("HR-SEL", "HR-SEL/emp/E-SEL-1001/transfer", 0, 2, {"to": "영업1팀", "effective": 3, "status": "approved"})
-    seq = H["HR-SEL"].work("hr-sel.a2", 0, "Review 박도윤's transfer request", "박도윤 transfer to 영업1팀 approved, effective day 3.", ["E-SEL-1001", "영업1팀"],
-                           "Day 0: approved transfer (E-SEL-1001)")
-    activity["HR-SEL"].append(ActivityRecord(entity="E-SEL-1001", agent="hr-sel.a2", seq=seq, day=0, role="records"))
-
-    # operational 조각: 가승인 검토 (DB에 없음, 지급 담당 이력에만)
-    commits = {  # cid: (지역, 부서 index, 금액, 검토일, 담당, 발견성)
-        "CMT-00001": ("SEL", 0, 612_300, -1, "fin-sel.a3", "H1"),
-        "CMT-00002": ("SEL", 1, 455_800, 0, "fin-sel.a3", "H0"),
-        "CMT-00003": ("TYO", 1, 389_100, -2, "fin-tyo.a3", "H1"),
-    }
-    commit_seq = {}
-    for cid, (r, d, amt, day, a, disc) in commits.items():
-        g, dept = f"FIN-{r}", DEPTS[r][d]
-        seq = H[g].work(a, day, f"Review a provisional approval for {dept} equipment", f"{cid} {dept} equipment KRW {amt:,}: provisional approval review started, settlement due day 8.",
-                        [cid, dept], f"Day {day}: started provisional approval review ({cid})")
-        commit_seq[cid] = seq
-        if disc == "H0":
-            journal[g].append(JournalRecord(entity=cid, agent=a, seq=seq))
-        else:
-            activity[g].append(ActivityRecord(entity=cid, agent=a, seq=seq, day=day, role="payables"))
-
-    # 워밍업의 정형 그룹 간 교류
-    egress = {g: [] for g in groups}
-    egress["FIN-SEL"].append(EgressRecord(day=-1, entity="E-SEL-1001", attr="profile", to_group="HR-SEL",
-                                          question="Please confirm the department of 도윤 대리.", status="ok", referral_to=None))
-    egress["HR-SEL"].append(EgressRecord(day=0, entity="개발1팀", attr="available_budget", to_group="FIN-SEL",
-                                         question="Please check whether 개발1팀 has room in its equipment budget.", status="ok", referral_to=None))
-
-    aliases = {}
-    for r in REGIONS:
-        al = {e: [EMPS[e][0], EMPS[e][1]] for e in EMPS if region_of(e) == r}
-        aliases[r] = al
-
-    # ── 1일차 이후 타임라인 ──
-    timeline, work, gold = [], [], []
-    seq_counter = iter(range(1, 10_000))
-    later_db = []                                            # (day, round, g, key, db_day, value)
-
-    def world(day, rnd, g, action, agent=None, payload=None, entities=()):
-        timeline.append(TimelineEvent(eid=f"EV-{len(timeline) + len(work) + 1:04d}", seq=1, day=day, round=rnd, kind="world",
-                                      group=g, agent=agent, action=action, payload=payload or {}, entities=list(entities)))
-
-    def db_write(day, rnd, g, key, db_day, value):
-        v = put(g, key, day, db_day, value)
-        world(day, rnd, g, "db_write", payload=dump(DbWrite(key=key, version=db[g][key][v - 1])))
-
-    def local(day, rnd, g, agent, tid, text, results, entities, schema, answer, disc=None):
-        timeline.append(TimelineEvent(eid=f"EV-{len(timeline) + len(work) + 1:04d}", seq=1, day=day, round=rnd, kind="local",
-                                      group=g, agent=agent, task_id=tid, text=text,
-                                      tool_results=[RenderedToolResult(tool=t, text=x) for t, x in results],
-                                      entities=entities, output_schema=schema, payload={"disc": disc} if disc else {}))
-        gold.append(GoldRecord(task_id=tid, answer=answer))
-
-    grade_schema = OutputSchema(slots=[Slot(name="grade", type="number")])
-    done_schema = OutputSchema(slots=[Slot(name="done", type="bool")])
-    status_schema = OutputSchema(slots=[Slot(name="status", type="enum", options=["reviewing", "pending", "settled", "cancelled"])])
-    amount_schema = OutputSchema(slots=[Slot(name="remaining", type="number")])
-
-    local(1, 1, "HR-SEL", "hr-sel.a2", "L-001", "Apply the grade adjustment request for 지우 과장 and tell me the resulting grade.",
-          [("db.query", "E-SEL-1003 profile: 개발1팀, grade 1, regular, active"), ("hr.grade_request", "Approved adjustment: +1")],
-          ["E-SEL-1003"], grade_schema, {"grade": 2})
-    db_write(1, 1, "HR-SEL", "HR-SEL/emp/E-SEL-1003/profile", 2, profile("E-SEL-1003", grade=2))
-    local(1, 2, "FIN-TYO", "fin-tyo.a1", "L-002", "Check the balance of the 営業1課 budget line.",
-          [("db.query", "FIN-TYO 営業1課 remaining: 4,051,700")], ["営業1課"], amount_schema, {"remaining": 4_051_700})
-    local(2, 1, "FIN-SEL", "fin-sel.a3", "L-003", "Confirm provisional approval CMT-00001 and tell me its status.",
-          [("payables.confirm", "CMT-00001 영업1팀 KRW 612,300 registered as pending")], ["CMT-00001", "영업1팀"], status_schema,
-          {"status": "pending"}, disc="H1")
-    db_write(2, 1, "FIN-SEL", "FIN-SEL/commit/CMT-00001/status", 3, {"status": "pending", "amount": 612_300, "dept": "영업1팀"})
-    world(3, 0, "FIN-SEL", "agent_leave", agent="fin-sel.a3")
-    local(3, 1, "HR-SEL", "hr-sel.a2", "L-004", "Put the department transfer of 도윤 대리 into effect.",
-          [("db.query", "E-SEL-1001 transfer: 영업1팀, effective day 3, approved")], ["E-SEL-1001", "영업1팀"], done_schema, {"done": True})
-    db_write(3, 1, "HR-SEL", "HR-SEL/emp/E-SEL-1001/profile", 4, profile("E-SEL-1001", dept="영업1팀"))
-    world(4, 0, "FIN-SEL", "agent_join", agent="fin-sel.n0001", payload={
-        "from": "fin-sel.a3", "role": "payables",
-        "handover_notes": ["[Handover] CMT-00001 영업1팀 provisional approval pending, settlement due day 8."]},
-          entities=["CMT-00001", "영업1팀"])
-    local(4, 2, "HR-TYO", "hr-tyo.a3", "L-005", "Check the pay grade of 小野さん.",
-          [("db.query", "E-TYO-1001 profile: 開発1課, grade 2, regular, active")], ["E-TYO-1001"], grade_schema, {"grade": 2})
-    local(5, 1, "FIN-TYO", "fin-tyo.a2", "L-006", "Apply the 開発1課 budget adjustment and tell me the balance after it.",
-          [("fin.adjust_request", "開発1課 capex balance adjusted to KRW 2,988,600 (quarterly carry-over)")], ["開発1課"], amount_schema,
-          {"remaining": 2_988_600}, disc="H0")
-    db_write(5, 1, "FIN-TYO", "FIN-TYO/line/開発1課/remaining", 7, 2_988_600)
-
-    # ── 교차 작업 ──
-    def holder(agent, raw_window=True, active=True):
-        return FragHolder(agent=agent, raw_window=raw_window, digest=True, active=active)
-
-    def hr_need(tid, n, e, day, root):
-        """HR 소속 need. 발효됐지만 아직 등록 전인 이동은 db_pending 조각."""
-        g = f"HR-{region_of(e)}"; key = f"{g}/emp/{e}/profile"
-        vs = db[g][key]
-        latest = [x for x in vs if x.day <= day][-1]
-        card = agent_id(g, 0)
-        if latest.db_day <= day:
-            src, cls = DbSource(key=key, v=latest.v, canary=None), "A"
-        else:
-            src = FragSource(fid=f"FR-{key}#{latest.v}", origin="db_pending", holders=[holder(records_agent(e))])
-            cls = "A" if records_agent(e) == card else "B"
-        local_need = g == root
-        return Need(need_id=f"{tid}.N{n}", semantic_key=f"{g}/{e}/profile", group=g, role="records", order=n,
-                    card_agent=card, sources=[src], state_class=None if local_need else cls), latest.value
-
-    def fin_need(tid, n, r, d, day, pending, holders_by_frag):
-        """FIN 집행 가능액 need. pending = [(cid, 금액, 출처)], 출처는 'frag' 또는 'db'."""
-        g, dept = f"FIN-{r}", DEPTS[r][d]; key = f"{g}/line/{dept}/remaining"
-        vs = db[g][key]; latest = [x for x in vs if x.day <= day][-1]
-        srcs, frag_holders = [], []
-        if latest.db_day <= day:
-            srcs.append(DbSource(key=key, v=latest.v, canary=str(latest.value)))
-        else:
-            h = holders_by_frag[key]
-            srcs.append(FragSource(fid=f"FR-{key}#{latest.v}", origin="db_pending", holders=h, canary=str(latest.value)))
-            frag_holders.append(h)
-        db_pending_cids = [c for c, _, how in pending if how == "db"]
-        srcs.append(DbQuerySource(query=f"commit WHERE dept={dept} AND status IN (reviewing, pending)",
-                                  result=db_pending_cids or "ABSENT", asof=day))
-        for cid, amt, how in pending:
-            if how == "db":
-                srcs.append(DbSource(key=f"{g}/commit/{cid}/status", v=1, canary=str(amt)))
-            else:
-                h = holders_by_frag[cid]
-                srcs.append(FragSource(fid=f"FR-{cid}", origin="operational", holders=h, canary=str(amt)))
-                frag_holders.append(h)
-        srcs.append(RuleSource(id=f"{g}.pending_deducted"))
-        card = budgeting_agent(r, d)
-        live = [{x.agent for x in h if x.active and (x.raw_window or x.digest)} for h in frag_holders]
-        if not frag_holders: cls = "A"
-        elif any(not L for L in live): cls = "D"
-        else:
-            inter = set.intersection(*live); cls = "A" if card in inter else ("B" if inter else "C")
-        avail = latest.value - sum(a for _, a, _ in pending)
-        return Need(need_id=f"{tid}.N{n}", semantic_key=f"{g}/{dept}/available_budget", group=g, role="budgeting", order=n,
-                    card_agent=card, sources=srcs, state_class=cls), avail
-
-    frag_h = {
-        "CMT-00001": [holder("fin-sel.a3")],
-        "CMT-00002": [holder("fin-sel.a3")],
-        "CMT-00003": [holder("fin-tyo.a3")],
-        "FIN-SEL/line/개발1팀/remaining": [holder("fin-sel.a2")],
-    }
-    frag_h_after_leave = {**frag_h, "CMT-00002": [FragHolder(agent="fin-sel.a3", raw_window=False, digest=False, active=False)]}
-
-    def cross(tid, day, rnd, root, agent, text, entities, schema, answer, needs):
-        work.append(TimelineEvent(eid=f"EV-{len(timeline) + len(work) + 1:04d}", seq=1, day=day, round=rnd, kind="cross",
-                                  group=root, agent=agent, task_id=tid, text=text, entities=entities, output_schema=schema))
-        remote = [n.state_class for n in needs if n.state_class]
-        gold.append(GoldRecord(task_id=tid, answer=answer, needs=needs,
-                               state_class=max(remote, key=CLASS_ORDER.index) if remote else None,
-                               meta={"template": "lookup" if schema is LOOKUP else "budget"}))
-
-    def lookup(tid, day, rnd, e):
-        r = region_of(e); root = f"FIN-{r}"
-        n, prof = hr_need(tid, 1, e, day, root)
-        cross(tid, day, rnd, root, agent_id(root, 0), f"Check the current department and grade of {EMPS[e][1]}.", [e], LOOKUP, {"dept": prof["dept"], "grade": prof["grade"]}, [n])
-
-    def budget(tid, day, rnd, e, amount, pending, fh=frag_h):
-        r = region_of(e); root = f"HR-{r}"
-        n1, prof = hr_need(tid, 1, e, day, root)
-        d = DEPTS[r].index(prof["dept"])
-        n2, avail = fin_need(tid, 2, r, d, day, pending, fh)
-        cross(tid, day, rnd, root, agent_id(root, 2), f"{EMPS[e][1]} needs equipment for KRW {amount:,}. Can it be paid from their department budget right now? Also tell me the available amount.",
-              [e], BUDGET, {"decision": "approve" if amount <= avail else "insufficient", "available": avail}, [n1, n2])
-
-    lookup("W-001", 1, 2, "E-SEL-1000")                                                          # A
-    budget("W-002", 1, 3, "E-SEL-1000", 1_850_000, [("CMT-00001", 612_300, "frag")])              # B: 지급 담당만 앎
-    budget("W-003", 1, 3, "E-SEL-1001", 1_500_000, [("CMT-00002", 455_800, "frag")])              # C: 잔액(예산 a2) + 가승인(지급 a3)
-    budget("W-004", 2, 2, "E-SEL-1003", 2_300_000, [("CMT-00002", 455_800, "frag")])              # B: 잔액은 DB 등록됨
-    lookup("W-005", 2, 3, "E-SEL-1001")                                                          # A: 이동 발효 전
-    budget("W-006", 2, 2, "E-TYO-1001", 3_100_000, [("CMT-00003", 389_100, "frag")])              # B
-    lookup("W-007", 3, 2, "E-SEL-1001")                                                          # B: 발효, DB 등록 전
-    budget("W-008", 4, 2, "E-SEL-1002", 2_700_000, [("CMT-00001", 612_300, "db")])                # A: 확정 대기가 DB에
-    budget("W-009", 4, 3, "E-SEL-1003", 1_700_000, [("CMT-00002", 455_800, "frag")], frag_h_after_leave)  # D: 이탈자 이력에만
-    lookup("W-010", 5, 2, "E-TYO-1002")                                                          # A
-
-    _write_scenario(out / "worldgen_mini", "worldgen", 5, specs, rules, params, groups,
-                    lambda g: GroupSnapshot(group=g, histories={k: v for k, v in H[g].h.items()}, activity=activity[g],
-                                            journal=journal[g], egress_log=egress[g],
-                                            db=[DbRecord(key=k, versions=[x for x in vs if x.day <= 0])
-                                                for k, vs in db[g].items() if any(x.day <= 0 for x in vs)],
-                                            aliases={**aliases[g.split("-")[1]], **{d: [d] for d in DEPTS[g.split("-")[1]]}},
-                                            env={"scope_categories": DEPTS[g.split("-")[1]]}),
-                    timeline, work, gold,
-                    {"domains": ["HR", "FIN"], "regions": REGIONS, "rounds_per_day": 3, "db_lag": [1, 2]})
+    h, snap = root / "harness", root / "harness" / "snapshot_day0"
+    write_json(h / "world_init.json", {"domains": ["HR", "FIN"], "regions": ["SEL", "TYO"],
+                                       "groups": {g: {"domain": d, "region": r, "topology": t} for g, (d, r, t) in GROUPS.items()},
+                                       "agent_cards": agent_cards})
+    write_json(h / "rulebook.json", rulebook)
+    write_jsonl(h / "work.jsonl", w.work)
+    write_jsonl(h / "timeline.jsonl", w.timeline)
+    write_json(snap / "roster.json", roster)
+    write_json(snap / "cards.json", targets)
+    write_json(snap / "catalog.json", w.catalog)
+    write_jsonl(snap / "db_registered.jsonl", w.db)
+    for agent, rows in sorted(w.tx.items()):
+        write_jsonl(snap / "transcripts" / f"{agent}.jsonl", rows)
+    write_json(snap / "index" / "journal.json", w.journal)
+    write_json(snap / "index" / "activity.json", w.activity)
+    write_json(snap / "index" / "entity.json", w.entity)
+    write_jsonl(root / "private" / "gold.jsonl", w.gold)
+    write_jsonl(root / "private" / "fragments.jsonl", w.fragments)
+    digest = hashlib.sha256(b"".join(p.read_bytes() for p in sorted(h.rglob("*")) if p.is_file())).hexdigest()[:20]
+    write_json(root / "manifest.json", {"world_hash": digest, "generator": "worldgen_v4.4", "schema_version": "4.4-mini",
+                                        "params": {"seed": 0, "D": 2, "R": 2, "T": 5}})
 
 
-# ═════════════════════════════ silo_mini ═════════════════════════════
+# ═════════════════════════════ silo_mini (공개 형식) ═════════════════════════════
 SHARDS = {
     "g1.a1": ["apple", "river", "stone", "cloud"], "g1.a2": ["apple", "river", "maple", "tiger"],
     "g2.a1": ["apple", "river", "candle", "ocean"], "g2.a2": ["apple", "river", "stone", "lemon"],
@@ -376,68 +309,55 @@ QUESTIONS = {
            OutputSchema(slots=[Slot(name="words", type="set")]),
            {"words": sorted(set.intersection(*map(set, SHARDS.values())))}),
     "Q2": ("How many distinct words are there across all shards combined?",
-           OutputSchema(slots=[Slot(name="count", type="number")]),
+           OutputSchema(slots=[Slot(name="count", type="int")]),
            {"count": len(set().union(*SHARDS.values()))}),
 }
+NOTICE = "[Notice] You hold one shard. You can read it with shard.read."
 
 
 def build_silo(out: Path):
+    root = out / "silo_mini"
     groups = [f"G{i}" for i in range(1, 5)]
-    skill = AgentSkill(id="shard", name="Shard holder", description="Reads the elements of its own shard and answers", tags=["silo"], examples=[])
-    specs = [GroupSpec(id=g, members=[MemberSpec(agent_id=a, role="holder", card=AgentCard(
-                name=f"{g} shard holder", description="An agent that holds one shard", version=1, skills=[skill], group=g,
-                scope=None, occupant=a)) for a in SHARDS if a.startswith(g.lower() + ".")],
-                       card=GroupCard(name=g, description="A group of two shard holders", version=1, skills=[skill], group=g,
-                                      service_scope=None, endpoint=f"boundary:{g}"))
-             for g in groups]
+    skill = AgentSkill(id="shard", name="Shard holder", description="Reads the elements of its own shard and answers",
+                       tags=["silo"], examples=[])
     group_of = {a: a.split(".")[0].upper() for a in SHARDS}
-
-    def snapshot(g):
-        H = Histories()
-        for a in SHARDS:
-            if group_of[a] == g:
-                H.add(a, 0, "user", "[Notice] You hold one shard. You can read it with shard.read.", [f"SH-{a}"],
-                      "Day 0: shard notice")
-        return GroupSnapshot(group=g, histories=H.h, activity=[], journal=[], egress_log=[],
-                             env={"shards": {a: w for a, w in SHARDS.items() if group_of[a] == g}})
-
-    work, gold = [], []
+    specs = [GroupSpec(id=g, members=[MemberSpec(agent_id=a, role="holder", card=AgentCard(
+                name=f"{g} shard holder", description="An agent that holds one shard", version=1, skills=[skill],
+                group=g, scope=None, occupant=a)) for a in SHARDS if group_of[a] == g],
+                       card=GroupCard(name=g, description="A group of two shard holders", version=1, skills=[skill],
+                                      group=g, service_scope=None, endpoint=f"boundary:{g}"))
+             for g in groups]
+    pub, priv = root / "public", root / "private"
+    for g in groups:
+        hist = {a: [HistoryEntry(seq=1, day=0, role="user", text=NOTICE, tokens=tokens(NOTICE), entities=[f"SH-{a}"],
+                                 digest="Day 0: shard notice")] for a in SHARDS if group_of[a] == g}
+        snap = GroupSnapshot(group=g, histories=hist, env={"shards": {a: v for a, v in SHARDS.items() if group_of[a] == g}})
+        write_json(pub / "snapshot_day0" / f"{g}.json", snap.model_dump(mode="json"))
+    work, gold, seq = [], [], 0
     for rnd, (q, (text, schema, answer)) in enumerate(QUESTIONS.items(), start=1):
         for asker in SHARDS:
-            tid = f"{q}.{asker}"; root = group_of[asker]
-            work.append(TimelineEvent(eid=f"EV-{len(work) + 1:04d}", seq=1, day=1, round=rnd, kind="cross", group=root,
-                                      agent=asker, task_id=tid, text=text, entities=[], output_schema=schema))
+            seq += 1
+            tid, root_g = f"{q}.{asker}", group_of[asker]
+            work.append(TimelineEvent(eid=f"EV-{seq:04d}", seq=seq, day=1, round=rnd, kind="cross", group=root_g,
+                                      agent=asker, task_id=tid, text=text, request={}, output_schema=schema))
             needs = []
-            for n, (owner, words) in enumerate(SHARDS.items(), start=1):
+            for n, owner in enumerate(SHARDS, start=1):
                 g = group_of[owner]; card = sorted(a for a in SHARDS if group_of[a] == g)[0]
-                needs.append(Need(need_id=f"{tid}.N{n}", semantic_key=f"silo/shard/{owner}", group=g, role="holder", order=n,
-                                  card_agent=card, sources=[FragSource(fid=f"SH-{owner}", origin="operational",
-                                                                       holders=[FragHolder(agent=owner, raw_window=True, digest=False, active=True)])],
-                                  state_class=None if g == root else ("A" if owner == card else "B")))
+                needs.append(Need(need_id=f"{tid}.N{n}", semantic_key=f"silo/shard/{owner}", group=g, role="holder",
+                                  order=n, card_agent=card,
+                                  sources=[FragSource(fid=f"SH-{owner}", origin="operational",
+                                                      holders=[FragHolder(agent=owner, raw_window=True, digest=False, active=True)])],
+                                  state_class=None if g == root_g else ("A" if owner == card else "B")))
             remote = [x.state_class for x in needs if x.state_class]
-            gold.append(GoldRecord(task_id=tid, answer=answer, needs=needs, state_class=max(remote, key=CLASS_ORDER.index)))
-
-    _write_scenario(out / "silo_mini", "silo", 1, specs, [], {}, groups, snapshot, [], work, gold, {"max_rounds": 3})
-
-
-# ═════════════════════════════ 공통 쓰기 ═════════════════════════════
-def _write_scenario(root: Path, benchmark, days, specs, rules, rule_params, groups, snapshot, timeline, work, gold, params):
-    pub, priv = root / "public", root / "private"
-    events = sorted(timeline + work, key=lambda e: (e.day, e.round, e.kind != "world", e.eid))
-    events = [e.model_copy(update={"seq": i}) for i, e in enumerate(events, start=1)]
-    timeline = [e for e in events if e.kind != "cross"]
-    work = [e for e in events if e.kind == "cross"]
-    write_json(pub / "world_init.json", dump(WorldInit(benchmark=benchmark, groups=specs)))
-    write_json(pub / "rulebook.json", dump(rules))
-    for g in groups:
-        write_json(pub / "snapshot_day0" / f"{g}.json", dump(snapshot(g)))
-    write_jsonl(pub / "timeline.jsonl", dump(timeline))
-    write_jsonl(pub / "work.jsonl", dump(work))
-    write_jsonl(priv / "gold.jsonl", dump(gold))
-    write_json(priv / "rulebook_params.json", rule_params)
-    write_json(pub / "manifest.json", dump(Manifest(benchmark=benchmark, world_hash=world_hash(pub), seed=0, days=days,
-                                                    generator="gbg.tests.fixtures.build_fixtures", tokenizer=None,
-                                                    params=params)))
+            gold.append(GoldRecord(task_id=tid, answer=answer, needs=needs, state_class=max(remote, key="ABCD".index)))
+    write_json(pub / "world_init.json", WorldInit(benchmark="silo", groups=specs).model_dump(mode="json"))
+    write_json(pub / "rulebook.json", [])
+    write_jsonl(pub / "timeline.jsonl", [])
+    write_jsonl(pub / "work.jsonl", [e.model_dump(mode="json") for e in work])
+    write_jsonl(priv / "gold.jsonl", [x.model_dump(mode="json") for x in gold])
+    write_json(pub / "manifest.json", Manifest(benchmark="silo", world_hash="silo-mini", seed=0, days=1,
+                                               generator="gbg.tests.fixtures.build_fixtures", params={"max_rounds": 3}
+                                               ).model_dump(mode="json"))
 
 
 def build(out: Path):

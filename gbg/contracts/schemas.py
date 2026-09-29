@@ -1,14 +1,16 @@
-"""핵심 스키마: 이력, 그룹 명세와 초기 상태, 타임라인, 도구, need, 채점, 시나리오 파일.
+"""핵심 스키마: 이력, 그룹 명세와 초기 상태, 타임라인, 도구, need, 채점.
 
-시나리오 디렉터리 (벤치마크 공통 형식)
+어댑터는 벤치마크 산출물을 읽어 이 계약으로 넘긴다(groups, initial_state, events). worldgen 4.2는 harness/
+폴더를 읽고, SILO 등 자체 형식 벤치마크는 아래 공개 형식을 쓴다.
+
+공개 형식 (SILO 픽스처)
     public/manifest.json            Manifest
     public/world_init.json          WorldInit
-    public/rulebook.json            [RuleText]  (본문만)
+    public/rulebook.json            [RuleText]
     public/snapshot_day0/<g>.json   GroupSnapshot
-    public/timeline.jsonl           TimelineEvent (local | world)
-    public/work.jsonl               TimelineEvent (cross, 도착 시 담당자에게만)
+    public/timeline.jsonl           TimelineEvent (cross 이외)
+    public/work.jsonl               TimelineEvent (cross)
     private/gold.jsonl              GoldRecord   (실행 코드는 읽지 않음)
-    private/rulebook_params.json    {rule id: 파라미터}
 """
 from typing import Annotated, Literal
 
@@ -31,20 +33,12 @@ class HistoryEntry(Contract):
     digest: str                                 # 결정·대상·범주형 값만, 수치 없음
 
 
-class ActivityRecord(Contract):
-    """엔티티 → 최근 처리자 (H1 흔적). 그룹 내부 전용."""
-    entity: str
-    agent: str
-    seq: int = Field(ge=1)                      # 그 에이전트 이력의 항목
+class IndexEntry(Contract):
+    """그룹 색인 항목 (경계 모듈 전용). journal은 원문(H0), activity는 "누가 무엇을 처리" 흔적(H1)."""
     day: int
-    role: str
-
-
-class JournalRecord(Contract):
-    """엔티티 → H0 원문 항목."""
-    entity: str
     agent: str
-    seq: int = Field(ge=1)
+    text: str
+    entities: list[str] = []                    # 색인 키: 조각이 언급하는 엔티티 전부 (worldgen 4.4)
 
 
 class EgressRecord(Contract):
@@ -73,59 +67,68 @@ class DbVersion(Contract):
 
 
 class DbRecord(Contract):
+    """키 하나의 버전들. 등록 순서는 버전 순서와 무관하고 빈틈이 있을 수 있다. 현재값 = 등록된 최대 버전."""
     key: str
     versions: list[DbVersion] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def _ordered(self):
-        if [x.v for x in self.versions] != list(range(1, len(self.versions) + 1)):
-            raise ValueError(f"{self.key}: 버전 번호는 1부터 연속이어야 한다")
-        if any(a.day > b.day for a, b in zip(self.versions, self.versions[1:])):
-            raise ValueError(f"{self.key}: 버전의 day가 역전됨")
+    def _unique(self):
+        vs = [x.v for x in self.versions]
+        if len(vs) != len(set(vs)):
+            raise ValueError(f"{self.key}: 같은 버전 번호가 두 번 등록됨")
         return self
 
 
 class RuleText(Contract):
-    """규정 본문 (공개). 파라미터는 private/rulebook_params.json."""
+    """규정 본문 (공개). 파라미터는 private에만 있다."""
     id: str
     group: str
     body: str
+    title: str | None = None
 
 
 # ─────────────────────────── 그룹 명세와 초기 상태 ───────────────────────────
 class MemberSpec(Contract):
     agent_id: str
     role: str
-    card: AgentCard
+    card: AgentCard | None                      # swarm 워커 등 card가 없는 구성원은 None
+    active: bool = True                         # 1일차 시작 시점에 활동 중인가 (떠난 사람의 이력도 그룹에 남는다)
 
 
 class GroupSpec(Contract):
     id: str
+    topology: str = "specialist"                # specialist | swarm
     members: list[MemberSpec] = Field(min_length=1)
     card: GroupCard
+    card_targets: dict[str, str] = {}           # 역할 → card가 가리키는 에이전트 (Direct 디렉터리)
 
     @model_validator(mode="after")
     def _cards(self):
         if self.card.group != self.id:
             raise ValueError(f"{self.id}: 그룹 card의 group 불일치")
-        for m in self.members:
-            if m.card.group != self.id or m.card.occupant != m.agent_id:
-                raise ValueError(f"{m.agent_id}: 에이전트 card의 group·occupant 불일치")
-        if len({m.agent_id for m in self.members}) != len(self.members):
+        ids = [m.agent_id for m in self.members]
+        if len(ids) != len(set(ids)):
             raise ValueError(f"{self.id}: 구성원 id 중복")
+        for m in self.members:
+            if m.card is not None and (m.card.group != self.id or m.card.occupant != m.agent_id):
+                raise ValueError(f"{m.agent_id}: 에이전트 card의 group·occupant 불일치")
+        if unknown := set(self.card_targets.values()) - set(ids):
+            raise ValueError(f"{self.id}: card 대상이 구성원이 아님 {sorted(unknown)}")
         return self
 
 
 class GroupSnapshot(Contract):
-    """snapshot_day0/<group>.json: 1일차 시작 시점의 그룹 상태."""
+    """1일차 시작 시점의 그룹 상태."""
     group: str
     histories: dict[str, list[HistoryEntry]]    # agent id → 이력
-    activity: list[ActivityRecord]
-    journal: list[JournalRecord]
-    egress_log: list[EgressRecord]
+    journal: list[IndexEntry] = []
+    activity: list[IndexEntry] = []
+    entity_index: dict[str, list[str]] = {}     # 엔티티 → 처리한 에이전트
+    egress_log: list[EgressRecord] = []
     db: list[DbRecord] = []
-    aliases: dict[str, list[str]] = {}          # 엔티티 id → 별칭 (태깅용)
-    env: dict[str, JsonValue] = {}              # 벤치마크 고유 환경 상태 (환경 도구가 읽음)
+    catalog: dict[str, JsonValue] = {}          # 그룹 마스터 데이터 (키 → 값)
+    aliases: dict[str, list[str]] = {}          # 엔티티 id → 이름·별칭 (태깅·해소용)
+    env: dict[str, JsonValue] = {}              # 벤치마크 고유 환경 상태
 
     @model_validator(mode="after")
     def _refs(self):
@@ -133,10 +136,6 @@ class GroupSnapshot(Contract):
             seqs = [e.seq for e in hist]
             if any(a >= b for a, b in zip(seqs, seqs[1:])):
                 raise ValueError(f"{aid}: 이력 seq가 증가하지 않음")
-        have = {(aid, e.seq) for aid, hist in self.histories.items() for e in hist}
-        for r in [*self.activity, *self.journal]:
-            if (r.agent, r.seq) not in have:
-                raise ValueError(f"{self.group}: 색인이 없는 이력 항목을 가리킴 ({r.agent}, {r.seq})")
         keys = [r.key for r in self.db]
         if len(keys) != len(set(keys)):
             raise ValueError(f"{self.group}: DB 키 중복")
@@ -150,15 +149,22 @@ class GroupInit(GroupSnapshot):
 
 # ─────────────────────────── 타임라인 ───────────────────────────
 class Slot(Contract):
+    """닫힌 슬롯 하나. list는 순서 있는 배열, set은 순서 없는 배열(정규화 때 정렬). items는 원소 형식 명세
+    (worldgen answer_types의 원소 형식 그대로: integer / boolean / enum(values) / string(format) / tuple(items))."""
     name: str
-    type: Literal["enum", "number", "id", "bool", "set", "list"]
-    options: list[str] | None = None            # enum만
+    type: Literal["int", "number", "enum", "id", "bool", "set", "list"]
+    options: list[JsonValue] | None = None      # enum만
     nullable: bool = False
+    items: dict[str, JsonValue] | None = None   # set·list의 원소 형식 (없으면 set은 문자열, list는 제한 없음)
+    format: str | None = None                   # id 슬롯의 뜻 (id, department)
+    note: str | None = None                     # 에이전트에게 보여 줄 설명
 
     @model_validator(mode="after")
     def _options(self):
         if (self.type == "enum") != (self.options is not None):
             raise ValueError(f"{self.name}: options는 enum 슬롯에만, 그리고 반드시 있어야 한다")
+        if self.items is not None and self.type not in ("set", "list"):
+            raise ValueError(f"{self.name}: items는 set·list 슬롯에만")
         return self
 
 
@@ -175,46 +181,54 @@ class OutputSchema(Contract):
 
 
 class DbWrite(Contract):
-    """action=db_write 세계 이벤트의 payload: 시나리오가 정한 DB 버전 하나."""
+    """db_register 이벤트의 payload: 등록되는 DB 버전 하나."""
     key: str
     version: DbVersion
 
 
-class RenderedToolResult(Contract):
-    tool: str
-    text: str
+EventKind = Literal["db_register", "catalog", "transcript", "index", "spawn", "despawn",
+                    "agent_leave", "agent_join", "local", "cross", "world"]
+
+# 종류별로 반드시 있어야 하는 필드와 payload 키
+_REQUIRED = {
+    "db_register": ("group",), "catalog": ("group",), "transcript": ("agent",), "index": (),
+    "spawn": ("agent", "group"), "despawn": ("agent",), "agent_leave": ("agent", "group"),
+    "agent_join": ("agent", "group"), "local": ("agent", "group", "task_id"),
+    "cross": ("agent", "group", "task_id", "text", "request", "output_schema"), "world": (),
+}
+_PAYLOAD = {
+    "catalog": ("key", "value"), "transcript": ("role", "text", "tokens", "summary"), "index": ("entries",),
+    "agent_join": ("role",),
+}
 
 
 class TimelineEvent(Contract):
+    """seq 순서로 하나씩 실행되는 사건. cross만 에이전트가 수행하고, 나머지는 세계가 정한 대로 적용된다."""
     eid: str
-    seq: int = Field(ge=1)                      # 완전 정렬 순서 = (day, round, seq)
+    seq: int = Field(ge=1)
     day: int = Field(ge=1)
-    round: int = Field(ge=0)                    # 0 = 날 시작(세계 이벤트), 1.. = 작업 라운드
-    kind: Literal["local", "cross", "world"]
-    group: str
-    agent: str | None = None                    # 작업 담당자 또는 세계 이벤트 대상
-    task_id: str | None = None
-    text: str = ""                              # 렌더링 원문 (과제 문장)
-    tool_results: list[RenderedToolResult] = [] # 로컬 작업의 도구 결과 원문
+    round: int = Field(ge=0)                    # 0 = 날 시작, 1..3 = 작업 라운드, 4 = 하루 끝 정리
+    kind: EventKind
+    group: str | None = None
+    agent: str | None = None
+    task_id: str | None = None                  # cross: 과제 id, local: 로컬 작업 id
+    text: str = ""                              # cross: 과제 문장 (surface)
+    request: dict[str, JsonValue] | None = None # cross: 명시적 요청 파라미터 (검토 범위 등)
     entities: list[str] = []
     output_schema: OutputSchema | None = None
-    action: Literal["agent_leave", "agent_join", "db_write", "env"] | None = None
     payload: dict[str, JsonValue] = {}
 
     @model_validator(mode="after")
     def _by_kind(self):
-        if self.kind in ("local", "cross"):
-            if not (self.task_id and self.agent and self.text and self.output_schema):
-                raise ValueError(f"{self.eid}: 작업에는 task_id, agent, text, output_schema가 필요하다")
-            if self.action is not None:
-                raise ValueError(f"{self.eid}: 작업에는 action이 없다")
-        else:
-            if self.action is None or self.task_id is not None or self.output_schema is not None:
-                raise ValueError(f"{self.eid}: 세계 이벤트는 action만 갖는다")
-            if self.action in ("agent_leave", "agent_join") and not self.agent:
-                raise ValueError(f"{self.eid}: {self.action}에는 agent가 필요하다")
-            if self.action == "db_write":
-                DbWrite.model_validate(self.payload)
+        missing = [f for f in _REQUIRED[self.kind] if getattr(self, f) in (None, "")]
+        if missing:
+            raise ValueError(f"{self.eid}: {self.kind}에는 {missing}가 필요하다")
+        if self.kind != "cross" and (self.output_schema is not None or self.request is not None):
+            raise ValueError(f"{self.eid}: output_schema·request는 cross에만")
+        if missing := [k for k in _PAYLOAD.get(self.kind, ()) if k not in self.payload]:
+            raise ValueError(f"{self.eid}: {self.kind} payload에 {missing}가 필요하다")
+        if self.kind == "db_register":
+            DbWrite.model_validate(self.payload)
         return self
 
 
@@ -226,7 +240,7 @@ class ToolSpec(Contract):
     resources: list[str]
 
 
-# ─────────────────────────── need와 채점 ───────────────────────────
+# ─────────────────────────── need와 채점 (공개 형식) ───────────────────────────
 class DbSource(Contract):
     type: Literal["db"] = "db"
     key: str
@@ -281,7 +295,6 @@ class Verdict(Contract):
     slots: dict[str, bool]
 
 
-# ─────────────────────────── 시나리오 파일 ───────────────────────────
 class Manifest(Contract):
     benchmark: str
     world_hash: str
@@ -311,4 +324,3 @@ class GoldRecord(Contract):
     needs: list[Need] = []
     state_class: StateClass | None = None       # 작업 등급 = 가장 어려운 원격 need
     meta: dict[str, JsonValue] = {}             # 벤치마크 고유 (경로, 반사실, R 등급 등)
-

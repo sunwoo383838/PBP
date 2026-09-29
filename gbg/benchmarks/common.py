@@ -1,4 +1,4 @@
-"""공개 시나리오 형식(contracts/schemas.py 모듈 docstring)을 읽는 어댑터 기반.
+"""공개 시나리오 형식(contracts/schemas.py 모듈 docstring)을 읽는 어댑터 기반 (SILO 픽스처).
 
 load는 public/ 디렉터리만 받고, 그 밖의 경로(private/, 시나리오 루트, 상위 경로)는 예외로 거부한다.
 """
@@ -54,8 +54,8 @@ class PublicScenarioAdapter:
     def env_tools(self) -> list[ToolSpec]:
         return []
 
-    def role_tools(self, role: str) -> list[ToolSpec]:
-        """역할별 환경 도구 명세 (에이전트에게 보이는 스키마). 기본은 역할과 무관하게 env_tools()."""
+    def group_tools(self, group: str) -> list[ToolSpec]:
+        """그룹별 환경 도구 명세 (에이전트에게 보이는 스키마). 기본은 그룹과 무관하게 env_tools()."""
         return self.env_tools()
 
     def make_tools(self, stores) -> list:

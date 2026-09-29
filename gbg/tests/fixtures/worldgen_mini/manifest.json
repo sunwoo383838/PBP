@@ -1,0 +1,11 @@
+{
+ "world_hash": "2f3facc9f2bc9097ec70",
+ "generator": "worldgen_v4.4",
+ "schema_version": "4.4-mini",
+ "params": {
+  "seed": 0,
+  "D": 2,
+  "R": 2,
+  "T": 5
+ }
+}

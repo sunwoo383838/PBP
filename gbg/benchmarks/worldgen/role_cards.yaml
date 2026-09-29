@@ -1,0 +1,55 @@
+# worldgen 4.4 const.py의 ROLES·CARD 사본 (worldgen은 4.4로 동결). swarm 접수 담당의 card skills를 만든다.
+roles:
+  HR:
+  - records
+  - records
+  - payroll
+  - recruiting
+  - mobility
+  IT:
+  - assets
+  - assets
+  - access
+  - licenses
+  - provisioning
+  FIN:
+  - budgeting
+  - payables
+  - payables
+  - closing
+  - control
+  PROC:
+  - buying
+  - buying
+  - vendors
+  - receiving
+  - quality
+  LEGAL:
+  - contracts
+  - contracts
+  - compliance
+  - privacy
+  - review
+card:
+  records: Look up and update employee department, grade and contract type records
+  payroll: Pay grades and grade changes
+  recruiting: Hiring, onboarding and offboarding
+  mobility: Personnel moves and department transfers
+  assets: Equipment assignment and recovery, in-house stock
+  access: Accounts and access rights, equipment tier decisions
+  licenses: Software license seat management
+  provisioning: Equipment and seat preparation for new hires
+  budgeting: Budget line planning, adjustment and balance lookup
+  payables: Provisional approval review, registration and settlement
+  closing: Month-end close and cancellation confirmation
+  control: Spending controls and budget owner arrangements
+  buying: Quote requests and purchase orders
+  vendors: Supplier ratings and lead times
+  receiving: Goods receipt and delivery confirmation
+  quality: Supplier quality management
+  contracts: Contract terms and durations
+  compliance: Approval policies and exception decisions
+  privacy: Data residency rules
+  review: Contract change review and NDA checks
+  coordinator: Request intake and worker dispatch
+  worker: Handles assigned items

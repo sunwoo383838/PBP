@@ -11,6 +11,7 @@ DEEPINFRA_API_KEY와 GBG_LIVE=1이 있을 때만 돈다 (test_real_deepinfra_liv
 import asyncio
 import json
 import os
+from gbg.contracts.card import public_id
 from pathlib import Path
 
 import httpx
@@ -46,7 +47,7 @@ def _default(schema):
         return None
     if "enum" in schema:
         return schema["enum"][0]
-    return {"number": 0, "string": "", "boolean": False, "array": []}[schema["type"]]
+    return {"integer": 0, "number": 0, "string": "", "boolean": False, "array": []}[schema["type"]]
 
 
 def _first_directory_agent(system):
@@ -63,10 +64,10 @@ def auto_reply(req):
         calls = []
         if "db.query" in tools:
             rtype = tools["db.query"]["parameters"]["properties"]["record_type"]["enum"][0]
-            calls.append(("db.query", {"entity": "E-SEL-1000", "record_type": rtype}))
+            calls.append(("db.query", {"entity": "영업1팀", "record_type": rtype}))
         if "shard.read" in tools:
             calls.append(("shard.read", {}))
-        if finish == "submit" and "ask_agent" in tools and "[Task L-" not in msgs[1]["content"]:
+        if finish == "submit" and "ask_agent" in tools:
             to = _first_directory_agent(msgs[0]["content"])
             calls.append(("ask_agent", {"agent_id": to, "question": "Could you check this case for me?"}))
         if calls:
@@ -121,11 +122,11 @@ def backend(mode, cache=None, transport=None, script=None, model="qwen3-32b", pa
                       api_key="test", sleep=sleep)
 
 
-def llm_runner(tmp, llm, *, condition="direct", name="worldgen_mini", max_day=1):
+def llm_runner(tmp, llm, *, condition="direct", name="worldgen_mini", max_day=1, conditions=CONDITIONS):
     a = load_adapter(name)
-    rt = AgentRuntime(CONDITIONS[condition], a.role_tools, ContextBuilder(TOK.count, P.context.raw_window, P.context.summary),
+    rt = AgentRuntime(CONDITIONS[condition], a.group_tools, ContextBuilder(TOK.count, P.context.raw_window, P.context.summary),
                       P.agent.max_steps, P.agent.format_retries)
-    return Runner(a, condition=condition, seed=7, run_dir=tmp, conditions=CONDITIONS, access=ACCESS,
+    return Runner(a, condition=condition, seed=7, run_dir=tmp, conditions=conditions, access=ACCESS,
                   tools=ToolRegistry(ACCESS), env_tools=a.make_tools, agent_factory=lambda aid, g, role: LLMAgent(aid, rt),
                   params=P.kernel, llm=llm, tokens=TOK.count, max_day=max_day)
 
@@ -270,8 +271,11 @@ def test_system_prompt_differs_only_in_condition_blocks(tmp_path):
     stripped = {c: strip_condition_blocks(s) for c, s in systems.items()}
     assert len(set(stripped.values())) == 1, "도구·디렉터리 블록 밖은 조건 간 한 줄도 다르면 안 된다"
     assert systems["direct"] != systems["routing"] != systems["i_e"]
-    assert "- fin-sel.a1 |" in systems["direct"] and "- FIN-SEL |" in systems["routing"]
-    assert "hr-sel.a1 |" not in systems["direct"], "디렉터리에 자기 자신은 없다"
+    assert f"- {public_id('fin-sel.a1')} | Region: SEL |" in systems["direct"] and "- FIN-SEL |" in systems["routing"]
+    assert public_id("hr-sel.a1") not in systems["direct"], "디렉터리에 자기 자신은 없다"
+    for g in a.groups():                                                 # Direct에는 그룹 개념이 전혀 없다
+        assert g.id not in systems["direct"] and g.id.lower() not in systems["direct"]
+        assert all(m.agent_id not in systems["direct"] for m in g.members)
     assert "- HR-SEL |" not in systems["routing"], "그룹 디렉터리에 자기 그룹은 없다"
 
 
@@ -286,28 +290,29 @@ def _flaky(bad_task, times):
                 seen["n"] += 1
                 if seen["n"] % 2:
                     return mk([], content="The grade is 2.")
-                return mk([("submit", {"grade": "two"})])
+                return mk([("submit", {"dept": "영업1팀", "grade": "two"})])
         return auto_reply(req)
     return script
 
 
 def test_format_error_retries_once_then_records(tmp_path):
-    runner = llm_runner(tmp_path, backend("SCRIPTED", script=_flaky("L-001", 99)))
+    runner = llm_runner(tmp_path, backend("SCRIPTED", script=_flaky("W-001", 99)))
     runner.run()
     ev = wal(tmp_path)
-    bad = [e for e in ev if e["type"] == "answer" and e["payload"]["task_id"] == "L-001"]
+    bad = [e for e in ev if e["type"] == "answer" and e["payload"]["task_id"] == "W-001"]
     assert len(bad) == 1 and bad[0]["payload"]["error"] == "format_error" and bad[0]["payload"]["answer"] is None
-    calls = [e for e in ev if e["type"] == "llm_call" and e["payload"]["task_id"] == "L-001"]
+    calls = [e for e in ev if e["type"] == "llm_call" and e["payload"]["task_id"] == "W-001"
+             and e["payload"]["component"] == "requester"]
     assert len(calls) == 1 + P.agent.format_retries, "원래 시도 + 재시도 1회"
-    others = [e for e in ev if e["type"] == "answer" and e["payload"]["task_id"] != "L-001"]
+    others = [e for e in ev if e["type"] == "answer" and e["payload"]["task_id"] != "W-001"]
     assert others and all(e["payload"].get("error") is None for e in others), "런은 계속된다"
 
 
 def test_format_error_recovers_within_retry(tmp_path):
-    runner = llm_runner(tmp_path, backend("SCRIPTED", script=_flaky("L-001", 1)))
+    runner = llm_runner(tmp_path, backend("SCRIPTED", script=_flaky("W-001", 1)))
     runner.run()
-    ans = next(e for e in wal(tmp_path) if e["type"] == "answer" and e["payload"]["task_id"] == "L-001")
-    assert ans["payload"].get("error") is None and ans["payload"]["answer"] == {"grade": 0}
+    ans = next(e for e in wal(tmp_path) if e["type"] == "answer" and e["payload"]["task_id"] == "W-001")
+    assert ans["payload"].get("error") is None and ans["payload"]["answer"] == {"dept": "", "grade": 0}
 
 
 def test_step_limit(tmp_path):
@@ -337,23 +342,25 @@ def test_every_llm_call_logs_context_window(tmp_path):
 def test_history_tokens_use_pinned_tokenizer(tmp_path):
     runner = llm_runner(tmp_path, backend("SCRIPTED", script=auto_reply))
     runner.run()
-    warm = len(load_adapter("worldgen_mini").initial_state("HR-SEL").histories["hr-sel.a2"])
-    new = runner.stores.history.entries("hr-sel.a2")[warm:]
-    assert new and all(e.tokens == TOK.count(e.text) for e in new)
+    h = runner.stores.history.entries("hr-sel.a3")
+    harness = ("[Task W-", "[Tool call]", "[Tool result] db.query", "[Tool result] entity.search", "[Submitted",
+               "[Question", "[Answer")
+    mine = [e for e in h if e.text.startswith(harness)]
+    assert mine and all(e.tokens == TOK.count(e.text) for e in mine), "하네스가 만든 항목은 고정 토크나이저로 센다"
+    replayed = next(e for e in h if e.text == "[Tool result] Recorded: E-SEL-1003 grade 2.")
+    assert replayed.tokens == int(len(replayed.text) * 1.1), "worldgen 이력 줄은 산출물의 토큰 수를 그대로 쓴다"
 
 
 def test_answer_digest_keeps_categories_drops_numbers(tmp_path):
     def script(req):
         tools = {t["function"]["name"] for t in req["tools"]}
-        if "submit" in tools and "[Task W-" in req["messages"][1]["content"] and len(req["messages"]) > 2:
-            props = next(t for t in req["tools"] if t["function"]["name"] == "submit")["function"]["parameters"]["properties"]
-            if "decision" in props:
-                return mk([("submit", {"decision": "approve", "available": 2508100})])
+        if "submit" in tools and "[Task W-005]" in req["messages"][1]["content"] and len(req["messages"]) > 2:
+            return mk([("submit", {"status": "pending", "amount": 612300})])
         return auto_reply(req)
-    runner = llm_runner(tmp_path, backend("SCRIPTED", script=script))
+    runner = llm_runner(tmp_path, backend("SCRIPTED", script=script), max_day=3)
     runner.run()
-    e = next(e for e in runner.stores.history.entries("hr-sel.a3") if e.text.startswith("[Submitted W-002]"))
-    assert "decision=approve" in e.digest and "2508100" not in e.digest and not looks_like_amount(e.digest)
+    e = next(e for e in runner.stores.history.entries("hr-sel.a3") if e.text.startswith("[Submitted W-005]"))
+    assert "status=pending" in e.digest and "612300" not in e.digest and not looks_like_amount(e.digest)
 
 
 # ─────────────────────────── 토크나이저 ───────────────────────────

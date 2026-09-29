@@ -1,0 +1,128 @@
+{
+ "hr-sel.a1": {
+  "group": "HR-SEL",
+  "role": "records",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-sel.a2": {
+  "group": "HR-SEL",
+  "role": "records",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-sel.a3": {
+  "group": "HR-SEL",
+  "role": "payroll",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-sel.a4": {
+  "group": "HR-SEL",
+  "role": "recruiting",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-sel.a5": {
+  "group": "HR-SEL",
+  "role": "mobility",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-tyo.a1": {
+  "group": "HR-TYO",
+  "role": "records",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-tyo.a2": {
+  "group": "HR-TYO",
+  "role": "records",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-tyo.a3": {
+  "group": "HR-TYO",
+  "role": "payroll",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-tyo.a4": {
+  "group": "HR-TYO",
+  "role": "recruiting",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "hr-tyo.a5": {
+  "group": "HR-TYO",
+  "role": "mobility",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a1": {
+  "group": "FIN-SEL",
+  "role": "budgeting",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a2": {
+  "group": "FIN-SEL",
+  "role": "payables",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a3": {
+  "group": "FIN-SEL",
+  "role": "payables",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a4": {
+  "group": "FIN-SEL",
+  "role": "closing",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a5": {
+  "group": "FIN-SEL",
+  "role": "control",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-tyo.c0": {
+  "group": "FIN-TYO",
+  "role": "coordinator",
+  "joined": -20,
+  "left": null,
+  "active": true
+ },
+ "fin-sel.a6": {
+  "group": "FIN-SEL",
+  "role": "payables",
+  "joined": -20,
+  "left": -8,
+  "active": false
+ },
+ "fin-tyo.w00001": {
+  "group": "FIN-TYO",
+  "role": "worker",
+  "joined": -3,
+  "left": -3,
+  "active": false
+ }
+}

@@ -84,11 +84,11 @@ def factory(adapter, jitter_seed=None):
 
 
 def make_runner(run_dir, scenario="worldgen_mini", *, seed=7, condition="direct", jitter_seed=None, fault=None,
-                launch_order=None, agent_factory=None):
+                agent_factory=None):
     adapter = load_adapter(scenario)
     return Runner(adapter, condition=condition, seed=seed, run_dir=run_dir, conditions=CONDITIONS, access=ACCESS,
                   tools=make_tools(), agent_factory=agent_factory or factory(adapter, jitter_seed),
-                  params=KernelParams(), fault=fault, launch_order=launch_order)
+                  params=KernelParams(), fault=fault)
 
 
 def wal_events(run_dir):
@@ -123,34 +123,36 @@ def test_wal_seq_is_dense_and_rounds_ordered(baseline):
     assert [e["seq"] for e in ev] == list(range(1, len(ev) + 1))
     assert [(e["day"], e["round"]) for e in ev] == sorted((e["day"], e["round"]) for e in ev)
     commits = [e for e in ev if e["type"] == "round_commit"]
-    assert len(commits) == 5 * 4                                              # 5일 × (라운드 0 + 3라운드)
+    assert len(commits) == 5 * 5                                              # 5일 × (라운드 0, 작업 1~3, 하루 끝 4)
     assert ev[-1]["type"] == "round_commit"
 
 
 def test_world_updates_are_in_wal(baseline):
     d, _ = baseline
     adapter = load_adapter("worldgen_mini")
-    writes = [e for e in adapter.events() if e.kind == "world" and e.action == "db_write"]
+    world = [e for e in adapter.events() if e.kind not in ("cross", "agent_join", "agent_leave", "spawn", "despawn")]
     logged = [e for e in wal_events(d) if e["type"] == "world_update"]
-    assert [e["payload"]["eid"] for e in logged] == [e.eid for e in writes]
-    assert all(e["payload"]["data"] == w.payload for e, w in zip(logged, writes))
-    assert all(e["day"] == w.day and e["round"] == w.round for e, w in zip(logged, writes))
+    assert [e["payload"]["eid"] for e in logged] == [e.eid for e in world], "세계 사건은 seq 순서대로 전부 WAL에"
+    assert all(e["payload"]["kind"] == w.kind and e["payload"]["data"] == w.payload for e, w in zip(logged, world))
+    assert all(e["day"] == w.day and e["round"] == w.round for e, w in zip(logged, world))
+    joins = [e["payload"]["agent"] for e in wal_events(d) if e["type"] == "agent_join"]
+    leaves = [e["payload"]["agent"] for e in wal_events(d) if e["type"] == "agent_leave"]
+    assert joins == ["fin-tyo.w00002", "fin-sel.n0001"] and leaves == ["fin-tyo.w00002", "fin-sel.a2"]
 
 
 def test_every_task_answered_once(baseline):
     d, _ = baseline
     adapter = load_adapter("worldgen_mini")
-    tasks = {e.task_id for e in adapter.events() if e.kind != "world"}
+    tasks = {e.task_id for e in adapter.events() if e.kind == "cross"}          # 로컬 작업은 재생만 (에이전트 수행 없음)
     answers = [e["payload"]["task_id"] for e in wal_events(d) if e["type"] == "answer"]
     assert sorted(answers) == sorted(tasks)
 
 
 # ─────────────────────────── 2. 실행 순서 섞기 ───────────────────────────
-@pytest.mark.parametrize("jitter_seed,reverse", [(1, False), (2, True), (3, True)])
-def test_interleaving_does_not_change_wal(baseline, tmp_path, jitter_seed, reverse):
+@pytest.mark.parametrize("jitter_seed", [1, 2, 3])
+def test_timing_jitter_does_not_change_wal(baseline, tmp_path, jitter_seed):
     _, h = baseline
-    order = (lambda agents: list(reversed(agents))) if reverse else None
-    assert make_runner(tmp_path, jitter_seed=jitter_seed, launch_order=order).run() == h
+    assert make_runner(tmp_path, jitter_seed=jitter_seed).run() == h
 
 
 # ─────────────────────────── 3. 강제 종료 후 재개 ───────────────────────────
@@ -178,7 +180,7 @@ def test_resume_after_crash_mid_day3(baseline, tmp_path, how):
     d, h = baseline
     adapter = load_adapter("worldgen_mini")
     if how == "agent":
-        runner = make_runner(tmp_path, agent_factory=_bomb_factory(adapter, "hr-sel.a2", 3))
+        runner = make_runner(tmp_path, agent_factory=_bomb_factory(adapter, "hr-sel.a3", 3))
     else:
         runner = make_runner(tmp_path, fault=crash_at(how, 3, after=2))
     with pytest.raises(Crash):
@@ -267,15 +269,22 @@ def test_hop_limit_ends_in_error(tmp_path):
 
 
 # ─────────────────────────── 실행 의미론 ───────────────────────────
-def test_responder_sees_round_start_history(tmp_path):
+def test_tasks_run_in_seq_order_and_see_earlier_tasks(tmp_path):
+    """과제는 seq 순서로 하나씩 돈다. 과제 안에서는 세계가 멈추고, 다음 과제는 앞 과제의 반영분을 본다."""
     make_runner(tmp_path, "silo_mini").run()
     ev = wal_events(tmp_path)
-    resp = {}
-    for e in ev:
-        if e["type"] == "message" and e["payload"]["kind"] == "response":
-            resp.setdefault(e["round"], []).append(int(e["payload"]["response"]["answer"]))
-    assert set(resp[1]) == {1}, "1라운드 응답자는 워밍업 이력(안내 한 줄)만 본다"
-    assert all(n > 1 for n in resp[2]), "2라운드 응답자는 1라운드 커밋분을 본다"
+    delivered = [e["payload"]["task_id"] for e in ev if e["type"] == "task_delivered"]
+    adapter = load_adapter("silo_mini")
+    assert delivered == [e.task_id for e in adapter.events() if e.kind != "world"], "도착 seq 순서 그대로"
+    spans = {}                                                                  # 과제마다 WAL 사건이 연속 구간
+    for i, e in enumerate(ev):
+        if "task_id" in e["payload"]:
+            spans.setdefault(e["payload"]["task_id"], []).append(i)
+    assert all(v == list(range(v[0], v[-1] + 1)) for v in spans.values()), "과제 사이에 다른 과제 사건이 끼지 않는다"
+    answers = [int(e["payload"]["response"]["answer"]) for e in ev
+               if e["type"] == "message" and e["payload"]["kind"] == "response"]
+    assert answers[0] == 1, "첫 응답자는 워밍업 이력(안내 한 줄)만 본다"
+    assert max(answers) > 1, "뒤 과제의 응답자는 앞 과제에서 쌓인 이력을 본다"
 
 
 def test_named_rng_streams():

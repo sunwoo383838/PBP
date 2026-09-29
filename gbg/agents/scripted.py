@@ -4,7 +4,7 @@ from collections.abc import Callable
 from gbg.contracts.envelope import Request, Response
 from gbg.contracts.schemas import OutputSchema, TimelineEvent
 
-_DEFAULT = {"number": 0, "id": "", "bool": False, "set": [], "list": []}
+_DEFAULT = {"int": 0, "number": 0, "id": "", "bool": False, "set": [], "list": []}
 
 
 def fixed_answer(schema: OutputSchema | None) -> dict:

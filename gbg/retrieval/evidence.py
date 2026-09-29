@@ -1,10 +1,13 @@
-"""증거 블록 조립.
+"""증거 블록 조립 (게이트웨이 전용: ingress_raw · Ingress · I+E. 그룹 이력 전체를 읽는다).
 
-    후보   = 정확 조회(activity[엔티티] 관련 항목 + journal[엔티티]) ∪ hybrid(질의, 그룹 이력)
-    재순위 = 정확 일치 > 하이브리드, 같은 점수면 최신. (엔티티, 속성) 태그가 있으면 최신 versions_per_attr개만
-    확장   = 적중 항목마다 같은 에이전트 이력의 앞뒤 expand개 (H2 선행 발화 확보)
+    후보   = 정확 조회 ∪ 태그 검색 ∪ hybrid(질의, 그룹 이력)
+             정확 조회(lookup.py, 라우터와 공통): 색인 + catalog 한 단계 연결 → 일지 원문 항목 + 처리자
+             처리자 이력 중 확장 엔티티 항목, 태그 검색: 그룹 이력 전체에서 확장 엔티티 태그·언급 항목
+    재순위 = 정확 일치 > 하이브리드, 같은 점수면 최신. 버전은 고르지 않는다: 같은 사실의 버전 선택은 L_state 결정이라
+             Ingress(경계 상태)의 게이트웨이 LLM이 맡는다. 조회 단계는 후보를 가지치기하지 않는다
+    확장   = 적중한 이력 항목마다 같은 에이전트 이력의 앞뒤 expand개 (H2 선행 발화 확보)
     상한   = evidence_cap 토큰, 넘으면 오래된 것부터 제외. 상한 도달 여부를 기록
-    출력   = [E1] fin-tyo.a3 · day 12 · 원문 … (항목마다 인용 id, 시간순)
+    출력   = [E1] fin-tyo.a3 · day 12 · 원문 … (항목마다 인용 id, 시간순). 일지 항목은 "journal"로 표시
 
 모든 검색 호출과 결과(항목 목록, 점수, 상한 도달)는 로그로 돌려준다(obs/retrievals.jsonl). 채점기는 이것으로
 L_sel을 검색 실패와 조립 실패로 나눈다.
@@ -15,18 +18,18 @@ from gbg.contracts.params import RetrievalParams
 from gbg.contracts.schemas import HistoryEntry
 
 from .hybrid import Doc, GroupRetriever, Mode
-from .normalize import normalize
+from .lookup import index_lookup, tag_search
 
 
 @dataclass(frozen=True)
 class EvidenceItem:
     cite: str
     agent: str
-    seq: int
+    seq: int | None                             # 이력 항목이면 seq, 일지 항목이면 None
     day: int
     text: str
     tokens: int
-    source: str                                 # exact | hybrid | context
+    source: str                                 # exact | journal | hybrid | context
 
 
 @dataclass
@@ -38,12 +41,7 @@ class Evidence:
     log: dict = field(default_factory=dict)
 
 
-def _attr_words(attr: str | None) -> list[str]:
-    return [w for w in normalize(attr or "").replace("_", " ").split() if len(w) > 2]
-
-
-async def build_evidence(retriever: GroupRetriever, query: str, entities: list[str], attr: str | None = None,
-                         mode: Mode = "hybrid") -> Evidence:
+async def build_evidence(retriever: GroupRetriever, query: str, entities: list[str], mode: Mode = "hybrid") -> Evidence:
     p: RetrievalParams = retriever.p
     stores, group = retriever.stores, retriever.group
     await retriever.sync()
@@ -56,33 +54,15 @@ async def build_evidence(retriever: GroupRetriever, query: str, entities: list[s
 
     agents = set(retriever.agents())
 
-    # 후보: 정확 조회
-    exact: set[Doc] = set()
-    for ent in entities:
-        for r in stores.activity.lookup(group, ent) + stores.journal.lookup(group, ent):
-            if r.agent not in agents:
-                continue
-            exact.add((r.agent, r.seq))
-            exact.update((r.agent, e.seq) for e in stores.history.entries(r.agent) if ent in e.entities)
+    # 후보: 정확 조회(색인 + catalog 한 단계) + 태그 검색(그룹 이력 전체)
+    lk = index_lookup(stores, group, list(entities), p.catalog_link_fields)
+    ents, journal = list(lk.entities), list(lk.journal)
+    exact: set[Doc] = set(tag_search(stores, sorted(agents), ents)) if ents else set()
     hits = await retriever.search(query, mode)
     score = {h.doc: h.score for h in hits}
 
     ordered = sorted(exact, key=retriever._recency) + [h.doc for h in hits if h.doc not in exact]
     source = {d: ("exact" if d in exact else "hybrid") for d in ordered}
-
-    # (엔티티, 속성) 버전 제한: 그 엔티티 태그와 속성 낱말을 함께 가진 항목은 최신 N개만
-    words = _attr_words(attr)
-    if entities and words:
-        kept, seen = [], {}
-        for d in ordered:
-            e = entry(d)
-            keys = [ent for ent in entities if ent in e.entities and any(w in normalize(e.text) for w in words)]
-            if keys and all(seen.get(k, 0) >= p.versions_per_attr for k in keys):
-                continue
-            for k in keys:
-                seen[k] = seen.get(k, 0) + 1
-            kept.append(d)
-        ordered = kept
 
     # 확장: 같은 에이전트 이력의 앞뒤
     chosen = dict.fromkeys(ordered)
@@ -94,28 +74,31 @@ async def build_evidence(retriever: GroupRetriever, query: str, entities: list[s
                 chosen[(d[0], seqs[j])] = None
                 source[(d[0], seqs[j])] = "context"
 
+    # 이력 항목 + 일지 항목 (같은 원문이 이력에 이미 있으면 일지 항목은 뺀다)
+    texts = {entry(d).text for d in chosen}
+    pool = [(entry(d).day, d[0], d[1], entry(d).text, entry(d).tokens, source[d]) for d in chosen]
+    seen_j = set()
+    for x in journal:
+        if x.text in texts or (x.agent, x.text) in seen_j:
+            continue
+        seen_j.add((x.agent, x.text))
+        pool.append((x.day, x.agent, None, x.text, stores.history.tokens(x.text), "journal"))
+    pool.sort(key=lambda t: (t[0], t[1], t[2] is None, t[2] or 0, t[3]))
+
     # 상한: 오래된 것부터 제외
-    docs = sorted(chosen, key=lambda d: (entry(d).day, d[0], d[1]))
-    total = sum(entry(d).tokens for d in docs)
+    total = sum(t[4] for t in pool)
     capped = False
-    while docs and total > p.evidence_cap:
-        total -= entry(docs.pop(0)).tokens
+    while pool and total > p.evidence_cap:
+        total -= pool.pop(0)[4]
         capped = True
 
-    items = [EvidenceItem(f"E{i}", d[0], d[1], entry(d).day, entry(d).text, entry(d).tokens, source[d])
-             for i, d in enumerate(docs, 1)]
-    text = "\n".join(f"[{it.cite}] {it.agent} · day {it.day} · {it.text}" for it in items)
-    log = {"group": group, "query": query, "entities": list(entities), "attr": attr, "mode": mode,
-           "candidates": [{"agent": d[0], "seq": d[1], "source": source[d], "score": score.get(d)} for d in ordered],
+    items = [EvidenceItem(f"E{i}", a, s, day, text, tok, src) for i, (day, a, s, text, tok, src) in enumerate(pool, 1)]
+    rendered = "\n".join(f"[{it.cite}] {it.agent} · day {it.day}{' · journal' if it.seq is None else ''} · {it.text}"
+                         for it in items)
+    log = {"group": group, "query": query, "entities": list(entities), "expanded": ents, "holders": list(lk.holders),
+           "mode": mode,
+           "candidates": [{"agent": d[0], "seq": d[1], "source": source[d], "score": score.get(d)} for d in ordered]
+                         + [{"agent": x.agent, "seq": None, "source": "journal", "score": None} for x in journal],
            "selected": [{"cite": it.cite, "agent": it.agent, "seq": it.seq, "source": it.source} for it in items],
            "tokens": total, "cap_reached": capped}
-    return Evidence(items, text, total, capped, log)
-
-
-def contains(items: list[EvidenceItem], entries: list[tuple[str, int]]) -> bool:
-    got = {(it.agent, it.seq) for it in items}
-    return any(e in got for e in entries)
-
-
-def entry_matches(e: HistoryEntry, canary: str) -> bool:
-    return canary in normalize(e.text).replace(" ", "")
+    return Evidence(items, rendered, total, capped, log)

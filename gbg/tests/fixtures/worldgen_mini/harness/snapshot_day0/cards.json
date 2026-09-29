@@ -1,0 +1,26 @@
+{
+ "HR-SEL": {
+  "records": "hr-sel.a2",
+  "payroll": "hr-sel.a3",
+  "recruiting": "hr-sel.a4",
+  "mobility": "hr-sel.a5"
+ },
+ "HR-TYO": {
+  "records": "hr-tyo.a1",
+  "payroll": "hr-tyo.a3",
+  "recruiting": "hr-tyo.a4",
+  "mobility": "hr-tyo.a5"
+ },
+ "FIN-SEL": {
+  "budgeting": "fin-sel.a1",
+  "payables": "fin-sel.a2",
+  "closing": "fin-sel.a4",
+  "control": "fin-sel.a5"
+ },
+ "FIN-TYO": {
+  "budgeting": "fin-tyo.c0",
+  "closing": "fin-tyo.c0",
+  "control": "fin-tyo.c0",
+  "payables": "fin-tyo.c0"
+ }
+}

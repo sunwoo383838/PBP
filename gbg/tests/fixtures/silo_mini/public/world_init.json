@@ -3,6 +3,7 @@
  "groups": [
   {
    "id": "G1",
+   "topology": "specialist",
    "members": [
     {
      "agent_id": "g1.a1",
@@ -25,8 +26,10 @@
       "group": "G1",
       "kind": "agent",
       "scope": null,
-      "occupant": "g1.a1"
-     }
+      "occupant": "g1.a1",
+      "region": null
+     },
+     "active": true
     },
     {
      "agent_id": "g1.a2",
@@ -49,8 +52,10 @@
       "group": "G1",
       "kind": "agent",
       "scope": null,
-      "occupant": "g1.a2"
-     }
+      "occupant": "g1.a2",
+      "region": null
+     },
+     "active": true
     }
    ],
    "card": {
@@ -72,10 +77,12 @@
     "kind": "group",
     "service_scope": null,
     "endpoint": "boundary:G1"
-   }
+   },
+   "card_targets": {}
   },
   {
    "id": "G2",
+   "topology": "specialist",
    "members": [
     {
      "agent_id": "g2.a1",
@@ -98,8 +105,10 @@
       "group": "G2",
       "kind": "agent",
       "scope": null,
-      "occupant": "g2.a1"
-     }
+      "occupant": "g2.a1",
+      "region": null
+     },
+     "active": true
     },
     {
      "agent_id": "g2.a2",
@@ -122,8 +131,10 @@
       "group": "G2",
       "kind": "agent",
       "scope": null,
-      "occupant": "g2.a2"
-     }
+      "occupant": "g2.a2",
+      "region": null
+     },
+     "active": true
     }
    ],
    "card": {
@@ -145,10 +156,12 @@
     "kind": "group",
     "service_scope": null,
     "endpoint": "boundary:G2"
-   }
+   },
+   "card_targets": {}
   },
   {
    "id": "G3",
+   "topology": "specialist",
    "members": [
     {
      "agent_id": "g3.a1",
@@ -171,8 +184,10 @@
       "group": "G3",
       "kind": "agent",
       "scope": null,
-      "occupant": "g3.a1"
-     }
+      "occupant": "g3.a1",
+      "region": null
+     },
+     "active": true
     },
     {
      "agent_id": "g3.a2",
@@ -195,8 +210,10 @@
       "group": "G3",
       "kind": "agent",
       "scope": null,
-      "occupant": "g3.a2"
-     }
+      "occupant": "g3.a2",
+      "region": null
+     },
+     "active": true
     }
    ],
    "card": {
@@ -218,10 +235,12 @@
     "kind": "group",
     "service_scope": null,
     "endpoint": "boundary:G3"
-   }
+   },
+   "card_targets": {}
   },
   {
    "id": "G4",
+   "topology": "specialist",
    "members": [
     {
      "agent_id": "g4.a1",
@@ -244,8 +263,10 @@
       "group": "G4",
       "kind": "agent",
       "scope": null,
-      "occupant": "g4.a1"
-     }
+      "occupant": "g4.a1",
+      "region": null
+     },
+     "active": true
     },
     {
      "agent_id": "g4.a2",
@@ -268,8 +289,10 @@
       "group": "G4",
       "kind": "agent",
       "scope": null,
-      "occupant": "g4.a2"
-     }
+      "occupant": "g4.a2",
+      "region": null
+     },
+     "active": true
     }
    ],
    "card": {
@@ -291,7 +314,8 @@
     "kind": "group",
     "service_scope": null,
     "endpoint": "boundary:G4"
-   }
+   },
+   "card_targets": {}
   }
  ]
 }

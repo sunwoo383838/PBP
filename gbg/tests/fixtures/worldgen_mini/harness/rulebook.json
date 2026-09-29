@@ -1,0 +1,30 @@
+{
+ "HR-SEL": [
+  {
+   "id": "HR-SEL.transfer_effective_day",
+   "title": "Transfer effective day",
+   "text": "A department transfer takes effect on its effective day."
+  }
+ ],
+ "HR-TYO": [
+  {
+   "id": "HR-TYO.transfer_effective_day",
+   "title": "Transfer effective day",
+   "text": "A department transfer takes effect on its effective day."
+  }
+ ],
+ "FIN-SEL": [
+  {
+   "id": "FIN-SEL.pending_deduction",
+   "title": "Pending deduction",
+   "text": "The available amount is the line balance minus provisional approvals under review or pending."
+  }
+ ],
+ "FIN-TYO": [
+  {
+   "id": "FIN-TYO.pending_deduction",
+   "title": "Pending deduction",
+   "text": "The available amount is the line balance minus provisional approvals under review or pending."
+  }
+ ]
+}

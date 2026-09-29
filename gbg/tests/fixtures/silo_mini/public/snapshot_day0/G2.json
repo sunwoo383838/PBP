@@ -28,10 +28,12 @@
    }
   ]
  },
- "activity": [],
  "journal": [],
+ "activity": [],
+ "entity_index": {},
  "egress_log": [],
  "db": [],
+ "catalog": {},
  "aliases": {},
  "env": {
   "shards": {

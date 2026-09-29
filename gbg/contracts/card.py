@@ -4,6 +4,7 @@ card는 그룹 밖에 공개되는 역량 광고다. 담을 수 있는 것은 �
 개별 건, 수치, 진행 중인 건의 내용, 내부 결정과 근거, 개인 식별 정보, 규정 세부 파라미터는 담지 않는다
 (발행 전 누출 검사는 stores/cards.py).
 """
+import hashlib
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -27,11 +28,18 @@ class _Card(Contract):
     group: str
 
 
+def public_id(agent_id: str) -> str:
+    """에이전트에게 보이는 불투명 id. 실제 id(그룹이 드러난다) 대신 디렉터리·요청·이력 문구에 쓴다."""
+    return "agent-" + hashlib.sha256(agent_id.encode()).hexdigest()[:10]
+
+
 class AgentCard(_Card):
-    """Direct의 요청자가 보는 card."""
+    """Direct의 요청자가 보는 card. 에이전트에게는 불투명 id·지역·skills만 렌더링한다 (그룹 개념 비노출).
+    name·description·group은 하네스 내부용이다."""
     kind: Literal["agent"] = "agent"
     scope: str | None                           # 담당 범위 (부서·지역·업무 범주 수준)
     occupant: str                               # 현재 점유자 agent id
+    region: str | None = None
 
 
 class GroupCard(_Card):

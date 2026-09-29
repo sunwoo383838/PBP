@@ -18,8 +18,7 @@ rules:
   - {subject: agent,    resource: own_history,   scope: own,   perm: context}
   - {subject: agent,    resource: db,            scope: own,   perm: r}
   - {subject: agent,    resource: rulebook,      scope: own,   perm: r}
-  # boundary:g
-  - {subject: boundary, resource: group_history, scope: own,   perm: r}
+  # boundary:g (라우터·게이트웨이 공통: 색인 + catalog(db 자원) + 규정. 그룹 이력은 게이트웨이만, 아래 overrides)
   - {subject: boundary, resource: db,            scope: own,   perm: r}
   - {subject: boundary, resource: rulebook,      scope: own,   perm: r}
   - {subject: boundary, resource: index,         scope: own,   perm: r}
@@ -40,5 +39,10 @@ rules:
   - {subject: kernel,   resource: obs,           scope: any,   perm: w}
   # private: 규칙 없음 (누구도 불가)
 
-# 조건별 차이: 조건 이름 → 추가 허용 규칙 (참고 행은 Stage 6에서)
-overrides: {}
+# 조건별 차이: 조건 이름 → 추가 허용 규칙
+# 게이트웨이(ingress_raw · ingress_sel · Ingress · I+E)만 그룹 이력 전체(M_g')를 읽는다: 엔티티 태그 검색 + 하이브리드 검색.
+overrides:
+  ingress_raw: [{subject: boundary, resource: group_history, scope: own, perm: r}]
+  ingress_sel: [{subject: boundary, resource: group_history, scope: own, perm: r}]
+  ingress:     [{subject: boundary, resource: group_history, scope: own, perm: r}]
+  i_e:         [{subject: boundary, resource: group_history, scope: own, perm: r}]

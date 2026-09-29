@@ -1,0 +1,103 @@
+# worldgen 조회 정책 (그룹 단위 권한). 도메인마다 그 그룹 구성원 전원이 읽을 수 있는 record type과 의미.
+# 도구 스키마와 실행 중 권한 검사가 모두 여기서 나온다. key는 내부 physical key 템플릿이며 에이전트에게 노출되지 않는다.
+# 역할은 조회 권한에 쓰지 않는다 (roster·card·로컬 작업 담당에만 남는다).
+record_types:
+  employee_profile:
+    domains: [HR]
+    entity_kind: employee
+    key: "{group}/emp/{entity}/profile"
+    description: "The employee's current department, grade (1-5), contract type, hire day, and employment status."
+  budget_line_balance:
+    domains: [FIN]
+    entity_kind: department
+    key: "{group}/line/{entity}/remaining"
+    description: "The remaining capex balance of the department's budget line, in KRW."
+  budget_line_base:
+    domains: [FIN]
+    entity_kind: department
+    key: "{group}/line/{entity}/base"
+    description: "The quarterly base allocation of the department's budget line, in KRW."
+  provisional_approval:
+    domains: [FIN, PROC]
+    entity_kind: provisional_approval
+    key: "{group}/commit/{entity}/status"
+    description: "A registered provisional approval: status (pending, settled, cancelled), amount in KRW, expected settlement day."
+  department_provisional_approvals:
+    domains: [FIN]
+    entity_kind: department
+    key: "{group}/commit/{member}/status"
+    match: {source: catalog, catalog_kind: commits, field: department}
+    limit: 5
+    description: "Registered provisional approvals of the department, ordered by approval ID, at most 5."
+  inventory_quantity:
+    domains: [IT]
+    entity_kind: inventory_item
+    key: "{group}/inv/{entity}/qty"
+    description: "The quantity in stock of an in-house inventory item."
+  asset_holder:
+    domains: [IT]
+    entity_kind: asset
+    key: "{group}/asset/{entity}/holder"
+    description: "The employee an asset is currently assigned to (null if unassigned)."
+  license_seats:
+    domains: [IT]
+    entity_kind: software
+    key: "{group}/lic/{entity}/seats"
+    description: "Total and used license seats of a software product."
+  vendor_lead_time:
+    domains: [PROC]
+    entity_kind: vendor
+    key: "{group}/vendor/{entity}/lead"
+    description: "The vendor's delivery lead time in days."
+  vendor_registration:
+    domains: [PROC]
+    entity_kind: vendor
+    key: "{group}/vendor/{entity}/registered"
+    description: "Whether the vendor is registered for purchasing."
+  quote_amount:
+    domains: [PROC]
+    entity_kind: quote
+    key: "{group}/quote/{entity}/amount"
+    description: "The quoted price of a vendor quote, in KRW."
+  seat_price:
+    domains: [PROC]
+    entity_kind: software
+    key: "{group}/seatprice/{entity}/amount"
+    description: "The purchase price of one license seat of a software product, in KRW."
+  goods_receipt:
+    domains: [PROC]
+    entity_kind: provisional_approval
+    key: "{group}/receipt/{entity}/received"
+    description: "Whether the goods for a provisional approval have been received."
+  contract_terms:
+    domains: [LEGAL]
+    entity_kind: employee
+    key: "{group}/contract/{entity}/terms"
+    description: "The employee's contract terms: allowed equipment tier, expiry day, and whether an NDA is required."
+  catalog_entry:
+    domains: [HR, IT, FIN, PROC, LEGAL]
+    entity_kind: any
+    catalog: true
+    description: "The group's master data entry for the entity (e.g. employee name and ID, item type and tier, vendor, quote, department of a provisional approval)."
+
+# catalog 종류 → 엔티티 종류 (이름 해소와 entity.search)
+catalog_kinds:
+  employees: employee
+  commits: provisional_approval
+  inventory: inventory_item
+  assets: asset
+  vendors: vendor
+  quotes: quote
+
+entity_names:
+  employee: employee
+  department: department
+  provisional_approval: provisional approval
+  inventory_item: inventory item
+  asset: asset
+  software: software
+  vendor: vendor
+  quote: quote
+  any: entity
+
+search_limit: 10

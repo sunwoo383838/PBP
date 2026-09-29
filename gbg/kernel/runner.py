@@ -6,8 +6,9 @@ from pathlib import Path
 
 from gbg.contracts.access import AccessTable
 from gbg.contracts.adapter import BenchmarkAdapter
-from gbg.contracts.conditions import Condition, resolve_condition
-from gbg.contracts.params import KernelParams
+from gbg.contracts.conditions import Condition, ConfigError, resolve_condition
+from gbg.contracts.freeze import DEFAULT_FREEZE, FreezeError, RetrievalFreeze, check_frozen, load_freeze
+from gbg.contracts.params import KernelParams, RetrievalParams
 from gbg.stores import Stores
 
 from .access_guard import AccessGuard
@@ -24,26 +25,38 @@ class Runner:
     def __init__(self, adapter: BenchmarkAdapter, *, condition: str, seed: int, run_dir: Path,
                  conditions: dict[str, Condition], access: AccessTable, tools: ToolRegistry,
                  agent_factory: AgentFactory, env_tools: Callable[[Stores], list[Tool]] | None = None,
-                 params: KernelParams = KernelParams(), fault: Fault | None = None,
-                 launch_order: Callable[[list[str]], list[str]] | None = None, llm=None,
-                 tokens: Callable[[str], int] | None = None, max_day: int | None = None):
+                 params: KernelParams = KernelParams(), fault: Fault | None = None, llm=None,
+                 tokens: Callable[[str], int] | None = None, max_day: int | None = None,
+                 retrieval: RetrievalParams | None = None, freeze: RetrievalFreeze | None = None):
+        freeze = freeze or load_freeze(DEFAULT_FREEZE)                     # 평가 시드는 동결된 조회 설정으로만
+        seed_of = (getattr(adapter, "manifest", None) or {}).get("params", {}).get("seed")
+        try:
+            check_frozen(freeze, seed_of, retrieval)
+        except FreezeError as e:
+            raise ConfigError(str(e)) from e
         cond = resolve_condition(conditions, condition)
+        if cond.blocked:
+            raise ConfigError(f"조건 '{condition}'은 실행할 수 없다: {cond.blocked}")
+        defaults = getattr(conditions, "defaults", None)
+        if defaults is None:
+            raise ConfigError("조건 설정에 defaults(과제 예산)가 없다: load_conditions로 읽은 ConditionSet을 넘긴다")
         self.adapter, self.condition, self.seed, self.params = adapter, condition, seed, params
         self.run_dir = Path(run_dir)
         self.wal = WAL(self.run_dir, fault)
         extra = {"tokens": tokens} if tokens else {}
-        self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day, **extra)
+        self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day,
+                                          responder_session=cond.responder_session, **extra)
         self.max_day = max_day
         for tool in env_tools(self.stores) if env_tools else []:
             tools.register(tool)
         self.kernel = Kernel(seed=seed, condition=condition, guard=AccessGuard(access, condition), tools=tools,
                              stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
-                             launch_order=launch_order, llm=llm)
+                             defaults=defaults, llm=llm)
         self.card_mode = cond.card_mode
 
     def _check_config(self):
         cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,
-               "seed": self.seed, "params": self.params.model_dump()}
+               "seed": self.seed, "params": self.params.model_dump(), "defaults": self.kernel.defaults.model_dump()}
         path = self.run_dir / "run.json"
         if path.exists():
             old = json.loads(path.read_text(encoding="utf-8"))
@@ -60,32 +73,47 @@ class Runner:
         for g in self.adapter.groups():
             for m in g.members:
                 k.add_member(m.agent_id, g.id, m.role)
+                k.members[m.agent_id].active = m.active
         committed = self.wal.recover()
         for ev in committed:
             self._apply(ev)
         done = (committed[-1].day, committed[-1].round) if committed else (0, self.params.rounds_per_day)
 
+        last_round = self.params.rounds_per_day + 1                       # 하루 끝 정리 라운드
         by_slot: dict[tuple[int, int], list] = {}
-        for te in self.adapter.events():
-            if not 0 <= te.round <= self.params.rounds_per_day:
-                raise ValueError(f"{te.eid}: round {te.round}는 0..{self.params.rounds_per_day} 밖")
+        prev = None
+        for te in self.adapter.events():                                  # seq 순서
+            if not 0 <= te.round <= last_round:
+                raise ValueError(f"{te.eid}: round {te.round}는 0..{last_round} 밖")
+            if prev is not None and (te.seq <= prev.seq or (te.day, te.round) < (prev.day, prev.round)):
+                raise ValueError(f"{te.eid}: seq 순서와 (day, round) 순서가 어긋남")
             by_slot.setdefault((te.day, te.round), []).append(te)
+            prev = te
         last_day = max(d for d, _ in by_slot) if by_slot else 0
         if self.max_day is not None:
             last_day = min(last_day, self.max_day)
 
         for day in range(1, last_day + 1):
-            for rnd in range(self.params.rounds_per_day + 1):
+            for rnd in range(last_round + 1):
                 if (day, rnd) <= done:
                     continue
-                arrivals = sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq)
-                drafts = asyncio.run(k.run_round(day, rnd, arrivals))
-                events, side = k.seal(day, rnd, drafts)
-                for ev in events:                                         # 투영 갱신 → 그 obs 기록도 같은 커밋에
-                    for name, rec in self._apply(ev):
-                        side.setdefault(f"obs/{name}.jsonl", []).append(rec)
+                events: list = []
+                side: dict[str, list[dict]] = {}
+                for te in sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq):   # seq 순서로 하나씩
+                    drafts = asyncio.run(k.run_item(day, rnd, te))
+                    evs, s = k.number(day, rnd, drafts)
+                    self._absorb(evs, s, events, side)                    # 다음 항목은 반영된 세계를 본다
+                self._absorb([k.marker(day, rnd, len(events))], {}, events, side)
                 self.wal.commit(events, side)
         return self.wal.hash()
+
+    def _absorb(self, evs, s, events, side):
+        for name, recs in s.items():
+            side.setdefault(name, []).extend(recs)
+        for ev in evs:
+            for name, rec in self._apply(ev):                             # 투영 갱신의 obs 기록도 같은 커밋에
+                side.setdefault(f"obs/{name}.jsonl", []).append(rec)
+            events.append(ev)
 
     def _apply(self, ev):
         self.kernel.apply(ev)

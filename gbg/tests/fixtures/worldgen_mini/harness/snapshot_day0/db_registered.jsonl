@@ -1,0 +1,15 @@
+{"key": "HR-SEL/emp/E-SEL-1000/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "영업1팀", "grade": 3, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "HR-SEL/emp/E-SEL-1001/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "개발1팀", "grade": 2, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "HR-SEL/emp/E-SEL-1002/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "영업1팀", "grade": 4, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "HR-SEL/emp/E-SEL-1003/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "개발1팀", "grade": 1, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "HR-TYO/emp/E-TYO-1000/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "営業1課", "grade": 3, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "HR-TYO/emp/E-TYO-1001/profile", "v": 1, "day": -20, "db_day": -20, "value": {"dept": "開発1課", "grade": 2, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"key": "FIN-SEL/line/영업1팀/remaining", "v": 1, "day": -20, "db_day": -20, "value": 3120400}
+{"key": "FIN-SEL/line/영업1팀/base", "v": 1, "day": -20, "db_day": -20, "value": 3120400}
+{"key": "FIN-SEL/line/개발1팀/remaining", "v": 1, "day": -20, "db_day": -20, "value": 2874300}
+{"key": "FIN-SEL/line/개발1팀/base", "v": 1, "day": -20, "db_day": -20, "value": 2874300}
+{"key": "FIN-TYO/line/営業1課/remaining", "v": 1, "day": -20, "db_day": -20, "value": 4051700}
+{"key": "FIN-TYO/line/営業1課/base", "v": 1, "day": -20, "db_day": -20, "value": 4051700}
+{"key": "FIN-TYO/line/開発1課/remaining", "v": 1, "day": -20, "db_day": -20, "value": 3366200}
+{"key": "FIN-TYO/line/開発1課/base", "v": 1, "day": -20, "db_day": -20, "value": 3366200}
+{"key": "FIN-SEL/commit/CMT-00001/status", "v": 1, "day": -3, "db_day": -2, "value": {"status": "pending", "amount": 612300, "expected_settle": 8}}

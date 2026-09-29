@@ -1,0 +1,51 @@
+{
+ "HR-SEL": {
+  "employees/E-SEL-1000": {
+   "employee_id": "E-SEL-1000",
+   "name": "김하린",
+   "alias": "하린 과장",
+   "region": "SEL"
+  },
+  "employees/E-SEL-1001": {
+   "employee_id": "E-SEL-1001",
+   "name": "박도윤",
+   "alias": "도윤 대리",
+   "region": "SEL"
+  },
+  "employees/E-SEL-1002": {
+   "employee_id": "E-SEL-1002",
+   "name": "이서준",
+   "alias": "서준 선임",
+   "region": "SEL"
+  },
+  "employees/E-SEL-1003": {
+   "employee_id": "E-SEL-1003",
+   "name": "최지우",
+   "alias": "지우 과장",
+   "region": "SEL"
+  }
+ },
+ "HR-TYO": {
+  "employees/E-TYO-1000": {
+   "employee_id": "E-TYO-1000",
+   "name": "佐藤結衣",
+   "alias": "佐藤さん",
+   "region": "TYO"
+  },
+  "employees/E-TYO-1001": {
+   "employee_id": "E-TYO-1001",
+   "name": "小野健",
+   "alias": "小野さん",
+   "region": "TYO"
+  }
+ },
+ "FIN-SEL": {
+  "commits/CMT-00001": {
+   "commit_id": "CMT-00001",
+   "department": "영업1팀",
+   "item": "laptop",
+   "work": null
+  }
+ },
+ "FIN-TYO": {}
+}

@@ -1,0 +1,6 @@
+{"i": 0, "day": -20, "round": 1, "role": "user", "text": "[Task] Check the 영업1팀 budget line", "tok": 36, "summary": "[Task] Check the 영업1팀 budget line"}
+{"i": 1, "day": -20, "round": 1, "role": "tool", "text": "영업1팀 capex balance confirmed at KRW 3,120,400.", "tok": 50, "summary": "영업1팀 capex balance confirmed at KRW 3,120,400."}
+{"i": 2, "day": -20, "round": 1, "role": "user", "text": "[Task] Check the 개발1팀 budget line", "tok": 36, "summary": "[Task] Check the 개발1팀 budget line"}
+{"i": 3, "day": -20, "round": 1, "role": "tool", "text": "개발1팀 capex balance confirmed at KRW 2,874,300.", "tok": 50, "summary": "개발1팀 capex balance confirmed at KRW 2,874,300."}
+{"i": 4, "day": 0, "round": 1, "role": "user", "text": "[Task] Adjust the 개발1팀 budget", "tok": 31, "summary": "[Task] Adjust the 개발1팀 budget"}
+{"i": 5, "day": 0, "round": 1, "role": "tool", "text": "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation).", "tok": 75, "summary": "개발1팀 capex balance adjusted to KRW 2,417,900 (division reall"}

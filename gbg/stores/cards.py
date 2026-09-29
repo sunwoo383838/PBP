@@ -12,10 +12,9 @@ import json
 import re
 import unicodedata
 
-from gbg.contracts.card import AgentCard, GroupCard
+from gbg.contracts.card import AgentCard, GroupCard, public_id
 from gbg.contracts.schemas import GroupSpec
 
-from .activity import ActivityIndex
 
 # ─────────────────────────── 금액 탐지 ───────────────────────────
 _NUM = r"\d[\d,.]*"
@@ -90,31 +89,54 @@ def _dump(card) -> dict:
 
 
 class CardRegistry:
+    """에이전트 card와 그룹 card.
+
+    Direct 디렉터리는 역할마다 card가 가리키는 한 명(card_targets)을 보여 준다. 같은 역할의 다른 구성원(중복 담당,
+    대리 처리자)은 디렉터리에 없다. card 대상이 정해지지 않은 그룹은 card가 있는 활동 구성원을 모두 보여 준다.
+    """
     def __init__(self, groups: list[GroupSpec], categories: dict[str, list[str]], names: set[str], card_mode: str):
         self.card_mode = card_mode
         self.categories = {g: list(c) for g, c in categories.items()}
         self.checker = CardLeakChecker(names, {c for cs in categories.values() for c in cs})
         self.agent_cards: dict[str, AgentCard] = {}
         self.group_of: dict[str, str] = {}
+        self.role_of: dict[str, str] = {}
         self.active: set[str] = set()
         self.group_cards: dict[str, GroupCard] = {}
+        self.targets: dict[str, dict[str, str]] = {}
         for g in groups:
-            for card in [g.card, *(m.card for m in g.members)]:
+            for card in [g.card, *(m.card for m in g.members if m.card)]:
                 if reasons := self.checker.check(card):
                     raise CardLeakError(f"{g.id} 기본 card '{card.name}' 누출 검사 실패: {reasons}")
             self.group_cards[g.id] = g.card
+            self.targets[g.id] = dict(g.card_targets)
             for m in g.members:
-                self.agent_cards[m.agent_id], self.group_of[m.agent_id] = m.card, g.id
-                self.active.add(m.agent_id)
+                self.group_of[m.agent_id], self.role_of[m.agent_id] = g.id, m.role
+                if m.card:
+                    self.agent_cards[m.agent_id] = m.card
+                if m.active:
+                    self.active.add(m.agent_id)
 
     # ── 조회 ──
     def directory(self, kind: str) -> list[AgentCard] | list[GroupCard]:
+        """agent_cards: 같은 에이전트는 한 번만(여러 역할의 card 대상이어도), 그룹이 드러나지 않게 불투명 id 순."""
         if kind == "agent_cards":
-            return [self.agent_cards[a] for a in sorted(self.active, key=lambda a: (self.group_of[a], a))
-                    if a in self.agent_cards]
+            agents = set()
+            for g in self.group_cards:
+                if self.targets[g]:
+                    agents |= set(self.targets[g].values())
+                else:
+                    agents |= {a for a, grp in self.group_of.items() if grp == g}
+            return sorted((self.agent_cards[a] for a in agents if a in self.active and a in self.agent_cards),
+                          key=lambda c: public_id(c.occupant))
         if kind == "group_cards":
             return [self.group_cards[g] for g in sorted(self.group_cards)]
         raise ValueError(f"알 수 없는 디렉터리 '{kind}'")
+
+    def resolve(self, pid: str) -> str | None:
+        """불투명 id → 실제 agent id. 떠난 구성원도 풀어 준다 (그 요청은 버스가 agent_unavailable로 끊고, 채점기는
+        실제 id로 L_route를 판정한다)."""
+        return next((a for a in sorted(self.group_of) if public_id(a) == pid), None)
 
     def render(self, kind: str) -> str:
         return "\n".join(json.dumps(_dump(c), ensure_ascii=False, sort_keys=True) for c in self.directory(kind))
@@ -130,9 +152,11 @@ class CardRegistry:
     def leave(self, agent: str):
         self.active.discard(agent)
 
-    def join(self, agent: str, group: str, from_agent: str | None, day: int, seq: int) -> list:
-        """후임은 전임 역할의 card를 그대로 이어받는다(점유자 교체, version 증가)."""
-        self.group_of[agent] = group
+    def join(self, agent: str, group: str, role: str, from_agent: str | None, day: int, seq: int) -> list:
+        """후임은 전임의 card를 이어받고(점유자 교체, version 증가), 전임이 card 대상이던 역할의 대상이 된다.
+        card가 없는 구성원(swarm 워커)은 디렉터리에 나타나지 않는다."""
+        self.group_of[agent], self.role_of[agent] = group, role
+        self.active.add(agent)
         prev = self.agent_cards.get(from_agent) if from_agent else None
         if prev is None:
             return []
@@ -140,7 +164,9 @@ class CardRegistry:
         ok, obs = self._publish(card, agent, day, seq)
         if ok:
             self.agent_cards[agent] = card
-            self.active.add(agent)
+            for r, a in list(self.targets.get(group, {}).items()):
+                if a == from_agent:
+                    self.targets[group][r] = agent
         return obs
 
     def update_scope(self, agent: str, scope: str, day: int, seq: int) -> list:
@@ -159,15 +185,15 @@ class CardRegistry:
             return None
         return f"Currently handles: {', '.join(cats)} ({self.agent_cards[agent].skills[0].name})"
 
-    def day_end(self, day: int, activity: ActivityIndex, seq: int) -> list:
+    def day_end(self, day: int, index, seq: int) -> list:
+        """card_mode dynamic: 그룹 색인의 엔티티 → 처리자에서 부서 수준 범주만 뽑아 담당 범위를 갱신한다."""
         if self.card_mode != "dynamic":
             return []
         obs = []
-        for agent in sorted(self.active):
+        for agent in sorted(a for a in self.active if a in self.agent_cards):
             g = self.group_of[agent]
-            recs = activity.by_agent(g).get(agent, [])
-            cats = sorted({r.entity for r in recs} & set(self.categories.get(g, [])))
-            scope = self.summarize(agent, cats)
+            handled = {e for e, agents in index.entities(g).items() if agent in agents}
+            scope = self.summarize(agent, sorted(handled & set(self.categories.get(g, []))))
             if scope is not None:
                 obs += self.update_scope(agent, scope, day, seq)
         return obs
@@ -175,4 +201,5 @@ class CardRegistry:
     def dump(self):
         return {"agent_cards": {a: _dump(c) for a, c in sorted(self.agent_cards.items())},
                 "group_cards": {g: _dump(c) for g, c in sorted(self.group_cards.items())},
+                "targets": {g: dict(sorted(t.items())) for g, t in sorted(self.targets.items())},
                 "active": sorted(self.active)}

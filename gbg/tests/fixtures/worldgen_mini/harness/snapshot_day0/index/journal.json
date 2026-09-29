@@ -1,0 +1,98 @@
+{
+ "HR-SEL": [
+  {
+   "day": -20,
+   "agent": "hr-sel.a1",
+   "text": "E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular.",
+   "entities": [
+    "E-SEL-1000"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "hr-sel.a2",
+   "text": "E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular.",
+   "entities": [
+    "E-SEL-1001"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "hr-sel.a1",
+   "text": "E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular.",
+   "entities": [
+    "E-SEL-1002"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "hr-sel.a2",
+   "text": "E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular.",
+   "entities": [
+    "E-SEL-1003"
+   ]
+  }
+ ],
+ "HR-TYO": [
+  {
+   "day": -20,
+   "agent": "hr-tyo.a1",
+   "text": "E-TYO-1000 HR record confirmed: 営業1課, grade 3, regular.",
+   "entities": [
+    "E-TYO-1000"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "hr-tyo.a2",
+   "text": "E-TYO-1001 HR record confirmed: 開発1課, grade 2, regular.",
+   "entities": [
+    "E-TYO-1001"
+   ]
+  }
+ ],
+ "FIN-SEL": [
+  {
+   "day": -20,
+   "agent": "fin-sel.a1",
+   "text": "영업1팀 capex balance confirmed at KRW 3,120,400.",
+   "entities": [
+    "영업1팀"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "fin-sel.a1",
+   "text": "개발1팀 capex balance confirmed at KRW 2,874,300.",
+   "entities": [
+    "개발1팀"
+   ]
+  },
+  {
+   "day": 0,
+   "agent": "fin-sel.a1",
+   "text": "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation).",
+   "entities": [
+    "개발1팀"
+   ]
+  }
+ ],
+ "FIN-TYO": [
+  {
+   "day": -20,
+   "agent": "fin-tyo.c0",
+   "text": "営業1課 capex balance confirmed at KRW 4,051,700.",
+   "entities": [
+    "営業1課"
+   ]
+  },
+  {
+   "day": -20,
+   "agent": "fin-tyo.c0",
+   "text": "開発1課 capex balance confirmed at KRW 3,366,200.",
+   "entities": [
+    "開発1課"
+   ]
+  }
+ ]
+}

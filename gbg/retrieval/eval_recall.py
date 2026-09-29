@@ -1,76 +1,117 @@
-"""오프라인 회수율 평가 (LLM 없음).
+"""오프라인 회수율 평가 (LLM 없음). worldgen 4.2 private 원장(gold.jsonl, fragments.jsonl)을 읽는 오프라인 도구다.
 
-원격 need 중 이력에만 있는 조각(frag 출처)에 대해 질의를 만들어, 증거 블록에 그 조각이 담긴 이력 항목이 들어가는지 본다.
-발견성(H0/H1/H2)별, 일차별, BM25 단독 대 하이브리드로 보고한다.
+원격 need의 결정 필수 성분 중 이력에만 있는 조각(frag 출처)에 대해 두 가지를 잰다.
+    index   정확 조회(색인 + catalog 한 단계, 라우터와 공통)가 조각에 닿는가: 조각 원문이 일지 결과에 있거나(H0),
+            조각 보유자가 처리자 목록에 있다(H1). H0·H1 90% 기준은 이 수치에 적용한다.
+    hybrid, bm25  게이트웨이 증거 블록에 조각 원문이 들어가는가.
+발견성(H0/H1/H2)별, 일차별로 보고한다. H2는 기준 없이 보고만 한다.
 
-- 조각의 위치: 조각의 카나리 값이 원문에 들어 있는 그룹 이력 항목 (쉼표·공백을 지운 정규화 매칭).
-  카나리가 없는 조각은 측정하지 않고 skipped로 센다.
-- 발견성: 그 항목이 일지에 있으면 H0, 활동 색인에 있으면 H1, 둘 다 없으면 H2.
-- 질의: need의 엔티티 표면형(그 그룹 별칭표의 첫 이름) + 속성 키워드 (semantic_key = 그룹/엔티티/속성).
+- 조각의 위치: fragments.jsonl의 원문이 들어 있는 보유자 이력 항목, 또는 같은 원문의 일지 항목.
+- 질의: need의 엔티티 표면형(ID + catalog 이름·별칭) + 속성 키워드. semantic key(그룹/…/…)에서 알려진 엔티티(catalog·
+  DB에 있는 ID나 부서)인 칸을 엔티티로, 나머지 칸을 속성으로 본다. 위치는 형식마다 다르다(예: IT-SEL/eligibility/E-SEL-1019).
 """
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 
-from gbg.contracts.schemas import GoldRecord, TimelineEvent
-
-from .evidence import build_evidence, contains, entry_matches
+from .evidence import build_evidence
 from .hybrid import GroupRetriever
+from .lookup import index_lookup
+from .normalize import normalize
 
 
 @dataclass(frozen=True)
 class Case:
     task_id: str
-    need_id: str
+    need: str
     group: str
     day: int
+    round: int
     disc: str
     fid: str
     query: str
     entities: tuple[str, ...]
     attr: str
-    targets: tuple[tuple[str, int], ...]
+    text: str                                   # 조각 원문
+    holders: tuple[str, ...]
 
 
-def build_cases(stores, tasks: dict[str, TimelineEvent], gold: list[GoldRecord],
-                aliases: dict[str, dict[str, list[str]]]) -> tuple[list[Case], dict[str, int]]:
+def _critical(need: dict) -> set[str] | None:
+    crit = need.get("critical_components")
+    if crit is None:
+        return None
+    return {c if isinstance(c, str) else c.get("fid") for c in crit}
+
+
+def parse_sem(sem: str, names: dict[str, list[str]]) -> tuple[tuple[str, ...], str]:
+    """semantic key → (엔티티들, 속성). names에 있는 칸이 모두 엔티티다 (예: PROC-SEL/quotes/laptop → laptop)."""
+    parts = sem.split("/")[1:]
+    ents = tuple(dict.fromkeys(p for p in parts if p in names))
+    attr = " ".join(p for p in parts if p not in ents)
+    return ents, attr
+
+
+def build_cases(gold: list[dict], fragments: dict[str, dict], names: dict[str, list[str]] | None = None
+                ) -> tuple[list[Case], dict[str, int]]:
+    """names: 알려진 엔티티 → 표면형(이름·별칭). 없으면 semantic key의 두 번째 칸을 엔티티로 본다."""
     cases, skipped = [], defaultdict(int)
     for g in gold:
-        task = tasks.get(g.task_id)
-        if task is None or task.kind != "cross":
-            continue
-        for n in g.needs:
-            if n.state_class is None:                                   # 로컬 need
+        for n in g["needs"]:
+            if n.get("local"):
                 continue
-            parts = n.semantic_key.split("/")
-            entity, attr = (parts[1] if len(parts) > 2 else None), parts[-1]
-            surface = (aliases.get(n.group, {}).get(entity) or [entity])[0] if entity else ""
-            agents = sorted(a for a, (grp, _) in stores.members.items() if grp == n.group)
-            journal = {(r.agent, r.seq) for r in stores.journal.records(n.group)}
-            activity = {(r.agent, r.seq) for r in stores.activity.records(n.group)}
-            for s in n.sources:
-                if s.type != "frag":
+            if names is None:
+                parts = n["sem"].split("/")
+                ents, attr = ((parts[1],) if len(parts) > 2 else ()), parts[-1]
+            else:
+                ents, attr = parse_sem(n["sem"], names)
+            surface = " ".join(dict.fromkeys(x for e in ents for x in [*(names or {}).get(e, []), e]))
+            crit = _critical(n)
+            for s in n["sources"]:
+                if s["type"] != "frag":
                     continue
-                if not s.canary:
-                    skipped["no_canary"] += 1
+                fid = s["frag"]["fid"]
+                if crit is not None and fid not in crit:
+                    skipped["not_critical"] += 1
                     continue
-                targets = tuple((a, e.seq) for a in agents for e in stores.history.entries(a)
-                                if e.day <= task.day and entry_matches(e, s.canary))
-                if not targets:
-                    skipped["unlocatable"] += 1
+                f = fragments.get(fid)
+                if f is None or not f.get("text"):
+                    skipped["no_fragment_text"] += 1
                     continue
-                disc = "H0" if any(t in journal for t in targets) else ("H1" if any(t in activity for t in targets) else "H2")
-                cases.append(Case(g.task_id, n.need_id, n.group, task.day, disc, s.fid,
-                                  f"{surface} {attr.replace('_', ' ')}".strip(), (entity,) if entity else (), attr, targets))
+                holders = tuple(sorted({h["agent"] for h in s["frag"].get("holders", [])} | {f["agent"]}))
+                cases.append(Case(g["wid"], n["sem"], n["group"], g["day"], g.get("round", 0),
+                                  s["frag"].get("disc") or f.get("disc", "?"),
+                                  fid, f"{surface} {attr.replace('_', ' ')}".strip(), ents,
+                                  attr, f["text"], holders))
+    cases.sort(key=lambda c: (c.day, c.round, c.task_id, c.fid))
     return cases, dict(skipped)
 
 
-async def evaluate(retrievers: dict[str, GroupRetriever], cases: list[Case], modes=("hybrid", "bm25")) -> dict:
+def hit(items, case: Case) -> bool:
+    """증거 블록에 조각 원문이 들어간 항목(이력 줄 또는 일지 항목)이 있는가."""
+    want = normalize(case.text)
+    return any(want in normalize(it.text) for it in items)
+
+
+def index_hit(retriever: GroupRetriever, case: Case) -> bool:
+    lk = index_lookup(retriever.stores, case.group, list(case.entities), retriever.p.catalog_link_fields)
+    want = normalize(case.text)
+    return any(want in normalize(x.text) for x in lk.journal) or bool(set(case.holders) & set(lk.holders))
+
+
+async def evaluate(retrievers: dict[str, GroupRetriever], cases: list[Case], modes=("hybrid", "bm25"),
+                   advance=None) -> dict:
+    """advance(case)가 있으면 사례마다 그 과제 도착 직전까지의 세계를 반영한 뒤 평가한다 (사례는 시간순)."""
     report = {"cases": len(cases), "modes": {}}
+    modes = ("index", *modes)
+    by_mode = {m: [] for m in modes}
+    for c in cases:
+        if advance:
+            advance(c)
+        by_mode["index"].append({**asdict(c), "hit": index_hit(retrievers[c.group], c), "cap_reached": False})
+        for mode in modes[1:]:
+            ev = await build_evidence(retrievers[c.group], c.query, list(c.entities), mode)
+            by_mode[mode].append({**asdict(c), "hit": hit(ev.items, c), "cap_reached": ev.cap_reached})
     for mode in modes:
-        rows = []
-        for c in cases:
-            ev = await build_evidence(retrievers[c.group], c.query, list(c.entities), c.attr, mode)
-            rows.append({**asdict(c), "hit": contains(ev.items, list(c.targets)), "cap_reached": ev.cap_reached})
+        rows = by_mode[mode]
         by = lambda key: {k: _rate([r for r in rows if r[key] == k]) for k in sorted({r[key] for r in rows})}
         report["modes"][mode] = {"recall": _rate(rows), "by_disc": by("disc"), "by_day": by("day"), "rows": rows}
     return report

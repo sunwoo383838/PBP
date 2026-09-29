@@ -1,6 +1,6 @@
 {
  "benchmark": "silo",
- "world_hash": "d5dbeebbb7d02408",
+ "world_hash": "silo-mini",
  "seed": 0,
  "days": 1,
  "generator": "gbg.tests.fixtures.build_fixtures",

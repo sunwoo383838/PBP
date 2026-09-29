@@ -1,0 +1,2 @@
+{"i": 0, "day": -3, "round": 1, "role": "user", "text": "[Task] Review a provisional approval for 영업1팀 equipment", "tok": 60, "summary": "[Task] Review a provisional approval for 영업1팀 equipment"}
+{"i": 1, "day": -3, "round": 1, "role": "tool", "text": "CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8.", "tok": 95, "summary": "CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confi"}

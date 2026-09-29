@@ -5,10 +5,11 @@ from gbg.benchmarks.silo.adapter import SiloAdapter
 from gbg.benchmarks.worldgen.adapter import WorldgenAdapter
 
 FIXTURES = Path(__file__).parent / "fixtures"
-ADAPTERS = {"worldgen_mini": WorldgenAdapter, "silo_mini": SiloAdapter}
+ADAPTERS = {"worldgen_mini": (WorldgenAdapter, "harness"), "silo_mini": (SiloAdapter, "public")}
 
 
 def load_adapter(name: str):
-    a = ADAPTERS[name]()
-    a.load(FIXTURES / name / "public")
+    cls, sub = ADAPTERS[name]
+    a = cls()
+    a.load(FIXTURES / name / sub)
     return a

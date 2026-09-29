@@ -1,0 +1,14 @@
+{"fid": "FR-PSEL0", "group": "HR-SEL", "agent": "hr-sel.a1", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular."}
+{"fid": "FR-PSEL1", "group": "HR-SEL", "agent": "hr-sel.a2", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-SEL-1001 HR record confirmed: 개발1팀, grade 2, regular."}
+{"fid": "FR-PSEL2", "group": "HR-SEL", "agent": "hr-sel.a1", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular."}
+{"fid": "FR-PSEL3", "group": "HR-SEL", "agent": "hr-sel.a2", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-SEL-1003 HR record confirmed: 개발1팀, grade 1, regular."}
+{"fid": "FR-PTYO0", "group": "HR-TYO", "agent": "hr-tyo.a1", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-TYO-1000 HR record confirmed: 営業1課, grade 3, regular."}
+{"fid": "FR-PTYO1", "group": "HR-TYO", "agent": "hr-tyo.a2", "day": -20, "origin": "db_pending", "disc": "H0", "text": "E-TYO-1001 HR record confirmed: 開発1課, grade 2, regular."}
+{"fid": "FR-LSEL0", "group": "FIN-SEL", "agent": "fin-sel.a1", "day": -20, "origin": "db_pending", "disc": "H0", "text": "영업1팀 capex balance confirmed at KRW 3,120,400."}
+{"fid": "FR-LSEL1", "group": "FIN-SEL", "agent": "fin-sel.a1", "day": -20, "origin": "db_pending", "disc": "H0", "text": "개발1팀 capex balance confirmed at KRW 2,874,300."}
+{"fid": "FR-LTYO0", "group": "FIN-TYO", "agent": "fin-tyo.c0", "day": -20, "origin": "db_pending", "disc": "H0", "text": "営業1課 capex balance confirmed at KRW 4,051,700."}
+{"fid": "FR-LTYO1", "group": "FIN-TYO", "agent": "fin-tyo.c0", "day": -20, "origin": "db_pending", "disc": "H0", "text": "開発1課 capex balance confirmed at KRW 3,366,200."}
+{"fid": "FR-C1", "group": "FIN-SEL", "agent": "fin-sel.a2", "day": -3, "origin": "operational", "disc": "H1", "text": "CMT-00001 영업1팀 laptop provisional approval KRW 612,300 confirmed, settlement due day 8."}
+{"fid": "FR-C2", "group": "FIN-SEL", "agent": "fin-sel.a3", "day": -1, "origin": "operational", "disc": "H1", "text": "CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9."}
+{"fid": "FR-C3", "group": "FIN-SEL", "agent": "fin-sel.a3", "day": -1, "origin": "operational", "disc": "H2", "text": "That one is on hold until Friday; hold KRW 389,100 against the line."}
+{"fid": "FR-LADJ", "group": "FIN-SEL", "agent": "fin-sel.a1", "day": 0, "origin": "db_pending", "disc": "H0", "text": "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation)."}

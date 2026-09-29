@@ -1,0 +1,4 @@
+{"i": 0, "day": -20, "round": 1, "role": "user", "text": "[Task] Check the HR record of E-SEL-1000", "tok": 44, "summary": "[Task] Check the HR record of E-SEL-1000"}
+{"i": 1, "day": -20, "round": 1, "role": "tool", "text": "E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular.", "tok": 60, "summary": "E-SEL-1000 HR record confirmed: 영업1팀, grade 3, regular."}
+{"i": 2, "day": -20, "round": 1, "role": "user", "text": "[Task] Check the HR record of E-SEL-1002", "tok": 44, "summary": "[Task] Check the HR record of E-SEL-1002"}
+{"i": 3, "day": -20, "round": 1, "role": "tool", "text": "E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular.", "tok": 60, "summary": "E-SEL-1002 HR record confirmed: 영업1팀, grade 4, regular."}

@@ -1,0 +1,4 @@
+{"i": 0, "day": -1, "round": 1, "role": "user", "text": "[Task] Review a provisional approval for 개발1팀 equipment", "tok": 60, "summary": "[Task] Review a provisional approval for 개발1팀 equipment"}
+{"i": 1, "day": -1, "round": 1, "role": "tool", "text": "CMT-00002 개발1팀 monitor provisional approval KRW 455,800 review started, settlement due day 9.", "tok": 102, "summary": "CMT-00002 개발1팀 monitor provisional approval KRW 455,800 revi"}
+{"i": 2, "day": -1, "round": 1, "role": "assistant", "text": "Opened a review for CMT-00003 개발1팀 workstation.", "tok": 51, "summary": "Opened a review for CMT-00003 개발1팀 workstation."}
+{"i": 3, "day": -1, "round": 1, "role": "assistant", "text": "That one is on hold until Friday; hold KRW 389,100 against the line.", "tok": 74, "summary": "That one is on hold until Friday; hold KRW 389,100 against t"}

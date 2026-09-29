@@ -22,21 +22,26 @@ class Bus:
     async def ask(self, ctx: "AgentContext", to_agent: str, question: str, purpose: str | None) -> Response:
         from .scheduler import AgentContext, AgentFailure, FatalError
         k = self.kernel
-        span = ctx.span.child()                                      # 이 문답 전체가 한 슬롯을 차지한다
+        span = ctx.span.child()
         rid = f"{ctx.task_id}/" + ".".join(str(x) for x in span.prefix[2:])
         to = k.members.get(to_agent)
         req = Request(rid=rid, from_group=ctx.group, from_agent=ctx.agent_id, to_group=to.group if to else "",
                       to_agent=to_agent, question=question, purpose=purpose, origin_task=ctx.task_id,
                       hop=ctx.hop + 1, lineage=[*ctx.lineage, ctx.group])
-        head = {"task_id": ctx.task_id, "rid": rid, "from_agent": ctx.agent_id, "to_agent": to_agent}
-        refused = "hop_limit" if req.hop > self.hop_limit else ("agent_unavailable" if not k.is_active(to_agent) else None)
+        head = {"task_id": ctx.task_id, "rid": rid, "from_agent": ctx.agent_id, "to_agent": to_agent,
+                "serving": ctx.serving}
+        refused = self._requester_policy(ctx, to_agent, question)
+        if refused is None and req.hop > self.hop_limit:
+            refused = "hop_limit"
+        if refused is None and not k.is_active(to_agent):
+            refused = "agent_unavailable"
         span.emit("message", f"agent:{ctx.agent_id}", {**head, "kind": "request", "delivered": refused is None,
                                                        "request": req.model_dump(mode="json")})
         if refused:
             resp, actor = error_response(rid, refused, ctx.day), "kernel"
         else:
             rctx = AgentContext(k, span, to_agent, to.group, to.role, ctx.day, ctx.round, ctx.task_id, req.hop,
-                                req.lineage, k.stores.history.entries(to_agent))
+                                req.lineage, k.stores.history.entries(to_agent), serving=rid)
             actor = f"agent:{to_agent}"
             try:
                 resp = await k.agents[to_agent].respond(rctx, req)
@@ -48,5 +53,20 @@ class Bus:
                 resp = error_response(rid, e.reason, ctx.day)
             except Exception as e:
                 resp = error_response(rid, f"agent_exception:{type(e).__name__}", ctx.day)
-        span.emit("message", actor, {**head, "kind": "response", "response": resp.model_dump(mode="json")})
+        span.emit("message", actor, {**head, "kind": "response", "question": question,
+                                      "response": resp.model_dump(mode="json")})
         return resp
+
+    def _requester_policy(self, ctx: "AgentContext", to_agent: str, question: str) -> str | None:
+        """요청자 권한 (defaults.requester): 과제 담당자의 질문 수 상한과 같은 질문 반복 허용 여부."""
+        b = self.kernel.budget
+        if b is None or ctx.component != "requester":
+            return None
+        pol = self.kernel.defaults.requester
+        b.asks += 1
+        if pol.max_asks is not None and b.asks > pol.max_asks:
+            return "max_asks"
+        if not pol.requery and (to_agent, question) in b.asked:
+            return "requery_not_allowed"
+        b.asked.add((to_agent, question))
+        return None

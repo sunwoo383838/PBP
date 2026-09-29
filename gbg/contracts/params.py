@@ -67,10 +67,10 @@ class RetrievalParams(Contract):
     rrf_k: int = Field(ge=1)
     embed_candidates: int = Field(ge=1)
     top_k: int = Field(ge=1)
-    versions_per_attr: int = Field(ge=1)
     expand: int = Field(ge=0)
     evidence_cap: int = Field(ge=1)
     alias: AliasParams
+    catalog_link_fields: list[str] = []
 
 
 class Params(Contract):

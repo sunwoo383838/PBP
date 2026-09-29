@@ -1,0 +1,54 @@
+{
+ "HR-SEL": {
+  "E-SEL-1000": [
+   "hr-sel.a1"
+  ],
+  "E-SEL-1001": [
+   "hr-sel.a2"
+  ],
+  "E-SEL-1002": [
+   "hr-sel.a1"
+  ],
+  "E-SEL-1003": [
+   "hr-sel.a2"
+  ]
+ },
+ "HR-TYO": {
+  "E-TYO-1000": [
+   "hr-tyo.a1"
+  ],
+  "E-TYO-1001": [
+   "hr-tyo.a2"
+  ]
+ },
+ "FIN-SEL": {
+  "영업1팀": [
+   "fin-sel.a1",
+   "fin-sel.a2"
+  ],
+  "개발1팀": [
+   "fin-sel.a1",
+   "fin-sel.a3"
+  ],
+  "CMT-00001": [
+   "fin-sel.a2"
+  ],
+  "laptop": [
+   "fin-sel.a2"
+  ],
+  "CMT-00002": [
+   "fin-sel.a3"
+  ],
+  "monitor": [
+   "fin-sel.a3"
+  ]
+ },
+ "FIN-TYO": {
+  "営業1課": [
+   "fin-tyo.c0"
+  ],
+  "開発1課": [
+   "fin-tyo.c0"
+  ]
+ }
+}

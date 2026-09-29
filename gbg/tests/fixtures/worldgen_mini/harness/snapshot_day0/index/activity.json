@@ -1,0 +1,27 @@
+{
+ "HR-SEL": [],
+ "HR-TYO": [],
+ "FIN-SEL": [
+  {
+   "day": -3,
+   "agent": "fin-sel.a2",
+   "trace": "fin-sel.a2 handled: CMT-00001 영업1팀 laptop",
+   "entities": [
+    "CMT-00001",
+    "영업1팀",
+    "laptop"
+   ]
+  },
+  {
+   "day": -1,
+   "agent": "fin-sel.a3",
+   "trace": "fin-sel.a3 handled: CMT-00002 개발1팀 monitor",
+   "entities": [
+    "CMT-00002",
+    "개발1팀",
+    "monitor"
+   ]
+  }
+ ],
+ "FIN-TYO": []
+}

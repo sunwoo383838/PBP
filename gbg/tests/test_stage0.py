@@ -2,8 +2,8 @@
 
 1. 모든 스키마와 어댑터 인터페이스가 pydantic 모델·Protocol로 정의되고, 픽스처가 검증을 통과한다.
 2. 조건 설정과 접근 표가 로드되고, 존재하지 않는 조건·자원 이름은 로드 시 오류.
-3. 픽스처 두 개: worldgen_mini(도메인 2, 지역 2, 그룹 4, 그룹당 3명, 5일, 교차 작업 10개),
-   silo_mini(에이전트 8명을 그룹 4개로, 전역 질문 2개).
+3. 픽스처 두 개: worldgen_mini(worldgen 4.2 형식 축소판: 도메인 2, 지역 2, 그룹 4, specialist 5명 + swarm 1,
+   5일, 교차 과제 8개), silo_mini(에이전트 8명을 그룹 4개로, 전역 질문 2개).
 4. 코어 패키지가 gbg.benchmarks를 import하지 않음.
 """
 import ast
@@ -21,9 +21,8 @@ from gbg.contracts.card import AgentCard, GroupCard
 from gbg.contracts.conditions import ConfigError, load_conditions, resolve_condition
 from gbg.contracts.envelope import Request, Response
 from gbg.contracts.events import Event
-from gbg.contracts.schemas import (
-    GoldRecord, GroupSnapshot, Manifest, RuleText, TimelineEvent, WorldInit,
-)
+from gbg.contracts.schemas import DbRecord, TimelineEvent
+from gbg.tests.support import load_adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIGS = ROOT / "configs"
@@ -31,28 +30,14 @@ FIXTURES = Path(__file__).parent / "fixtures"
 CORE_PACKAGES = ["contracts", "kernel", "stores", "llm", "retrieval", "agents", "boundary", "scorer"]
 
 
-# ─────────────────────────── 픽스처 읽기 (테스트 전용: private 포함) ───────────────────────────
+# ─────────────────────────── 픽스처 읽기 (어댑터 경유, private은 테스트만) ───────────────────────────
 def read_jsonl(path):
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-class Scenario:
-    def __init__(self, name):
-        pub, priv = FIXTURES / name / "public", FIXTURES / name / "private"
-        self.manifest = Manifest.model_validate_json((pub / "manifest.json").read_text(encoding="utf-8"))
-        self.world = WorldInit.model_validate_json((pub / "world_init.json").read_text(encoding="utf-8"))
-        self.rules = [RuleText.model_validate(x) for x in json.loads((pub / "rulebook.json").read_text(encoding="utf-8"))]
-        self.snapshots = {p.stem: GroupSnapshot.model_validate_json(p.read_text(encoding="utf-8"))
-                          for p in sorted((pub / "snapshot_day0").glob("*.json"))}
-        self.timeline = [TimelineEvent.model_validate(x) for x in read_jsonl(pub / "timeline.jsonl")]
-        self.work = [TimelineEvent.model_validate(x) for x in read_jsonl(pub / "work.jsonl")]
-        self.gold = [GoldRecord.model_validate(x) for x in read_jsonl(priv / "gold.jsonl")]
-        self.rule_params = json.loads((priv / "rulebook_params.json").read_text(encoding="utf-8"))
-
-
 @pytest.fixture(scope="module", params=["worldgen_mini", "silo_mini"])
-def scenario(request):
-    return Scenario(request.param)
+def adapter(request):
+    return load_adapter(request.param)
 
 
 # ─────────────────────────── 1. 스키마 · Protocol · 픽스처 검증 ───────────────────────────
@@ -76,91 +61,76 @@ def test_adapter_protocol_is_structural():
     assert not isinstance(Missing(), BenchmarkAdapter)
 
 
-def test_fixture_manifest_and_groups(scenario):
-    groups = {g.id for g in scenario.world.groups}
-    assert scenario.world.benchmark == scenario.manifest.benchmark
-    assert set(scenario.snapshots) == groups
-    for g in scenario.world.groups:
+def test_fixture_groups_and_cards(adapter):
+    groups = adapter.groups()
+    assert groups
+    for g in groups:
         assert g.card.group == g.id and g.card.endpoint == f"boundary:{g.id}"
+        members = {m.agent_id for m in g.members}
+        assert set(g.card_targets.values()) <= members
         for m in g.members:
-            assert m.card.group == g.id and m.card.occupant == m.agent_id
+            assert m.card is None or (m.card.group == g.id and m.card.occupant == m.agent_id)
 
 
-def test_fixture_snapshot_agents_exist(scenario):
-    members = {g.id: {m.agent_id for m in g.members} for g in scenario.world.groups}
-    for gid, snap in scenario.snapshots.items():
-        assert snap.group == gid
-        assert set(snap.histories) <= members[gid]
-        assert all(r.agent in members[gid] for r in snap.activity + snap.journal)
+def test_fixture_initial_state(adapter):
+    for g in adapter.groups():
+        init = adapter.initial_state(g.id)
+        members = {m.agent_id for m in g.members}
+        assert init.group == g.id and set(init.histories) <= members
+        assert all(x.agent in members for x in init.journal + init.activity)
+        assert all(r.key.startswith(g.id + "/") for r in init.db) or adapter.name != "worldgen"
 
 
-def test_fixture_timeline_sorted_and_unique(scenario):
-    events = sorted(scenario.timeline + scenario.work, key=lambda e: e.seq)
+def test_fixture_events_in_seq_order(adapter):
+    events = list(adapter.events())
     keys = [(e.day, e.round, e.seq) for e in events]
-    assert keys == sorted(keys), "seq 순서와 (day, round) 순서가 어긋남"
-    assert len({e.seq for e in events}) == len(events)
-    assert all(1 <= e.day <= scenario.manifest.days for e in events)
-    assert all(e.kind == "cross" for e in scenario.work)
-    assert all(e.kind != "cross" for e in scenario.timeline)
+    assert keys == sorted(keys) and [e.seq for e in events] == sorted({e.seq for e in events})
+    assert all(0 <= e.round <= 4 for e in events)
 
 
-def test_fixture_event_targets_exist(scenario):
-    known = {m.agent_id for g in scenario.world.groups for m in g.members}
-    known |= {e.agent for e in scenario.timeline if e.kind == "world" and e.action == "agent_join"}
-    groups = {g.id for g in scenario.world.groups}
-    for e in scenario.timeline + scenario.work:
-        assert e.group in groups
+def test_fixture_event_targets_exist(adapter):
+    known = {m.agent_id for g in adapter.groups() for m in g.members}
+    known |= {e.agent for e in adapter.events() if e.kind in ("agent_join", "spawn")}
+    groups = {g.id for g in adapter.groups()}
+    for e in adapter.events():
+        if e.group is not None:
+            assert e.group in groups, e
         if e.agent is not None:
             assert e.agent in known, e
 
 
-def test_fixture_gold_covers_tasks(scenario):
-    tasks = {e.task_id for e in scenario.timeline + scenario.work if e.kind in ("local", "cross")}
-    gold = {g.task_id for g in scenario.gold}
-    assert gold == tasks
-    cross = {e.task_id for e in scenario.work}
-    for g in scenario.gold:
-        if g.task_id in cross:
-            assert g.needs, f"{g.task_id}: 교차 작업에 need가 없음"
-            assert g.state_class is not None
-
-
-def test_fixture_rulebook_split(scenario):
-    ids = [r.id for r in scenario.rules]
-    assert len(ids) == len(set(ids))
-    assert set(scenario.rule_params) == set(ids), "규정 본문(공개)과 파라미터(비공개)의 id가 어긋남"
-    groups = {g.id for g in scenario.world.groups}
-    assert all(r.group in groups for r in scenario.rules)
-
-
-def test_fixture_rule_sources_resolve(scenario):
-    ids = {r.id for r in scenario.rules}
-    for g in scenario.gold:
-        for n in g.needs:
-            for s in n.sources:
-                if s.type == "rule":
-                    assert s.id in ids
-
-
-def test_worldgen_mini_shape():
-    s = Scenario("worldgen_mini")
-    assert s.manifest.benchmark == "worldgen" and s.manifest.days == 5
-    assert len({g.id.split("-")[0] for g in s.world.groups}) == 2
-    assert len({g.id.split("-")[1] for g in s.world.groups}) == 2
-    assert len(s.world.groups) == 4
-    assert all(len(g.members) == 3 for g in s.world.groups)
-    assert len(s.work) == 10
+def test_worldgen_mini_shape_and_gold():
+    a = load_adapter("worldgen_mini")
+    groups = {g.id: g for g in a.groups()}
+    assert sorted(groups) == ["FIN-SEL", "FIN-TYO", "HR-SEL", "HR-TYO"]
+    assert {g.topology for g in groups.values()} == {"specialist", "swarm"}
+    for g in groups.values():
+        if g.topology == "specialist":
+            active = [m for m in g.members if m.active]
+            assert len(active) == 5 and len({m.role for m in active}) == 4, g.id
+    assert groups["HR-SEL"].card_targets["records"] == "hr-sel.a2", "중복 담당 a1은 card 대상이 아니다"
+    events = list(a.events())
+    cross = [e for e in events if e.kind == "cross"]
+    assert len(cross) == 8 and max(e.day for e in events) == 5
+    assert all(e.request is not None and e.output_schema for e in cross)
+    gold = read_jsonl(FIXTURES / "worldgen_mini" / "private" / "gold.jsonl")
+    assert {g["wid"] for g in gold} == {e.task_id for e in cross}
+    assert {g["state_class"] for g in gold} == {"A", "B", "C", "D"}
+    kinds = {e.kind for e in events}
+    assert kinds == {"db_register", "catalog", "transcript", "index", "spawn", "despawn", "agent_leave", "agent_join",
+                     "local", "cross", "world"}, "4.2 사건 종류를 모두 담는다"
 
 
 def test_silo_mini_shape():
-    s = Scenario("silo_mini")
-    assert s.manifest.benchmark == "silo"
-    assert len(s.world.groups) == 4
-    assert sum(len(g.members) for g in s.world.groups) == 8
-    assert len({e.task_id.split(".")[0] for e in s.work}) == 2
-    agents = {m.agent_id for g in s.world.groups for m in g.members}
-    for q in {e.task_id.split(".")[0] for e in s.work}:
-        assert {e.agent for e in s.work if e.task_id.startswith(q + ".")} == agents, "전역 질문은 전 에이전트에 도착"
+    a = load_adapter("silo_mini")
+    groups = a.groups()
+    work = [e for e in a.events() if e.kind == "cross"]
+    assert len(groups) == 4 and sum(len(g.members) for g in groups) == 8
+    agents = {m.agent_id for g in groups for m in g.members}
+    qs = {e.task_id.split(".")[0] for e in work}
+    assert len(qs) == 2
+    for q in qs:
+        assert {e.agent for e in work if e.task_id.startswith(q + ".")} == agents, "전역 질문은 전 에이전트에 도착"
 
 
 def test_fixture_builder_is_deterministic(tmp_path):
@@ -176,16 +146,29 @@ def test_fixture_builder_is_deterministic(tmp_path):
 
 def test_schema_rejects_bad_records():
     ok = {"eid": "x", "seq": 1, "day": 1, "round": 1, "kind": "cross", "group": "G", "agent": "a",
-          "task_id": "W-1", "text": "t", "output_schema": {"slots": [{"name": "s", "type": "number"}]}}
+          "task_id": "W-1", "text": "t", "request": {}, "output_schema": {"slots": [{"name": "s", "type": "int"}]}}
     TimelineEvent.model_validate(ok)
+    for bad in [{"task_id": None}, {"request": None}, {"output_schema": None},       # cross에는 과제 필드 필수
+                {"kind": "local"},                                                   # output_schema·request는 cross만
+                {"surprise": 1},                                                     # 선언 밖 필드 금지
+                {"output_schema": {"slots": [{"name": "s", "type": "enum"}]}},       # enum에는 options
+                {"round": -1}]:
+        with pytest.raises(ValidationError):
+            TimelineEvent.model_validate({**ok, **bad})
+    base = {"eid": "x", "seq": 1, "day": 1, "round": 0}
+    TimelineEvent.model_validate({**base, "kind": "transcript", "agent": "a",
+                                  "payload": {"role": "user", "text": "t", "tokens": 3, "summary": "t"}})
     with pytest.raises(ValidationError):
-        TimelineEvent.model_validate({**ok, "task_id": None})                   # 작업에는 task_id 필수
+        TimelineEvent.model_validate({**base, "kind": "transcript", "agent": "a", "payload": {"text": "t"}})
     with pytest.raises(ValidationError):
-        TimelineEvent.model_validate({**ok, "kind": "world"})                   # world에는 action 필수
+        TimelineEvent.model_validate({**base, "kind": "db_register", "group": "G", "payload": {"key": "k"}})
     with pytest.raises(ValidationError):
-        TimelineEvent.model_validate({**ok, "surprise": 1})                     # 선언 밖 필드 금지
+        TimelineEvent.model_validate({**base, "kind": "agent_join", "group": "G", "agent": "a", "payload": {}})
+    # DB: 순서 무관, 빈틈 허용, 같은 버전 두 번은 거부
+    v = lambda n: {"v": n, "day": 0, "db_day": 0, "value": n}
+    DbRecord.model_validate({"key": "k", "versions": [v(3), v(1)]})
     with pytest.raises(ValidationError):
-        TimelineEvent.model_validate({**ok, "output_schema": {"slots": [{"name": "s", "type": "enum"}]}})
+        DbRecord.model_validate({"key": "k", "versions": [v(2), v(2)]})
 
     resp = {"rid": "r1", "status": "ok", "answer": "a", "values": [], "missing": [], "referral_to": None,
             "need": [], "as_of": 3}
@@ -216,15 +199,44 @@ def test_card_kinds_are_distinct():
 
 
 # ─────────────────────────── 2. 조건 설정 ───────────────────────────
-def test_conditions_load_ladder():
+def test_conditions_load_ladder_and_reference_rows():
     conds = load_conditions(CONFIGS / "conditions.yaml")
-    assert list(conds) == ["direct", "routing", "ingress", "i_e"]
+    assert list(conds) == ["direct", "direct_dyncard", "routing", "routing_reveal", "ingress_raw", "ingress_sel", "ingress", "i_e"]
     assert conds["direct"].agent_tool == "ask_agent" and conds["direct"].directory == "agent_cards"
     assert conds["direct"].ingress is None and conds["direct"].egress is None
     assert conds["routing"].ingress.fanout == 1 and not conds["routing"].ingress.assemble
+    assert conds["routing_reveal"].ingress.fanout == 0 and conds["routing_reveal"].ingress.reveal_holders
+    assert conds["ingress_raw"].ingress.fanout == 3 and not conds["ingress_raw"].ingress.assemble
     assert conds["ingress"].ingress.fanout == 3 and conds["ingress"].ingress.requery
+    sel, ing = conds["ingress_sel"].ingress, conds["ingress"].ingress
+    assert (sel.fanout, sel.assemble) == (ing.fanout, ing.assemble), "조회·fan-out·조립은 Ingress와 같다"
+    assert not (sel.requery or sel.boundary_state or sel.version_marks) and ing.boundary_state and ing.version_marks
     assert conds["i_e"].agent_tool == "ask" and conds["i_e"].egress.history
-    assert all(c.card_mode == "static" for c in conds.values())
+    assert conds["direct_dyncard"].card_mode == "dynamic" and conds["direct_dyncard"].blocked
+    assert all(c.card_mode == "static" for n, c in conds.items() if n != "direct_dyncard")
+    assert all(c.responder_session == "persistent" for c in conds.values())
+    d = conds.defaults
+    assert d.budget.calls is None and d.budget.tokens is None, "B_CALLS/B_TOKENS는 파일럿 뒤 확정"
+    assert d.final_reserve.calls == 1 and d.requester.max_asks is None and d.requester.requery
+
+
+@pytest.mark.parametrize("defaults", [
+    None,                                                                       # defaults 없음
+    {"budget": {"calls": 1, "tokens": None}, "final_reserve": {"calls": 1, "tokens": 0},
+     "requester": {"max_asks": None, "requery": True}},                        # 예약분이 상한 이상
+    {"budget": {"calls": None, "tokens": None}, "final_reserve": {"calls": 0, "tokens": 0},
+     "requester": {"max_asks": None, "requery": True}},                        # 최종 답변 호출 예약 0
+])
+def test_bad_defaults_rejected(tmp_path, defaults):
+    raw = yaml.safe_load((CONFIGS / "conditions.yaml").read_text(encoding="utf-8"))
+    if defaults is None:
+        raw.pop("defaults")
+    else:
+        raw["defaults"] = defaults
+    p = tmp_path / "conditions.yaml"
+    p.write_text(yaml.safe_dump(raw, allow_unicode=True), encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_conditions(p)
 
 
 def test_unknown_condition_name_errors():
@@ -241,6 +253,11 @@ def test_unknown_condition_name_errors():
     {"egress": {"history": True}},                                             # Egress는 ask 도구에서만
     {"card_mode": "live"},
     {"cache": True},                                                           # 선언 밖 키
+    {"ingress": {"fanout": 0, "assemble": False, "requery": False, "reveal_holders": False}},   # fanout 0은 reveal만
+    {"ingress": {"fanout": 3, "assemble": False, "requery": False, "reveal_holders": True}},    # reveal은 fanout 0만
+    {"ingress": {"fanout": 3, "assemble": False, "requery": False, "version_marks": True}},     # 버전 표시는 조립하는 게이트웨이만
+    {"budget": {"calls": 10, "tokens": 1000}},                                 # 예산은 조건별로 못 바꾼다
+    {"responder_session": "shared"},
 ])
 def test_bad_condition_rejected_at_load(tmp_path, patch):
     raw = yaml.safe_load((CONFIGS / "conditions.yaml").read_text(encoding="utf-8"))
@@ -263,7 +280,6 @@ def access() -> AccessTable:
     ("agent", "r", "own_history", "own", False),                              # ContextBuilder로만
     ("kernel", "w", "own_history", "own", True),
     ("agent", "r", "group_history", "own", False),
-    ("boundary", "r", "group_history", "own", True),
     ("boundary", "w", "group_history", "own", False),
     ("kernel", "w", "group_history", "own", True),
     ("agent", "r", "db", "own", True),
@@ -288,8 +304,17 @@ def access() -> AccessTable:
     ("agent", "r", "private", "any", False),
 ])
 def test_access_table_matches_plan(access, subject, action, resource, scope, expected):
-    for cond in ("direct", "routing", "ingress", "i_e"):
+    for cond in ("direct", "routing", "routing_reveal", "ingress_raw", "ingress_sel", "ingress", "i_e"):
         assert access.allows(subject, action, resource, scope, cond) is expected
+
+
+def test_group_history_is_gateway_only(access):
+    """그룹 이력 전체는 게이트웨이(ingress_raw · ingress_sel · Ingress · I+E)만 읽는다. 라우터는 색인·catalog·DB만."""
+    for cond, allowed in [("ingress_raw", True), ("ingress_sel", True), ("ingress", True), ("i_e", True),
+                          ("routing", False), ("routing_reveal", False), ("direct", False)]:
+        assert access.allows("boundary", "r", "group_history", "own", cond) is allowed, cond
+        assert access.allows("boundary", "r", "index", "own", cond), cond
+        assert access.allows("boundary", "r", "db", "own", cond), cond
 
 
 def test_access_unknown_names_rejected(access):

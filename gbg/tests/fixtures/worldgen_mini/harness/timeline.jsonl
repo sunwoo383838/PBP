@@ -1,0 +1,30 @@
+{"day": 1, "round": 0, "seq": 1, "type": "db_register", "phase": "eval", "key": "HR-SEL/emp/E-SEL-1003/profile", "v": 3, "value": {"dept": "개발1팀", "grade": 3, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"day": 1, "round": 0, "seq": 2, "type": "catalog_upsert", "phase": "eval", "group": "FIN-SEL", "key": "commits/CMT-00004", "value": {"commit_id": "CMT-00004", "department": "개발1팀", "item": "laptop", "work": null}}
+{"day": 1, "round": 0, "seq": 3, "type": "db_register", "phase": "eval", "key": "FIN-SEL/commit/CMT-00004/status", "v": 1, "value": {"status": "pending", "amount": 301200, "expected_settle": 6}}
+{"day": 1, "round": 1, "seq": 4, "type": "local", "phase": "eval", "eid": "L-001", "group": "HR-SEL", "assignee": "hr-sel.a3"}
+{"day": 1, "round": 1, "seq": 5, "type": "tx", "phase": "eval", "agent": "hr-sel.a3", "i": 0, "role": "user", "text": "[Task] Apply the grade adjustment for 지우 과장", "tokens": 47, "summary": "[Task] Apply the grade adjustment for 지우 과장", "eid": "L-001"}
+{"day": 1, "round": 1, "seq": 6, "type": "tx", "phase": "eval", "agent": "hr-sel.a3", "i": 0, "role": "tool", "text": "[Tool result] Recorded: E-SEL-1003 grade 2.", "tokens": 47, "summary": "[Tool result] Recorded: E-SEL-1003 grade 2.", "eid": "L-001"}
+{"day": 1, "round": 1, "seq": 7, "type": "cross", "phase": "eval", "work": "W-001", "group": "FIN-SEL", "assignee": "fin-sel.a1", "follows": null}
+{"day": 1, "round": 1, "seq": 8, "type": "spawn", "phase": "eval", "group": "FIN-TYO", "agent": "fin-tyo.w00002"}
+{"day": 1, "round": 1, "seq": 9, "type": "local", "phase": "eval", "eid": "L-002", "group": "FIN-TYO", "assignee": "fin-tyo.w00002"}
+{"day": 1, "round": 1, "seq": 10, "type": "tx", "phase": "eval", "agent": "fin-tyo.w00002", "i": 0, "role": "user", "text": "[Task] Check the 営業1課 budget line", "tokens": 36, "summary": "[Task] Check the 営業1課 budget line", "eid": "L-002"}
+{"day": 1, "round": 1, "seq": 11, "type": "tx", "phase": "eval", "agent": "fin-tyo.c0", "i": 0, "role": "tool", "text": "[Worker report] 営業1課 budget line checked (details omitted)", "tokens": 63, "summary": "[Worker report] 営業1課 budget line checked (details omitted)", "eid": "L-002"}
+{"day": 1, "round": 2, "seq": 12, "type": "cross", "phase": "eval", "work": "W-002", "group": "HR-SEL", "assignee": "hr-sel.a3", "follows": null}
+{"day": 1, "round": 4, "seq": 13, "type": "index_batch", "phase": "eval", "entries": [{"group": "FIN-SEL", "index": "activity", "agent": "fin-sel.a3", "trace": "fin-sel.a3 handled: CMT-00004 개발1팀 provisional approval", "entities": ["CMT-00004", "개발1팀"]}]}
+{"day": 1, "round": 4, "seq": 14, "type": "despawn", "phase": "eval", "agent": "fin-tyo.w00002"}
+{"day": 2, "round": 0, "seq": 15, "type": "db_register", "phase": "eval", "key": "HR-SEL/emp/E-SEL-1003/profile", "v": 2, "value": {"dept": "개발1팀", "grade": 2, "contract": "regular", "hire_day": -300, "status": "active"}}
+{"day": 2, "round": 0, "seq": 16, "type": "db_register", "phase": "eval", "key": "FIN-SEL/line/개발1팀/remaining", "v": 2, "value": 2417900}
+{"day": 2, "round": 1, "seq": 17, "type": "cross", "phase": "eval", "work": "W-003", "group": "HR-SEL", "assignee": "hr-sel.a3", "follows": null}
+{"day": 2, "round": 4, "seq": 18, "type": "index_batch", "phase": "eval", "entries": [{"group": "FIN-SEL", "index": "journal", "agent": "fin-sel.a1", "text": "개발1팀 capex balance registered at KRW 2,417,900.", "entities": ["개발1팀"]}]}
+{"day": 3, "round": 0, "seq": 19, "type": "agent_leave", "phase": "eval", "group": "FIN-SEL", "agent": "fin-sel.a2", "handover": true}
+{"day": 3, "round": 1, "seq": 20, "type": "cross", "phase": "eval", "work": "W-004", "group": "FIN-SEL", "assignee": "fin-sel.a1", "follows": null}
+{"day": 3, "round": 2, "seq": 21, "type": "world", "phase": "eval", "event": "budget_reset", "regions": ["SEL"]}
+{"day": 3, "round": 2, "seq": 22, "type": "cross", "phase": "eval", "work": "W-005", "group": "HR-SEL", "assignee": "hr-sel.a3", "follows": null}
+{"day": 3, "round": 4, "seq": 23, "type": "index_batch", "phase": "eval", "entries": []}
+{"day": 4, "round": 0, "seq": 24, "type": "agent_join", "phase": "eval", "group": "FIN-SEL", "agent": "fin-sel.n0001", "role": "payables", "handover": true, "from": "fin-sel.a2"}
+{"day": 4, "round": 0, "seq": 25, "type": "tx", "phase": "eval", "agent": "fin-sel.n0001", "i": 0, "role": "user", "text": "[Handover] CMT-00001 영업1팀 provisional approval pending, settlement due day 8.", "tokens": 84, "summary": "[Handover] CMT-00001 영업1팀 provisional approval pending, sett", "eid": null}
+{"day": 4, "round": 1, "seq": 26, "type": "cross", "phase": "eval", "work": "W-006", "group": "HR-TYO", "assignee": "hr-tyo.a3", "follows": null}
+{"day": 4, "round": 4, "seq": 27, "type": "index_batch", "phase": "eval", "entries": []}
+{"day": 5, "round": 1, "seq": 28, "type": "cross", "phase": "eval", "work": "W-007", "group": "FIN-TYO", "assignee": "fin-tyo.c0", "follows": null}
+{"day": 5, "round": 2, "seq": 29, "type": "cross", "phase": "eval", "work": "W-008", "group": "HR-SEL", "assignee": "hr-sel.a1", "follows": null}
+{"day": 5, "round": 4, "seq": 30, "type": "index_batch", "phase": "eval", "entries": []}
