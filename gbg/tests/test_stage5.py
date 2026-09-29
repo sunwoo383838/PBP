@@ -734,3 +734,17 @@ def test_common_knowledge_is_in_every_role_and_gateway_uses_the_same_sentences(t
     r = LLMAgent("x", AgentRuntime(T.CONDITIONS["routing"], None, None, None, 1)).comm()
     i = LLMAgent("x", AgentRuntime(T.CONDITIONS["ingress"], None, None, None, 1)).comm()
     assert r[0] == "ask_group_forward" and i[0] == "ask_group"
+
+
+def test_oldest_tool_results_are_elided_when_the_prompt_would_overflow():
+    """입력이 컨텍스트 한도를 넘으면 이번 루프의 가장 오래된 도구 결과부터 생략 (모든 조건 동일). 마지막 결과는 남긴다."""
+    from types import SimpleNamespace
+    agent = LLMAgent("x", AgentRuntime(T.CONDITIONS["direct"], None, ContextBuilder(len, 1, 1), None, 1))
+    ctx = SimpleNamespace(kernel=SimpleNamespace(llm=SimpleNamespace(params=SimpleNamespace(context_length=2600, max_tokens=100))))
+    msgs = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]
+    for i in range(3):
+        msgs += [{"role": "assistant", "content": ""}, {"role": "tool", "tool_call_id": str(i), "content": "x" * 1000}]
+    agent._fit(ctx, msgs, 2, 0)
+    tools = [m["content"] for m in msgs if m["role"] == "tool"]
+    assert tools[0] == LLMAgent.ELIDED and tools[-1] == "x" * 1000
+    assert len(json.dumps(msgs, ensure_ascii=False, sort_keys=True)) <= int((2600 - 100) * 0.9)

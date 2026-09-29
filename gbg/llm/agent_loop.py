@@ -320,6 +320,7 @@ class LLMAgent:
         for step in range(1, limit + 1):
             comp = {**context.composition, "tool_def_tokens": tool_def_tokens,
                     "loop_messages": len(messages) - len(context.messages), "cached_tool_result": cached_in_context}
+            self._fit(ctx, messages, len(context.messages), tool_def_tokens)
             estimate = self.rt.builder.count(_dumps(messages)) + tool_def_tokens    # 호출 전 프롬프트 추정
             try:
                 res = await ctx.llm(messages, tools, step, comp, estimate=estimate)
@@ -373,6 +374,23 @@ class LLMAgent:
             return await self._final(ctx, messages, finish, check, limit + 1, context.composition)
         return await self._last_reply(ctx, messages, finish, check, limit + 1, context.composition)
 
+    ELIDED = _dumps({"elided": "earlier tool result removed to fit the context window"})
+
+    def _fit(self, ctx: AgentContext, messages: list[dict], base: int, extra: int):
+        """입력이 모델 컨텍스트(컨텍스트 − 출력 상한, 토크나이저 차이 여유 10%)를 넘으면 이번 루프의 가장 오래된 도구
+        결과부터 생략 표시로 바꾼다 (모든 조건 동일). 도구 결과가 계속 쌓이는 긴 루프에서 요청이 거부되는 것을 막는다."""
+        p = getattr(getattr(ctx.kernel, "llm", None), "params", None)
+        if p is None or not getattr(p, "context_length", None):
+            return
+        limit = int((p.context_length - p.max_tokens) * 0.9)
+        i = base
+        while self.rt.builder.count(_dumps(messages)) + extra > limit:
+            while i < len(messages) and not (messages[i]["role"] == "tool" and messages[i]["content"] != self.ELIDED):
+                i += 1
+            if i >= len(messages) - 1:                                     # 마지막 결과는 남긴다
+                return
+            messages[i] = {**messages[i], "content": self.ELIDED}
+
     async def _last_reply(self, ctx: AgentContext, messages: list[dict], finish: dict, check, step: int, composition: dict):
         """응답자 단계 한도: reply 도구만 주는 호출 1회 (최종 예약분이 아니라 과제 예산에서 쓴다). responder_step_cap으로 센다."""
         if ctx.kernel.budget is not None:
@@ -399,6 +417,7 @@ class LLMAgent:
         """예산 소진: 예약된 최종 호출 1회, submit 도구만."""
         messages = messages + [{"role": "user", "content": BUDGET_NUDGE}]
         tools = [_fn(finish["name"], finish["description"], finish["parameters"])]
+        self._fit(ctx, messages, 2, self.rt.builder.count(_dumps(tools)))
         comp = {**composition, "tool_def_tokens": self.rt.builder.count(_dumps(tools)), "loop_messages": -1}
         res = await ctx.llm(messages, tools, step, comp, final=True, force=finish["name"])   # 제출 도구 강제
         for c in res.message["tool_calls"]:

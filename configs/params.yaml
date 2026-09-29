@@ -25,7 +25,7 @@ llm:
   seed_per_call: true                       # 호출마다 seed = 요청 내용의 해시에서 결정적으로. 기록하고, 재현은 캐시·WAL로
   service_tier: priority                    # DeepInfra 우선 처리 (실제로 우선 처리된 요청만 1.5배 과금). 응답 내용과 무관해 캐시 키에서 뺀다
   concurrency: 150                          # 모델별 전역 동시 요청 상한 (DeepInfra 기본 한도 200/모델)
-  timeout_s: 200                            # 느린 쪽 10분위 62 tok/s에서 8000토큰 128초 × 1.5 (2026-09-29 측정)
+  timeout_s: 600                            # 2026-09-30: 200초에서 동시 100개 부하(생성 약 25~43 tok/s)의 긴 출력이 시간 초과(pilot18 54건). 8000토큰 ÷ 15 tok/s ≈ 530초
   retry: {max_attempts: 6, base_delay_s: 1.0, max_delay_s: 30.0,       # 5xx·연결 오류 지수 백오프
           rate_limit_base_delay_s: 3.0, rate_limit_max_delay_s: 600.0, rate_limit_max_attempts: 20}   # 429: 3초부터 두 배씩
 
