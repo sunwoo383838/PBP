@@ -27,8 +27,13 @@ record_types:
     entity_kind: department
     key: "{group}/commit/{member}/status"
     match: {source: catalog, catalog_kind: commits, field: department}
-    limit: 5
-    description: "Registered provisional approvals of the department, ordered by approval ID, at most 5."
+    description: "All registered provisional approvals of the department (status, amount in KRW, expected settlement day), ordered by approval ID. Latest registered version of each; unregistered changes are not included."
+  department_employees:
+    domains: [HR]
+    entity_kind: department
+    key: "{group}/emp/{member}/profile"
+    match: {source: db, field: dept}
+    description: "All employees whose latest registered profile lists this department, ordered by employee ID: grade, contract type, hire day and employment status of each. Nothing is filtered or counted; unregistered changes are not included."
   inventory_quantity:
     domains: [IT]
     entity_kind: inventory_item
@@ -39,6 +44,12 @@ record_types:
     entity_kind: asset
     key: "{group}/asset/{entity}/holder"
     description: "The employee an asset is currently assigned to (null if unassigned)."
+  employee_assets:
+    domains: [IT]
+    entity_kind: employee
+    key: "{group}/asset/{member}/holder"
+    match: {source: db, field: emp}
+    description: "All assets whose latest registered holder is this employee, ordered by asset ID. Unregistered changes are not included."
   license_seats:
     domains: [IT]
     entity_kind: software

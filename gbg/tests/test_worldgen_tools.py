@@ -138,13 +138,16 @@ def test_no_record_and_unknown_name(t):
     assert vis["status"] == "NOT_FOUND" and log["label"] == "NOT_FOUND"
 
 
-def test_ambiguous_gives_no_candidates(tmp_path):
+def test_ambiguous_returns_own_group_candidates_with_ids(tmp_path):
+    """같은 이름이 여럿이면 오류 대신 자기 그룹 범위 안의 후보를 ID와 함께 모두 돌려준다."""
     t2 = Tools(tmp_path, day=1)
     t2.stores.catalog.upsert("HR-SEL", "employees/E-SEL-1002",
                              {"employee_id": "E-SEL-1002", "name": "이서준", "alias": "지우 과장", "region": "SEL"})
     vis, log = q(t2, "hr-sel.a1", 1, "지우 과장", "employee_profile")
-    assert vis == {"status": "AMBIGUOUS", "hint": HINTS["AMBIGUOUS"]} and log["candidates"] == 2
-    assert "E-SEL" not in json.dumps(vis)
+    assert vis["status"] == "AMBIGUOUS" and log["candidates"] == 2
+    assert {c["entity"] for c in vis["candidates"]} == {"E-SEL-1002", "E-SEL-1003"}
+    vis, _ = q(t2, "hr-sel.a1", 1, "E-SEL-1002", "employee_profile")
+    assert vis["status"] == "HIT", "후보 ID로 다시 조회"
 
 
 def test_invalid_type_labels_and_backend_recheck(t):
@@ -156,7 +159,7 @@ def test_invalid_type_labels_and_backend_recheck(t):
     assert vis["status"] == "INVALID_TYPE" and log["label"] == "KIND_MISMATCH"
 
 
-def test_multi_record_type_matches_catalog_department_ordered_and_limited(tmp_path):
+def test_multi_record_type_matches_catalog_department_ordered_and_complete(tmp_path):
     t2 = Tools(tmp_path, day=1)
     vis, _ = q(t2, "fin-sel.a1", 1, "영업1팀", "department_provisional_approvals")
     assert [r["id"] for r in vis["records"]] == ["CMT-00001"]
@@ -167,8 +170,56 @@ def test_multi_record_type_matches_catalog_department_ordered_and_limited(tmp_pa
         t2.stores.db.add("FIN-SEL", f"FIN-SEL/commit/{cid}/status",
                          DbVersion(v=1, day=1, db_day=1, value={"status": "pending", "amount": 1000 + i}))
     vis, log = q(t2, "fin-sel.a1", 1, "영업1팀", "department_provisional_approvals")
-    assert [r["id"] for r in vis["records"]] == ["CMT-00001", "CMT-00040", "CMT-00050", "CMT-00060", "CMT-00070"]
-    assert vis["truncated"] and log["total"] == 7
+    assert [r["id"] for r in vis["records"]] == ["CMT-00001", "CMT-00040", "CMT-00050", "CMT-00060", "CMT-00070",
+                                                 "CMT-00080", "CMT-00090"], "상한 없음 (목록 전부)"
+    assert not vis["truncated"] and log["total"] == 7
+    assert all("status" in r["record"] for r in vis["records"]), "상태 필드 포함"
+
+
+def test_department_employees_lists_latest_registered_profiles_unfiltered(tmp_path):
+    """부서 직원 목록: 오늘까지 등록된 최신 버전 기준, 재직 상태·계약 형태로 거르지 않고 셀 대상은 에이전트가 정한다."""
+    t2 = Tools(tmp_path, day=1)
+    t2.stores.db.add("HR-SEL", "HR-SEL/emp/E-SEL-1002/profile",                 # 등록일이 미래인 이동: 아직 반영 안 됨
+                     DbVersion(v=9, day=1, db_day=5, value={"dept": "개발1팀", "grade": 4, "contract": "regular",
+                                                             "hire_day": -1, "status": "active"}))
+    t2.stores.db.add("HR-SEL", "HR-SEL/emp/E-SEL-1001/profile",                 # 퇴사자도 목록에 (거르지 않는다)
+                     DbVersion(v=9, day=1, db_day=1, value={"dept": "영업1팀", "grade": 2, "contract": "contractor",
+                                                             "hire_day": -1, "status": "exited"}))
+    vis, log = q(t2, "hr-sel.a1", 1, "영업1팀", "department_employees")
+    rows = {r["id"]: r["record"] for r in vis["records"]}
+    assert set(rows) == {"E-SEL-1000", "E-SEL-1001", "E-SEL-1002"}
+    assert rows["E-SEL-1001"]["status"] == "exited" and rows["E-SEL-1001"]["contract"] == "contractor"
+    assert all({"grade", "contract", "status"} <= set(r) for r in rows.values())
+    vis, _ = q(t2, "fin-sel.a1", 1, "영업1팀", "department_employees")
+    assert vis["status"] == "INVALID_TYPE", "HR 그룹만"
+
+
+def test_employee_assets_from_own_group_db_only(tmp_path):
+    from gbg.benchmarks.worldgen.records import RecordService
+    t2 = Tools(tmp_path, day=1)
+    db = t2.stores.db
+    for aid, emp, db_day in [("A-1", "E-SEL-1000", 0), ("A-2", "E-SEL-1000", 3), ("A-3", "E-SEL-1001", 0)]:
+        db.add("IT-SEL", f"IT-SEL/asset/{aid}/holder", DbVersion(v=1, day=0, db_day=db_day, value={"emp": emp}))
+    db.add("IT-SEL", "IT-SEL/asset/A-3/holder", DbVersion(v=2, day=0, db_day=1, value={"emp": None}))   # 회수됨
+    svc = RecordService(load_policy(), t2.stores, {**t2.adapter.domain_of(), "IT-SEL": "IT"})
+    vis, _ = svc.lookup("IT-SEL", "하린 과장", "employee_assets", 1)
+    assert [r["id"] for r in vis["records"]] == ["A-1"], "A-2는 아직 미등록"
+    vis, _ = svc.lookup("IT-SEL", "E-SEL-1001", "employee_assets", 1)
+    assert vis["status"] == "NO_RECORD", "최신 등록 버전에서 회수됨: 엔티티는 있고 등록된 레코드가 없다"
+
+
+def test_absent_record_is_no_record_not_permission(tmp_path):
+    """아무 그룹에도 레코드가 없는 엔티티(입고 기록이 아직 없는 가승인)는 '다른 영역'이 아니라 '등록된 레코드 없음'.
+    다른 그룹이 레코드를 가진 엔티티는 여전히 NOT_FOUND(다른 영역)."""
+    from gbg.benchmarks.worldgen.records import RecordService
+    t2 = Tools(tmp_path, day=1)
+    t2.stores.catalog.upsert("FIN-SEL", "commits/CMT-00077", {"commit_id": "CMT-00077", "department": "영업1팀"})
+    t2.stores.db.add("FIN-SEL", "FIN-SEL/commit/CMT-00077/status", DbVersion(v=1, day=0, db_day=0, value={"status": "pending"}))
+    svc = RecordService(load_policy(), t2.stores, {**t2.adapter.domain_of(), "PROC-SEL": "PROC"})
+    vis, log = svc.lookup("PROC-SEL", "CMT-00077", "goods_receipt", 1)
+    assert vis["status"] == "NO_RECORD" and log["label"] == "NO_RECORD" and "no record" in vis["hint"]
+    vis, log = svc.lookup("PROC-SEL", "CMT-00077", "provisional_approval", 1)
+    assert vis["status"] == "NOT_FOUND" and log["label"] == "PERMISSION_DENIED", "FIN-SEL의 레코드"
 
 
 # ─────────────────────────── entity.search ───────────────────────────
@@ -234,3 +285,18 @@ def test_tool_definition_tokens_are_logged_as_fixed_cost(tmp_path):
     for w in windows:
         per.setdefault((w["agent"], w["task_id"], w["serving"]), set()).add(w["tool_def_tokens"])
     assert all(len(v) == 1 for v in per.values()), "같은 호출 경로 안에서 도구 정의 토큰은 고정"
+
+
+def test_not_found_hint_and_nearest_candidates_from_own_records(tmp_path):
+    t2 = Tools(tmp_path, day=1)
+    vis, log = q(t2, "fin-sel.a1", 1, "영업1", "budget_line_balance")
+    assert vis["status"] == "NOT_FOUND" and "list it under missing" in vis["hint"]
+    assert "영업1팀" in {c["entity"] for c in vis.get("nearest_in_your_records", [])}, "자기 기록 안의 가까운 후보"
+    vis, _ = q(t2, "fin-sel.a1", 1, "하린 과장", "catalog_entry")                  # 다른 그룹(HR) 엔티티
+    assert vis["status"] == "NOT_FOUND" and "E-SEL" not in json.dumps(vis.get("nearest_in_your_records", []))
+
+
+def test_derived_names_for_items_without_name_fields():
+    from gbg.benchmarks.worldgen.records import _names
+    assert "laptop (basic)" in _names({"item_id": "INV-SEL-LTB", "type": "laptop", "tier": "basic"}, "inventory")
+    assert "V-SEL-0 laptop (standard)" in _names({"quote_id": "Q", "vendor": "V-SEL-0", "type": "laptop", "tier": "standard"}, "quotes")

@@ -13,6 +13,7 @@ import json
 from collections.abc import Callable
 
 from gbg.contracts.card import public_id
+from gbg.contracts.envelope import render_response
 from gbg.contracts.events import Event
 from gbg.contracts.schemas import HistoryEntry
 
@@ -61,7 +62,7 @@ class HistoryStore:
         self.tag, self.tokens = tag, tokens
         self.ephemeral = responder_session == "ephemeral"
         self.tasks: dict[str, dict] = {}               # task_id → 과제 정보 (엔티티, 종류, 발견성, 그룹)
-        self._at: tuple[int | None, int | None] = (None, None)   # apply 중인 사건의 (라운드, WAL seq)
+        self._at: tuple[int | None, int | None, str | None] = (None, None, None)   # apply 중인 사건의 (라운드, WAL seq, 과제)
 
     def entries(self, agent: str) -> tuple[HistoryEntry, ...]:
         return tuple(self._h.get(agent, []))
@@ -77,20 +78,23 @@ class HistoryStore:
             tokens: int | None = None) -> int:
         hist = self._h.setdefault(agent, [])
         seq = hist[-1].seq + 1 if hist else 1
-        rnd, order = self._at                                              # 반영 중인 사건의 (라운드, WAL seq)
+        rnd, order, task = self._at                                        # 반영 중인 사건의 (라운드, WAL seq, 과제)
         hist.append(HistoryEntry(seq=seq, day=day, role=role, text=text,
                                  tokens=self.tokens(text) if tokens is None else tokens,
-                                 entities=sorted(set(entities)), digest=digest, round=rnd, order=order))
+                                 entities=sorted(set(entities)), digest=digest, round=rnd, order=order,
+                                 task=task))
         return seq
 
     def apply(self, ev: Event, group_of: dict[str, str]) -> dict[str, int]:
         """사건 하나를 이력에 반영하고, 답 항목이 생기면 {agent: seq}를 돌려준다(색인 갱신용).
-        새 항목에는 그 사건의 (라운드, WAL seq)를 적는다 (full_load의 시간순 정렬용)."""
-        self._at = (ev.round, ev.seq)
+        새 항목에는 그 사건의 (라운드, WAL seq)를 적는다 (full_load의 시간순 정렬용). 과제 사건에는 원 과제 id도 적는다
+        (검색의 에피소드 묶음용). 시나리오가 렌더링한 transcript 줄은 과제 id 없이 [Task]/[Result] 표시로 묶인다."""
+        task = ev.payload.get("task_id") if ev.type != "world_update" else None
+        self._at = (ev.round, ev.seq, task if isinstance(task, str) else None)
         try:
             return self._apply(ev, group_of)
         finally:
-            self._at = (None, None)
+            self._at = (None, None, None)
 
     def _apply(self, ev: Event, group_of: dict[str, str]) -> dict[str, int]:
         p, d = ev.payload, ev.day
@@ -136,11 +140,13 @@ class HistoryStore:
                     self.add(to, d, "assistant", f"[Handled a request from {pa}] ({r['status']})", ents,
                              f"Day {d}: handled a request from {pa} ({r['status']}){_targets(ents)}")
                 else:
-                    self.add(to, d, "assistant", f"[Answer to {pa}] {r['answer']}", tag(to, r["answer"]),
-                             f"Day {d}: answered {pa} ({r['status']}){_targets(tag(to, r['answer']))}")
+                    body = render_response(r)
+                    self.add(to, d, "assistant", f"[Answer to {pa}] {body}", tag(to, body),
+                             f"Day {d}: answered {pa} ({r['status']}){_targets(tag(to, body))}")
             if known(a) and not in_session:
-                self.add(a, d, "tool", f"[Answer from {pto}] ({r['status']}) {r['answer']}", tag(a, r["answer"]),
-                         f"Day {d}: answer from {pto} ({r['status']}){_targets(tag(a, r['answer']))}")
+                body = render_response(r)
+                self.add(a, d, "tool", f"[Answer from {pto}] ({r['status']}) {body}", tag(a, body),
+                         f"Day {d}: answer from {pto} ({r['status']}){_targets(tag(a, body))}")
         elif ev.type == "answer" and ev.actor.startswith("agent:") and known(p["agent"]):
             a = p["agent"]; body = p["answer"] if p.get("error") is None else {"error": p["error"]}
             text = f"[Submitted {p['task_id']}] {_j(body)}"

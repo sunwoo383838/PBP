@@ -170,7 +170,7 @@ def test_schema_rejects_bad_records():
     with pytest.raises(ValidationError):
         DbRecord.model_validate({"key": "k", "versions": [v(2), v(2)]})
 
-    resp = {"rid": "r1", "status": "ok", "answer": "a", "values": [], "missing": [], "referral_to": None,
+    resp = {"rid": "r1", "status": "ok", "answer": "a", "items": [], "missing": [], "referral_to": None,
             "need": [], "as_of": 3}
     Response.model_validate(resp)
     with pytest.raises(ValidationError):
@@ -201,26 +201,25 @@ def test_card_kinds_are_distinct():
 # ─────────────────────────── 2. 조건 설정 ───────────────────────────
 def test_conditions_load_ladder_and_reference_rows():
     conds = load_conditions(CONFIGS / "conditions.yaml")
-    assert list(conds) == ["direct", "direct_dyncard", "routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress",
-                           "i_e", "full_load"]
+    assert list(conds) == ["direct", "routing", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load", "gateway_rag",
+                           "ingress_no_requery", "egress_no_history", "retrieval_oracle"]
+    assert not {"routing_reveal", "direct_dyncard", "direct_ephemeral", "ingress_raw", "coordinator"} & set(conds)
     fl = conds["full_load"]
     assert fl.agent_tool == "load_group_history" and fl.ingress is None and not fl.budget_limit, "참조 행: 예산 상한 없음"
     assert conds["direct"].agent_tool == "ask_agent" and conds["direct"].directory == "agent_cards"
     assert conds["direct"].ingress is None and conds["direct"].egress is None
     assert conds["routing"].ingress.deliver == "forward" and not conds["routing"].ingress.reveal_holders
-    assert conds["routing_reveal"].ingress.reveal_holders
     assert conds["ingress_read"].ingress.deliver == "read"
     sel, ing = conds["ingress_sel"].ingress, conds["ingress"].ingress
     assert sel.deliver == ing.deliver == conds["i_e"].ingress.deliver == "assemble"
     assert not (sel.requery or sel.boundary_state or sel.version_marks) and ing.requery and ing.boundary_state and ing.version_marks
-    assert {n for n, c in conds.items() if c.blocked} == {"direct_dyncard", "routing_reveal", "ingress_read", "ingress_sel"}
+    assert {n for n, c in conds.items() if c.blocked} == {"ingress_no_requery", "egress_no_history", "retrieval_oracle"}, "후속"
     assert "ingress_raw" not in conds, "새 Routing과 같아져서 없앴다"
     assert conds["i_e"].agent_tool == "ask" and conds["i_e"].egress.history
-    assert conds["direct_dyncard"].card_mode == "dynamic" and conds["direct_dyncard"].blocked
-    assert all(c.card_mode == "static" for n, c in conds.items() if n != "direct_dyncard")
+    assert all(c.card_mode == "static" for c in conds.values())
     assert all(c.responder_session == "persistent" for c in conds.values())
     d = conds.defaults
-    assert (d.budget.calls, d.budget.tokens) == (60, 400000), "파일럿 상한. 본 실행 값은 파일럿 사용량 분포로 확정"
+    assert (d.budget.calls, d.budget.tokens) == (500, 6700000), "파일럿 상한. 본 실행 값은 파일럿 사용량 분포로 확정"
     assert d.final_reserve.calls == 1 and d.requester.max_asks is None and d.requester.requery
 
 
@@ -309,7 +308,7 @@ def access() -> AccessTable:
     ("agent", "r", "private", "any", False),
 ])
 def test_access_table_matches_plan(access, subject, action, resource, scope, expected):
-    for cond in ("direct", "routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load"):
+    for cond in ("direct", "routing", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load", "gateway_rag"):
         if cond == "full_load" and subject == "agent" and scope == "other" and resource in ("db", "rulebook", "group_history"):
             continue                                                       # full_load만 다른 그룹 조회 허용 (아래 테스트)
         assert access.allows(subject, action, resource, scope, cond) is expected
@@ -317,7 +316,7 @@ def test_access_table_matches_plan(access, subject, action, resource, scope, exp
 
 def test_boundary_search_is_same_for_all_boundary_conditions(access):
     """담당자 선택용 검색(색인 + catalog + 그룹 이력)은 모든 경계 조건이 같다. 에이전트는 다른 그룹 이력을 못 읽는다."""
-    for cond in ("routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e"):
+    for cond in ("routing", "ingress_read", "ingress_sel", "ingress", "i_e", "gateway_rag"):
         assert access.allows("boundary", "r", "group_history", "own", cond), cond
         assert access.allows("boundary", "r", "index", "own", cond), cond
         assert access.allows("boundary", "r", "db", "own", cond), cond

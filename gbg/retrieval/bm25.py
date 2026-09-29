@@ -31,6 +31,11 @@ class BM25Index:
     def __len__(self):
         return len(self.docs)
 
+    def remove(self, doc_id: Hashable):
+        tf = self.docs.pop(doc_id)
+        del self.lengths[doc_id]
+        self.df.subtract(tf.keys())
+
     def add(self, doc_id: Hashable, text: str):
         if doc_id in self.docs:
             raise ValueError(f"문서 {doc_id} 중복 추가")

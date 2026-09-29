@@ -1,4 +1,5 @@
-"""DeepInfra OpenAI 호환 백엔드. temperature 0, thinking 끔, 429·5xx 지수 백오프, 모델별 전역 동시 요청 상한.
+"""DeepInfra OpenAI 호환 백엔드. 샘플링은 설정(params.yaml)대로, thinking 끔, 호출마다 seed, 429·5xx 지수 백오프,
+모델별 전역 동시 요청 상한.
 
 모드
     LIVE      캐시에 없으면 API를 부르고 저장한다. 같은 키가 동시에 들어오면 한 번만 부른다.
@@ -53,6 +54,7 @@ class LLMResult:
     cached: bool
     attempts: int
     latency_ms: int
+    seed: int | None = None
 
 
 def normalize(raw: dict) -> dict:
@@ -66,11 +68,13 @@ def normalize(raw: dict) -> dict:
     calls = [{"name": c["function"]["name"], "arguments": c["function"].get("arguments") or "{}"}   # 제공자 id는 버린다
              for c in msg.get("tool_calls") or []]
     usage = raw.get("usage") or {}
+    tier = raw.get("service_tier")                                      # 실제로 적용된 처리 등급 (priority | default)
     out = {"content": content or None, "tool_calls": calls, "finish_reason": choice.get("finish_reason"),
            "usage": {"prompt_tokens": usage.get("prompt_tokens", 0), "completion_tokens": usage.get("completion_tokens", 0),
                      "estimated_cost": usage.get("estimated_cost", 0.0),
                      # 제공자 쪽 프롬프트 캐시 적중 토큰: 과제당 토큰에는 반영하지 않고 별도 열로만 기록
-                     "provider_cached_tokens": (usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0}}
+                     "provider_cached_tokens": (usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0,
+                     **({"service_tier": tier} if tier else {})}}
     if stripped:
         out["thinking_stripped"] = True
     if msg.get("reasoning_content"):                                    # thinking이 켜져 있었다는 신호 (내용은 버린다)
@@ -79,9 +83,10 @@ def normalize(raw: dict) -> dict:
 
 
 class LLMBackend:
-    def __init__(self, params: LLMParams, *, mode: Mode, model: str, cache: ResponseCache | None = None,
+    def __init__(self, params: LLMParams, *, mode: Mode, model: str | None = None, cache: ResponseCache | None = None,
                  script: Script | None = None, transport: httpx.AsyncBaseTransport | None = None,
                  api_key: str | None = None, sleep: Callable[[float], Awaitable] = asyncio.sleep):
+        model = model or params.model                                   # 기본: 설정의 llm.model (모든 LLM 호출 동일)
         if model not in params.models:
             raise ValueError(f"알 수 없는 모델 별칭 '{model}' ({', '.join(params.models)})")
         if mode in ("LIVE", "REPLAY") and cache is None:
@@ -95,16 +100,19 @@ class LLMBackend:
         self._inflight: dict[str, asyncio.Future] = {}
         self._sem: tuple[asyncio.AbstractEventLoop, asyncio.Semaphore] | None = None
 
-    def build_request(self, messages: list[dict], tools: list[dict]) -> dict:
+    def build_request(self, messages: list[dict], tools: list[dict], force: str | None = None) -> dict:
         req = {"model": self.params.models[self.model], "messages": messages,
                "temperature": self.params.temperature, "max_tokens": self.params.max_tokens, **self.params.extra_body}
         if tools:
             req["tools"] = tools
-            req["tool_choice"] = self.params.tool_choice
+            req["tool_choice"] = ({"type": "function", "function": {"name": force}} if force   # 특정 도구 강제 (DeepInfra 지원)
+                                  else self.params.tool_choice)
         return req
 
-    async def complete(self, messages: list[dict], tools: list[dict]) -> LLMResult:
-        req = self.build_request(messages, tools)
+    async def complete(self, messages: list[dict], tools: list[dict], force: str | None = None) -> LLMResult:
+        req = self.build_request(messages, tools, force)
+        if self.params.seed_per_call:                                      # 요청 내용에서 정한 seed: 같은 요청은 같은 seed
+            req["seed"] = int(request_key(req)[:8], 16) % 2 ** 31
         key = request_key(req)
         t0 = time.perf_counter()
         if self.mode == "SCRIPTED":
@@ -133,6 +141,7 @@ class LLMBackend:
     def _result(self, key, req, resp, cached, attempts, t0) -> LLMResult:
         return LLMResult(key=key, model=req["model"], message={"content": resp["content"], "tool_calls": resp["tool_calls"]},
                          usage=resp["usage"], finish_reason=resp.get("finish_reason"), cached=cached, attempts=attempts,
+                         seed=req.get("seed"),
                          latency_ms=int((time.perf_counter() - t0) * 1000))
 
     def _semaphore(self) -> asyncio.Semaphore:
@@ -153,7 +162,8 @@ class LLMBackend:
                 for attempt in range(1, r.max_attempts + 1):
                     self.api_calls += 1
                     try:
-                        resp = await client.post("/chat/completions", json=req)
+                        body = {**req, "service_tier": self.params.service_tier} if self.params.service_tier else req
+                        resp = await client.post("/chat/completions", json=body)
                     except httpx.TransportError as e:
                         last = f"{type(e).__name__}: {e}"
                     else:

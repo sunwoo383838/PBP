@@ -1,7 +1,9 @@
-"""하이브리드 검색: 그룹 하나의 이력(떠난 에이전트 포함) 말뭉치에서 BM25 순위와 임베딩 순위를 RRF(k=60)로 결합, 상위 20.
+"""하이브리드 검색: 그룹 하나의 이력(떠난 에이전트, 에이전트 창 밖으로 밀린 원문 포함)을 에피소드 단위(episodes.py)로
+색인하고, BM25 순위와 임베딩 순위를 RRF(k=60)로 결합한다.
 
-말뭉치는 저장소에서 증분 동기화한다. 문서 id = (에이전트, 이력 seq). 같은 점수면 최신(날짜, seq가 큰 것) 먼저.
-그룹 경계: 이 그룹 소속 에이전트의 이력만 색인한다.
+말뭉치는 저장소에서 증분 동기화한다. 문서 id = (에이전트, 에피소드 첫 줄 seq). 아직 닫히지 않은 에피소드(과제 진행 중)는
+줄이 늘면 다시 색인한다. 같은 점수면 최신(날짜, seq가 큰 것) 먼저.
+그룹 경계: 이 그룹 소속 에이전트의 이력만 색인한다. 저장소에는 커밋된 사건만 있으므로 요청 시점 이후 기록은 없다.
 """
 from dataclasses import dataclass
 from typing import Literal
@@ -12,9 +14,12 @@ from gbg.kernel.tools import Resource
 
 from .bm25 import BM25Index
 from .embed import Embedder, VectorIndex
+from .episodes import Episode, episodes
+from .normalize import normalize
+from .rerank import NullReranker, Reranker
 
 Mode = Literal["hybrid", "bm25", "embed"]
-Doc = tuple[str, int]                           # (agent, seq)
+Doc = tuple[str, int]                           # (agent, 에피소드 첫 seq)
 
 
 @dataclass(frozen=True)
@@ -39,33 +44,45 @@ def authorize(guard: AccessGuard, subject: str, subject_group: str, group: str) 
 
 
 class GroupRetriever:
-    def __init__(self, stores, group: str, embedder: Embedder, params: RetrievalParams):
+    def __init__(self, stores, group: str, embedder: Embedder, params: RetrievalParams,
+                 reranker: Reranker | None = None):
         self.stores, self.group, self.embedder, self.p = stores, group, embedder, params
+        self.reranker = reranker or NullReranker()
         self.bm25 = BM25Index(params.bm25.k1, params.bm25.b)
         self.vectors = VectorIndex()
-        self.meta: dict[Doc, tuple[int, int]] = {}     # doc → (day, seq) 정렬용
+        self.episodes: dict[Doc, Episode] = {}
+        self.of_line: dict[tuple[str, int], Doc] = {}      # (agent, 줄 seq) → 에피소드
+        self.norm: dict[tuple[str, int], str] = {}         # (agent, 줄 seq) → 정규화한 원문 (태그·일지 대조용)
         self._synced: dict[str, int] = {}
 
     def agents(self) -> list[str]:
         return sorted(a for a, (g, _) in self.stores.members.items() if g == self.group)
 
     async def sync(self):
-        new_ids, new_texts = [], []
+        changed: list[Episode] = []
         for a in self.agents():
             entries = self.stores.history.entries(a)
+            if self._synced.get(a) == len(entries):
+                continue
             for e in entries[self._synced.get(a, 0):]:
-                doc = (a, e.seq)
-                self.bm25.add(doc, e.text)
-                self.meta[doc] = (e.day, e.seq)
-                new_ids.append(doc)
-                new_texts.append(e.text)
+                self.norm[(a, e.seq)] = normalize(e.text)
+            for ep in episodes(a, entries):
+                old = self.episodes.get(ep.id)
+                if old is not None and old.seqs == ep.seqs:
+                    continue
+                if old is not None:
+                    self.bm25.remove(ep.id)
+                self.bm25.add(ep.id, ep.text)
+                self.episodes[ep.id] = ep
+                self.of_line.update({(a, s): ep.id for s in ep.seqs})
+                changed.append(ep)
             self._synced[a] = len(entries)
-        if new_ids:
-            self.vectors.add(new_ids, await self.embedder.embed(new_texts))
+        if changed:
+            self.vectors.add([ep.id for ep in changed], await self.embedder.embed([ep.text for ep in changed]))
 
     def _recency(self, doc: Doc):
-        day, seq = self.meta[doc]
-        return (-day, -seq, doc[0])
+        ep = self.episodes[doc]
+        return (-ep.day, -ep.seqs[0], doc[0])
 
     def _ranked(self, scores: dict[Doc, float]) -> list[Doc]:
         return sorted(scores, key=lambda d: (-round(scores[d], 9), *self._recency(d)))

@@ -3,23 +3,24 @@
 # budget: 과제 전체의 LLM 호출 수·토큰 상한. 요청자·응답자(중첩 포함)·경계 모듈 합산. 모든 조건 동일 (조건별로 바꿀 수 없다).
 # card_mode: static | dynamic, responder_session: persistent | ephemeral (기본 persistent)
 defaults:
-  budget: {calls: 60, tokens: 400000}        # 파일럿 상한 (2026-09-29). 본 실행 B_CALLS·B_TOKENS는 파일럿 사용량 분포로 확정
+  budget: {calls: 500, tokens: 6700000}      # 파일럿 상한 (2026-09-29, 사용자 지시 500회. 토큰은 120회:1.6M과 같은 비율). 본 실행 = 가장 비싼 조건의 과제당 호출 p95를 10 단위로 올린 값
   final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
   requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
 
-# 사다리: direct → routing → ingress_read → ingress_sel → ingress → i_e. 참조 행: direct_dyncard, routing_reveal, full_load.
+# 본 실행 조건: direct, routing, ingress, i_e, full_load.
+# 기준 셀(D5, T30)에서만: ingress_read, ingress_sel, gateway_rag (사다리 중간 단계와 담당자 없는 게이트웨이).
+# 후속(코드만 두고 실행하지 않음): ingress_no_requery, egress_no_history, retrieval_oracle. sidecar도 후속.
+# 뺀 조건: routing_reveal(새 Routing과 사실상 같음), direct_dyncard(이탈·합류 갱신은 이미 모든 조건에 적용, 그 이상은
+# card 공개 원칙 위반), direct_ephemeral(로컬 업무 재생이라 C6를 잴 수 없음).
 # 경계 조건(routing 이후)은 담당자 선택이 모두 같고(검색 → LLM 선택, 인원 상한 없음, 과제 예산이 상한) 전달 방식만 다르다.
-# 구현 순서: direct, routing, ingress, i_e, full_load를 먼저 완성한다. ingress_read·ingress_sel은 정의만 두고 그다음에 구현한다.
 direct:          {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null}
-direct_dyncard:  {agent_tool: ask_agent, directory: agent_cards, card_mode: dynamic, ingress: null, egress: null,
-                  blocked: "동적 card 내용이 확정될 때까지 실행하지 않는다"}
 routing:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: forward}, egress: null}   # 검색 결과는 담당자 선택에만. 요청 원문 전달, 응답 원문 반환
-routing_reveal:  {agent_tool: ask_group, directory: group_cards, ingress: {deliver: forward, reveal_holders: true}, egress: null,
-                  blocked: "참조 행: 핵심 조건 다음에 구현 (요청자에게 ask_agent도 필요)"}   # 담당자 목록만 알려 주고 요청자가 ask_agent로 직접 질의
-ingress_read:    {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null,
-                  blocked: "정의만 둔다: 핵심 조건 다음에 구현"}   # routing + 검색된 기록 원문 첨부
-ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble}, egress: null,
-                  blocked: "정의만 둔다: 핵심 조건 다음에 구현"}   # 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
+ingress_read:    {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null}   # routing + 검색된 기록 원문 첨부
+ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble}, egress: null}   # 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
 ingress:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: null}
 i_e:             {agent_tool: ask,       directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: true}}
 full_load:       {agent_tool: load_group_history, directory: group_cards, ingress: null, egress: null, budget_limit: false}   # 권한을 풀어 준 참조(상한 아님): 모든 그룹의 조회 도구 + 그룹 이력 원문 전체
+gateway_rag:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, internal_query: false, boundary_state: true, version_marks: true}, egress: null}   # 담당자에게 묻지 않고 그룹 기록만으로 답하는 게이트웨이 (Ingress의 6·9단계 생략)
+ingress_no_requery: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: false, boundary_state: true, version_marks: true}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Ingress의 9단계(재질의) 끔
+egress_no_history: {agent_tool: ask, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: false}, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Egress 1단계에 기록 대신 요청자 자신의 이력과 card
+retrieval_oracle: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true, evidence: oracle}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # 증거 블록을 정답 조각으로 대체 (oracle_evidence/ 마운트)

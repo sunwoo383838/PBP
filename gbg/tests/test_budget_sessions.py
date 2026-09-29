@@ -38,8 +38,8 @@ def answers(ev):
 # ─────────────────────────── 실행 거부 조건 ───────────────────────────
 def test_blocked_condition_is_refused(tmp_path):
     a = load_adapter("worldgen_mini")
-    with pytest.raises(ConfigError, match="direct_dyncard"):
-        Runner(a, condition="direct_dyncard", seed=7, run_dir=tmp_path, conditions=CONDITIONS, access=ACCESS,
+    with pytest.raises(ConfigError, match="retrieval_oracle"):                # 후속 조건: 코드만 두고 실행 거부
+        Runner(a, condition="retrieval_oracle", seed=7, run_dir=tmp_path, conditions=CONDITIONS, access=ACCESS,
                tools=ToolRegistry(ACCESS), agent_factory=lambda *x: ScriptedAgent(x[0]))
     assert not (tmp_path / "wal").exists()
 
@@ -146,7 +146,7 @@ class ToolResponder(ScriptedAgent):
 
     async def respond(self, ctx, request):
         await ctx.call_tool("entity.search", query="영업")
-        return Response(rid=request.rid, status="ok", answer="about 영업1팀", values=[], missing=[],
+        return Response(rid=request.rid, status="ok", answer="about 영업1팀", items=[], missing=[],
                         referral_to=None, need=[], as_of=ctx.day)
 
 

@@ -129,16 +129,24 @@ class CachedEmbedder:
 
 
 class VectorIndex:
-    """그룹 하나의 문서 벡터. 추가 순서대로 쌓고 전수 코사인으로 찾는다."""
+    """그룹 하나의 문서 벡터. 추가 순서대로 쌓고 전수 코사인으로 찾는다. 같은 id를 다시 넣으면 그 행을 바꾼다."""
     def __init__(self):
         self.ids: list[Hashable] = []
+        self.row: dict[Hashable, int] = {}
         self.matrix: np.ndarray | None = None
 
     def add(self, ids: Sequence[Hashable], vecs: np.ndarray):
-        if not len(ids):
-            return
-        self.ids += list(ids)
-        self.matrix = vecs if self.matrix is None else np.vstack([self.matrix, vecs])
+        new = []
+        for i, v in zip(ids, vecs):
+            if i in self.row:
+                self.matrix[self.row[i]] = v
+            else:
+                self.row[i] = len(self.ids) + len(new)
+                new.append((i, v))
+        if new:
+            self.ids += [i for i, _ in new]
+            m = np.stack([v for _, v in new])
+            self.matrix = m if self.matrix is None else np.vstack([self.matrix, m])
 
     def scores(self, qvec: np.ndarray) -> dict[Hashable, float]:
         if self.matrix is None:

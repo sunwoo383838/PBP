@@ -12,9 +12,9 @@ def test_canary_values_normalize_commas_and_skip_ids_and_small_numbers():
 
 
 def test_selection_and_referral_without_values_pass():
-    assert router_leaks(["fin-sel.a1", "fin-sel.a3", "", "records show fin-sel.a3 handled CMT-00039"], HITS, REQ) == []
+    assert router_leaks(["fin-sel.a1", "fin-sel.a3", "", "E3"], HITS, REQ) == []
 
 
-def test_value_in_referral_reason_is_a_leak_unless_in_request():
-    assert router_leaks(["FIN-TYO", "TYO executes the 663,841 KRW item"], HITS, REQ) == ["663841"]
-    assert router_leaks(["FIN-TYO", "about 663,841"], HITS, REQ + " (item of 663,841 KRW)") == []
+def test_value_in_router_output_is_a_leak_unless_in_request():
+    assert router_leaks(["FIN-TYO", "663,841"], HITS, REQ) == ["663841"]
+    assert router_leaks(["FIN-TYO", "663,841"], HITS, REQ + " (item of 663,841 KRW)") == []

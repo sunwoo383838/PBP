@@ -75,7 +75,7 @@ def auto_reply(req):
     if finish == "submit":
         props = tools["submit"]["parameters"]["properties"]
         return mk([("submit", {k: _default(v) for k, v in props.items()})])
-    return mk([("reply", {"answer": "unknown", "missing": []})])
+    return mk([("reply", {"answer": "unknown", "items": [], "missing": ["unknown"]})])
 
 
 def mk(calls, content=None):
@@ -174,10 +174,12 @@ def test_replay_miss_stops_the_run(tmp_path):
         llm_runner(tmp_path / "r", backend("REPLAY", cache, httpx.MockTransport(no_api))).run()
 
 
-def test_request_is_deterministic_greedy_and_thinking_off():
+def test_request_sampling_follows_model_card_and_thinking_off():
+    """temperature 0(사용자 결정) + Qwen3.5 non-thinking 권장 샘플링 값. 재현은 캐시·WAL로 한다."""
     b = backend("SCRIPTED", script=auto_reply)
     req = b.build_request([{"role": "user", "content": "x"}], [])
     assert req["model"] == "Qwen/Qwen3-32B" and req["temperature"] == 0
+    assert (req["top_p"], req["top_k"], req["min_p"], req["presence_penalty"], req["repetition_penalty"]) == (0.8, 20, 0, 1.5, 1.0)
     assert req["reasoning_effort"] == "none" and "chat_template_kwargs" not in req
     assert "tools" not in req and "tool_choice" not in req
     req = b.build_request([{"role": "user", "content": "x"}], [{"type": "function", "function": {"name": "f"}}])
@@ -315,17 +317,39 @@ def test_format_error_recovers_within_retry(tmp_path):
     assert ans["payload"].get("error") is None and ans["payload"]["answer"] == {"dept": "", "grade": 0}
 
 
-def test_step_limit(tmp_path):
-    loop_forever = lambda req: mk([("rulebook.read", {"search": "x"})]) if "submit" in str(req["tools"]) else auto_reply(req)
-    llm_runner(tmp_path, backend("SCRIPTED", script=loop_forever)).run()
-    ans = [e for e in wal(tmp_path) if e["type"] == "answer"]
-    assert ans and all(e["payload"]["error"] == "step_limit" for e in ans)
-    per_task = {}
-    for e in wal(tmp_path):
-        if e["type"] == "llm_call" and e["payload"]["task_id"].startswith(("L-", "W-")) and e["actor"] == f"agent:{e['payload']['agent']}":
-            per_task.setdefault((e["payload"]["task_id"], e["payload"]["agent"]), 0)
-            per_task[(e["payload"]["task_id"], e["payload"]["agent"])] += 1
-    assert max(per_task.values()) == P.agent.max_steps
+def test_no_step_cap_task_budget_is_the_limit(tmp_path):
+    """단계 상한은 없다: 도구만 되풀이하는 요청자는 과제 예산(호출 수)에 닿고, 예약된 최종 호출로 제출한다."""
+    forced = []
+
+    def loop_forever(req):
+        if isinstance(req.get("tool_choice"), dict):
+            forced.append(req["tool_choice"]["function"]["name"])
+        return (mk([("entity.search", {"query": "x"})]) if len(req["tools"]) > 1 and "submit" in str(req["tools"])
+                else auto_reply(req))
+    conds = load_conditions(ROOT / "configs" / "conditions.yaml")
+    conds.defaults = conds.defaults.model_copy(update={"budget": conds.defaults.budget.model_copy(update={"calls": 20})})
+    llm_runner(tmp_path, backend("SCRIPTED", script=loop_forever), conditions=conds).run()
+    ans = [e["payload"] for e in wal(tmp_path) if e["type"] == "answer"]
+    lim = conds.defaults.budget.calls
+    assert ans and all(a.get("error") is None and a["budget"]["budget_exhausted"] and a["budget"]["final_call_used"]
+                       and a["budget"]["exhausted_by"] == "calls" and a["budget"]["used"]["calls"] <= lim for a in ans)
+    assert forced and set(forced) == {"submit"}, "최종 호출은 제출 도구를 강제한다"
+
+
+def test_safety_steps_end_with_a_submit_only_call(tmp_path):
+    """예산 상한이 없는 조건(full_load)을 위한 안전 한도: 닿으면 실패가 아니라 제출 전용 호출 1회로 끝낸다."""
+    a = load_adapter("worldgen_mini")
+    rt = AgentRuntime(CONDITIONS["direct"], a.group_tools, ContextBuilder(TOK.count, P.context.raw_window, P.context.summary),
+                      None, P.agent.format_retries, safety_steps=3)
+    loop_forever = lambda req: (mk([("entity.search", {"query": "x"})]) if len(req["tools"]) > 1 and "submit" in str(req["tools"])
+                                else auto_reply(req))
+    conds = load_conditions(ROOT / "configs" / "conditions.yaml")                  # 예산 상한이 없는 조건에서만 안전 한도
+    conds.defaults = conds.defaults.model_copy(update={"budget": conds.defaults.budget.model_copy(update={"calls": None, "tokens": None})})
+    Runner(a, condition="direct", seed=7, run_dir=tmp_path, conditions=conds, access=ACCESS, tools=ToolRegistry(ACCESS),
+           env_tools=a.make_tools, agent_factory=lambda aid, g, role: LLMAgent(aid, rt), params=P.kernel,
+           llm=backend("SCRIPTED", script=loop_forever), tokens=TOK.count, max_day=1).run()
+    ans = [e["payload"] for e in wal(tmp_path) if e["type"] == "answer"]
+    assert ans and all(x.get("error") is None and x["budget"]["used"]["calls"] == 4 for x in ans), "3단계 + 최종 1회"
 
 
 # ─────────────────────────── 기록 ───────────────────────────
@@ -384,3 +408,31 @@ def test_real_deepinfra_live_then_replay(tmp_path):
     flagged = [r for (r,) in cache.db.execute("SELECT response FROM responses")
                if "thinking_stripped" in json.loads(r) or "reasoning_leaked" in json.loads(r)]
     assert not flagged, "thinking이 꺼지지 않았다 (reasoning_content 또는 <think> 블록)"
+
+
+def test_service_tier_is_sent_but_not_part_of_the_cache_key(tmp_path):
+    """priority는 처리 순서만 바꾼다: 요청에는 싣고, 캐시 키에는 넣지 않아 기존 응답을 그대로 재사용한다."""
+    fake = FakeDeepInfra()
+    cache = ResponseCache(tmp_path / "c.sqlite")
+    default = LLMBackend(FAST, mode="LIVE", model="qwen3-32b", cache=cache, transport=fake.transport(), api_key="t",
+                         sleep=_no_sleep)
+    prio = LLMBackend(FAST.model_copy(update={"service_tier": "priority"}), mode="LIVE", model="qwen3-32b", cache=cache,
+                      transport=fake.transport(), api_key="t", sleep=_no_sleep)
+    msgs = [{"role": "user", "content": "hi"}]
+    a = asyncio.run(prio.complete(msgs, []))
+    assert fake.bodies[-1]["service_tier"] == "priority"
+    b = asyncio.run(default.complete(msgs, []))
+    assert b.cached and a.key == b.key and fake.calls == 1
+
+
+def test_seed_per_call_is_derived_from_request_and_recorded(tmp_path):
+    seen = []
+
+    def script(req):
+        seen.append(req.get("seed"))
+        return auto_reply(req)
+    b = LLMBackend(P.llm, mode="SCRIPTED", model="qwen3-32b", script=script, api_key="t")
+    m = [{"role": "user", "content": "x"}]
+    r1, r2 = asyncio.run(b.complete(m, [])), asyncio.run(b.complete(m, []))
+    r3 = asyncio.run(b.complete([{"role": "user", "content": "y"}], []))
+    assert r1.seed is not None and r1.seed == r2.seed == seen[0] and r3.seed != r1.seed

@@ -33,6 +33,7 @@ class HistoryEntry(Contract):
     digest: str                                 # 결정·대상·범주형 값만, 수치 없음
     round: int | None = None                    # 하루 안 라운드 (워밍업은 worldgen transcripts의 round)
     order: int | None = None                    # 그룹 공통 순번 = WAL seq (실행 중 사건만. 워밍업은 공개 순번이 없어 None)
+    task: str | None = None                     # 실행 중 과제 사건(과제·도구·문답·제출)의 원 과제 id. 검색의 에피소드 묶음용
 
 
 class IndexEntry(Contract):
@@ -173,6 +174,7 @@ class Slot(Contract):
 class OutputSchema(Contract):
     """과제의 닫힌 슬롯. 에이전트 출력은 이 형식으로 강제된다."""
     slots: list[Slot] = Field(min_length=1)
+    conventions: JsonValue = None               # 답 작성 규칙(슬롯의 뜻·null 규칙·순서). 업무 규정은 담지 않는다
 
     @model_validator(mode="after")
     def _unique(self):

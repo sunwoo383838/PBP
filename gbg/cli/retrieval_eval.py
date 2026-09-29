@@ -1,6 +1,6 @@
 """오프라인 회수율 평가 (LLM 없음). 채점기처럼 오프라인 도구라 private/(gold.jsonl, fragments.jsonl)을 읽는다.
 
-    uv run python -m gbg.cli.retrieval_eval <scenario_dir> [--embedder hash|api] [--cache PATH] [--out report.json]
+    uv run python -m gbg.cli.retrieval_eval <scenario_dir>... [--embedder hash|api] [--reranker api|none] [--out report.json]
 
 worldgen 4.2 시나리오(<dir>/harness, <dir>/private)에서, 각 과제가 도착하기 직전의 그룹 이력(워밍업 + 그때까지 재생된
 이력 줄·색인)에 대해 원격 need의 결정 필수 조각이 증거 블록에 들어오는지 본다. 세계 재생은 스크립트 에이전트 실행의
@@ -15,7 +15,8 @@ from gbg.benchmarks.worldgen.adapter import WorldgenAdapter
 from gbg.contracts.freeze import DEFAULT_FREEZE, load_freeze, mark_frozen, retrieval_hash
 from gbg.contracts.params import load_params
 from gbg.retrieval.embed import CachedEmbedder, DeepInfraEmbedder, EmbeddingCache, HashEmbedder
-from gbg.retrieval.eval_recall import build_cases, evaluate
+from gbg.retrieval.eval_recall import build_cases, evaluate, run_new
+from gbg.retrieval.rerank import CachedReranker, DeepInfraReranker, NullReranker, RerankCache
 from gbg.retrieval.hybrid import GroupRetriever
 from gbg.stores import Stores
 
@@ -92,15 +93,29 @@ def _known_entities(stores, events, link_fields) -> dict[str, list[str]]:
 THRESHOLD = 0.9                                                          # H0·H1 정확 조회 회수율, 개발 시드 평균
 
 
-def evaluate_scenario(scenario: Path, params, embedder) -> dict:
+def _lines_of(scenario: Path):
+    """조각 → 보유자 이력의 조각 줄 원문 (private/transcripts_full의 entries 위치)."""
+    cache: dict[str, list[str]] = {}
+
+    def lines(f: dict) -> list[str]:
+        a = f["agent"]
+        if a not in cache:
+            p = scenario / "private" / "transcripts_full" / f"{a}.jsonl"
+            cache[a] = [x["text"] for x in _jsonl(p)] if p.exists() else []
+        return [cache[a][i] for i in f.get("entries", []) if i < len(cache[a])]
+    return lines
+
+
+def evaluate_scenario(scenario: Path, params, embedder, reranker=None, systems=None) -> dict:
     adapter = WorldgenAdapter()
     adapter.load(scenario / "harness")
     stores = Stores.from_adapter(adapter, card_mode="static", rounds_per_day=params.kernel.rounds_per_day)
     gold = _jsonl(scenario / "private" / "gold.jsonl")
     frags = {f["fid"]: f for f in _jsonl(scenario / "private" / "fragments.jsonl")}
     events = _world_events(adapter, params)
-    cases, skipped = build_cases(gold, frags, _known_entities(stores, events, params.retrieval.catalog_link_fields))
-    retrievers = {g: GroupRetriever(stores, g, embedder, params.retrieval) for g in {c.group for c in cases}}
+    cases, skipped = build_cases(gold, frags, _known_entities(stores, events, params.retrieval.catalog_link_fields),
+                                 _lines_of(scenario))
+    retrievers = {g: GroupRetriever(stores, g, embedder, params.retrieval, reranker) for g in {c.group for c in cases}}
     pos = {"i": 0}
 
     def advance(case):                                                   # 과제 도착 라운드 전까지의 사건 반영
@@ -108,14 +123,14 @@ def evaluate_scenario(scenario: Path, params, embedder) -> dict:
             stores.apply(events[pos["i"]])
             pos["i"] += 1
 
-    report = asyncio.run(evaluate(retrievers, cases, advance=advance))
+    report = asyncio.run(evaluate(retrievers, cases, systems or {"evidence": run_new}, advance=advance))
     report.update(scenario=str(scenario), seed=adapter.manifest.get("params", {}).get("seed"), skipped=skipped)
     return report
 
 
 def criterion(reports: list[dict]) -> dict:
     """H0·H1 정확 조회 회수율의 개발 시드 평균으로 판정한다 (시드별 회수율의 단순 평균). H2는 보고만."""
-    per = {d: [(r["modes"]["index"]["by_disc"].get(d) or {}).get("recall") for r in reports] for d in ("H0", "H1", "H2")}
+    per = {d: [(r["systems"]["index"]["by_disc"].get(d) or {}).get("recall") for r in reports] for d in ("H0", "H1", "H2")}
     mean = {d: round(sum(v) / len(v), 4) if v and None not in v else None for d, v in per.items()}
     return {"per_seed": per, "mean": mean, "threshold": THRESHOLD,
             "pass": all(mean[d] is not None and mean[d] >= THRESHOLD for d in ("H0", "H1"))}
@@ -126,6 +141,8 @@ def main(argv=None):
     ap.add_argument("scenarios", type=Path, nargs="+", help="개발 시드 시나리오 디렉터리들")
     ap.add_argument("--embedder", choices=["hash", "api"], default="api")
     ap.add_argument("--cache", type=Path, default=Path.home() / ".cache" / "gbg" / "embeddings.sqlite")
+    ap.add_argument("--reranker", choices=["api", "none"], default="api")
+    ap.add_argument("--rerank-cache", type=Path, default=Path.home() / ".cache" / "gbg" / "rerank.sqlite")
     ap.add_argument("--params", type=Path, default=ROOT / "configs" / "params.yaml")
     ap.add_argument("--out", type=Path)
     ap.add_argument("--freeze", action="store_true",
@@ -136,14 +153,16 @@ def main(argv=None):
     params = load_params(args.params)
     inner = HashEmbedder() if args.embedder == "hash" else DeepInfraEmbedder(params.llm, params.retrieval.embed_model)
     embedder = CachedEmbedder(inner, EmbeddingCache(args.cache), "LIVE", params.retrieval.embed_batch)
-    reports = [evaluate_scenario(sc, params, embedder) for sc in args.scenarios]
+    rr = params.retrieval
+    reranker = (CachedReranker(DeepInfraReranker(params.llm, rr.rerank_model), RerankCache(args.rerank_cache))
+                if args.reranker == "api" and rr.rerank_model else NullReranker())
+    reports = [evaluate_scenario(sc, params, embedder, reranker) for sc in args.scenarios]
     # 조회 설정은 개발 시드에서 동결한다: 판정에 쓴 설정의 해시를 남겨 평가 시드 실행과 대조한다
     frozen = retrieval_hash(params.retrieval)
     out = {"embedder": embedder.name, "retrieval_params_sha256": frozen, "criterion": criterion(reports),
            "scenarios": reports}
     summary = [{"scenario": r["scenario"], "cases": r["cases"], "skipped": r["skipped"],
-                **{m: {"recall": v["recall"], "by_disc": {d: x["recall"] for d, x in v["by_disc"].items()}}
-                   for m, v in r["modes"].items()}} for r in reports]
+                **{m: {k: v for k, v in s.items() if k != "rows"} for m, s in r["systems"].items()}} for r in reports]
     print(json.dumps({"embedder": embedder.name, "retrieval_params_sha256": frozen, "scenarios": summary,
                       "criterion": out["criterion"]}, ensure_ascii=False, indent=1))
     if args.out:

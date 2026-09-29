@@ -2,4 +2,4 @@
 # retrieval_eval --freeze가 여기에 적는다. 평가 시드 시나리오는 이 해시와 조회 설정이 같을 때만 실행한다.
 dev_seeds: [1, 2, 3, 4, 5, 7]                   # D3·D5, T30 (12개 시나리오)
 eval_seeds: [12, 13, 14, 15, 16]                # 조회 설정 동결 후 생성
-retrieval_params_sha256: null                   # null = 아직 동결 전 (평가 시드 실행 거부)
+retrieval_params_sha256: dcda42af0618c2197dd7c4744e4a58bdd50c98cc7f5aeb3ad1cd3cba5ad319cb

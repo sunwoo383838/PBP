@@ -111,8 +111,8 @@ class AgentContext:
         return await self.kernel.bus.ask_egress(self, question, purpose)
 
     async def llm(self, messages: list[dict], tools: list[dict], step: int, composition: dict | None = None,
-                  final: bool = False, estimate: int = 0):
-        return await self.kernel.llm_call(self, messages, tools, step, composition, final, estimate)
+                  final: bool = False, estimate: int = 0, force: str | None = None):
+        return await self.kernel.llm_call(self, messages, tools, step, composition, final, estimate, force)
 
 
 # ─────────────────────────── 커널 ───────────────────────────
@@ -260,14 +260,14 @@ class Kernel:
 
     # ── LLM 호출 (예산 · 기록) ──
     async def llm_call(self, ctx: AgentContext, messages: list[dict], tools: list[dict], step: int,
-                       composition: dict | None, final: bool = False, estimate: int = 0):
+                       composition: dict | None, final: bool = False, estimate: int = 0, force: str | None = None):
         if self.llm is None:
             raise FatalError("LLM 백엔드 없이 LLM 에이전트를 실행함")
         component = ctx.component
         if final and component != "requester":
             raise FatalError("최종 답변 호출은 과제 담당자만 할 수 있다")
         self.budget.admit(final, estimate)                                  # 넘으면 BudgetExhausted
-        res = await self.llm.complete(messages, tools)
+        res = await (self.llm.complete(messages, tools, force) if force else self.llm.complete(messages, tools))
         self.budget.charge(component, res.usage, composition, final)
         head = {"task_id": ctx.task_id, "agent": ctx.agent_id, "step": step, "component": component,
                 "final": final, "serving": ctx.serving}
@@ -275,6 +275,7 @@ class Kernel:
                         "cached": res.cached, "attempts": res.attempts, "latency_ms": res.latency_ms, "usage": res.usage,
                         "tokens": int(res.usage.get("prompt_tokens", 0)) + int(res.usage.get("completion_tokens", 0)),
                         "provider_cached_tokens": int(res.usage.get("provider_cached_tokens", 0) or 0),
+                        "service_tier": res.usage.get("service_tier"), "seed": res.seed,
                         "cached_tool_result": bool((composition or {}).get("cached_tool_result"))})]
         if composition is not None:
             obs.append(("context_windows", {"day": ctx.day, "round": ctx.round, **head, **composition}))

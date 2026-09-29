@@ -29,7 +29,8 @@ class Runner:
                  params: KernelParams = KernelParams(), fault: Fault | None = None, llm=None,
                  tokens: Callable[[str], int] | None = None, max_day: int | None = None,
                  retrieval: RetrievalParams | None = None, freeze: RetrievalFreeze | None = None,
-                 embedder=None, format_retries: int = 1, full_load_tokens: int = 40000):
+                 embedder=None, reranker=None, format_retries: int = 1, full_load_tokens: int = 40000,
+                 oracle_evidence: Path | None = None):
         freeze = freeze or load_freeze(DEFAULT_FREEZE)                     # 평가 시드는 동결된 조회 설정으로만
         seed_of = (getattr(adapter, "manifest", None) or {}).get("params", {}).get("seed")
         try:
@@ -61,6 +62,13 @@ class Runner:
             from gbg.stores.history import approx_tokens
             tools.register(load_history_tool(self.stores, tokens or approx_tokens, full_load_tokens,
                                              lambda: self.kernel.task_cache))
+        oracle_cond = cond.ingress is not None and cond.ingress.evidence == "oracle"
+        if oracle_evidence is not None and not oracle_cond:                # 정답 조각은 retrieval_oracle에서만
+            raise ConfigError(f"조건 '{condition}'에 oracle_evidence가 마운트돼 있다 (retrieval_oracle에서만 허용)")
+        if oracle_cond and oracle_evidence is None:
+            raise ConfigError("retrieval_oracle에는 oracle_evidence/ 마운트가 필요하다 (gbg.cli.export_oracle)")
+        oracle = ({p.stem: json.loads(p.read_text(encoding="utf-8")) for p in sorted(Path(oracle_evidence).glob("*.json"))}
+                  if oracle_evidence is not None else None)
         if cond.ingress is not None:                                       # 경계 조건: 그룹마다 경계 모듈 하나
             if embedder is None or retrieval is None:
                 raise ConfigError(f"조건 '{condition}'의 경계 모듈에는 임베더와 조회 설정(retrieval)이 필요하다")
@@ -72,8 +80,8 @@ class Runner:
                 resolver = AliasResolver(adapter.initial_state(g.id).aliases, embedder=embedder,
                                          embed_threshold=retrieval.alias.embed_threshold)
                 self.kernel.boundaries[g.id] = BoundaryModule(
-                    g.id, cond, retriever=GroupRetriever(self.stores, g.id, embedder, retrieval), resolver=resolver,
-                    count=tokens or approx_tokens, format_retries=format_retries)
+                    g.id, cond, retriever=GroupRetriever(self.stores, g.id, embedder, retrieval, reranker), resolver=resolver,
+                    count=tokens or approx_tokens, format_retries=format_retries, oracle=oracle)
 
     def _check_config(self):
         cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,

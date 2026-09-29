@@ -21,7 +21,7 @@ from gbg.kernel.access_guard import AccessGuard
 from gbg.retrieval.alias import AliasResolver, edit_distance
 from gbg.retrieval.bm25 import BM25Index, tokenize
 from gbg.retrieval.embed import CachedEmbedder, DeepInfraEmbedder, EmbeddingCache, EmbeddingMiss, HashEmbedder
-from gbg.retrieval.eval_recall import build_cases, evaluate
+from gbg.retrieval.eval_recall import build_cases, evaluate, run_new
 from gbg.retrieval.evidence import build_evidence
 from gbg.retrieval.hybrid import GroupRetriever, RetrievalDenied, authorize
 from gbg.retrieval.normalize import normalize, strip_honorifics
@@ -96,26 +96,68 @@ def _recall_report(embedder=None):
     frags = {f["fid"]: f for f in map(json.loads, (priv / "fragments.jsonl").read_text(encoding="utf-8").splitlines())}
     cases, skipped = build_cases(gold, frags)
     rets = {g: retriever(s, g, embedder) for g in {c.group for c in cases}}
-    return run(evaluate(rets, cases)), skipped
+    return run(evaluate(rets, cases, {"evidence": run_new})), skipped
 
 
 def test_recall_h0_h1_at_least_90_percent():
     """90% 기준은 정확 조회(색인 + catalog 한 단계)에 적용한다. H2는 보고만."""
     report, skipped = _recall_report()
-    idx = report["modes"]["index"]
+    idx = report["systems"]["index"]
     assert report["cases"] >= 5 and set(idx["by_disc"]) >= {"H0", "H1", "H2"}
     for disc in ("H0", "H1"):
         assert idx["by_disc"][disc]["recall"] >= 0.9, (disc, idx["by_disc"][disc])
-    assert {"hybrid", "bm25"} <= set(report["modes"]) and report["modes"]["hybrid"]["by_day"]
+    ev = report["systems"]["evidence"]
+    assert ev["by_class"] and ev["holder"]["active"]["n"] and set(ev["at_k"]) == {5, 10, 20, 50}
+    assert ev["queries"]["n"] == report["cases"] and ev["queries"]["tokens"]
 
 
-def test_h2_antecedent_reached_by_context_expansion():
+def _close(s, agent):
+    s.history.add(agent, 0, "assistant", "[Result] done", [], "d")                   # 픽스처의 열린 에피소드를 닫는다
+
+
+def test_h2_value_line_returned_with_its_episode():
+    """값 줄에는 엔티티가 없다 (H2). 대상 줄로 걸려도 결과는 에피소드 전체(small-to-big)."""
     s = stores()
-    s.history.add("fin-sel.a3", 0, "assistant", "CMT-00077 영업1팀 equipment review started.", ["CMT-00077", "영업1팀"], "d")
-    s.history.add("fin-sel.a3", 0, "assistant", "Hold that one until Friday.", [], "d")          # 지시어 발화
+    _close(s, "fin-sel.a3")
+    for text, ents in [("[Task] Review commitment CMT-00077", ["CMT-00077"]), ("[Memo] Checking the 영업1팀 file.", ["영업1팀"]),
+                       ("[Tool result] Recorded — On that item: hold until Friday.", []), ("[Result] Review done", [])]:
+        s.history.add("fin-sel.a3", 0, "assistant", text, ents, "d")
+    s.history.add("fin-sel.a3", 0, "assistant", "[Memo] unrelated note", [], "d")
     ev = run(build_evidence(retriever(s, "FIN-SEL"), "CMT-00077", ["CMT-00077"], mode="bm25"))
-    texts = {it.text: it.source for it in ev.items}
-    assert texts["Hold that one until Friday."] == "context"
+    ep = next(it for it in ev.items if it.title == "[Task] Review commitment CMT-00077")
+    assert "On that item: hold until Friday." in ep.text and ep.text.endswith("[Result] Review done")
+    assert "unrelated note" not in ep.text, "에피소드 밖 줄은 한 줄짜리 단위"
+    assert "tag" in ep.source
+
+
+def test_deepinfra_reranker_batches_and_caches(tmp_path):
+    import httpx
+    from gbg.retrieval.rerank import CachedReranker, DeepInfraReranker, RerankCache
+    seen = []
+
+    def handler(req):
+        body = json.loads(req.content)
+        seen.append((req.url.path, len(body["documents"])))
+        return httpx.Response(200, json={"scores": [len(d) / 100 for d in body["documents"]]})
+    inner = DeepInfraReranker(P.llm, "Qwen/Qwen3-Reranker-8B", batch=2, api_key="k", transport=httpx.MockTransport(handler))
+    rr = CachedReranker(inner, RerankCache(tmp_path / "rr.sqlite"))
+    assert rr.score("q", ["a", "bbb", "cc"]) == [0.01, 0.03, 0.02]
+    assert seen == [("/v1/inference/Qwen/Qwen3-Reranker-8B", 2), ("/v1/inference/Qwen/Qwen3-Reranker-8B", 1)]
+    replay = CachedReranker(inner, rr.cache, "REPLAY")
+    assert replay.score("q", ["cc", "a"]) == [0.02, 0.01] and len(seen) == 2
+
+
+def test_episode_chunking_rules():
+    from gbg.contracts.schemas import HistoryEntry
+    from gbg.retrieval.episodes import episodes
+    mk = lambda i, t, task=None: HistoryEntry(seq=i, day=0, role="user", text=t, tokens=5, entities=[], digest="",
+                                             task=task)
+    es = [mk(1, "[Memo] a"), mk(2, "[Task] one"), mk(3, "x"), mk(4, "[Task] two"), mk(5, "y"), mk(6, "[Result] r"),
+          mk(7, "[Task W-1] run", "W-1"), mk(8, "[Handover] note"), mk(9, "[Question from agent-x] q", "W-2"),
+          mk(10, "[Answer from agent-y] a", "W-1"), mk(11, "[Answer to agent-x] a", "W-2")]
+    got = [ep.seqs for ep in episodes("a", es)]
+    assert got == [(1,), (2, 3), (4, 5, 6), (7, 10), (8,), (9, 11)], "[Result] 전 새 [Task]는 그 직전에서 끊고, 과제는 id로 묶는다"
+    assert [ep.title for ep in episodes("a", es)][:3] == ["", "[Task] one", "[Task] two"]
 
 
 # ─────────────────────────── 3. 별칭 해소 ───────────────────────────
@@ -188,7 +230,7 @@ def test_results_never_cross_group_boundary():
 def test_retrieval_authorization_follows_access_table():
     conds = load_conditions(ROOT / "configs" / "conditions.yaml")
     access = load_access(ROOT / "configs" / "access.yaml", conds)
-    for cond in ("routing", "routing_reveal", "ingress_read", "ingress_sel", "ingress", "i_e"):   # 경계 조건 모두 같은 검색
+    for cond in ("routing", "ingress_read", "ingress_sel", "ingress", "i_e", "gateway_rag"):   # 경계 조건 모두 같은 검색
         guard = AccessGuard(access, cond)
         assert authorize(guard, "boundary:FIN-SEL", "FIN-SEL", "FIN-SEL")["allowed"]
         with pytest.raises(RetrievalDenied):
@@ -201,18 +243,29 @@ def test_retrieval_authorization_follows_access_table():
 
 # ─────────────────────────── 조립 규칙 ───────────────────────────
 def test_no_version_pruning_and_cap():
-    """조회 단계는 버전을 고르지 않는다 (버전 선택은 Ingress 게이트웨이 LLM의 L_state 결정). 상한만 적용한다."""
+    """조회 단계는 버전을 고르지 않는다 (버전 선택은 Ingress 게이트웨이 LLM의 L_state 결정). 상한은 점수 낮은 것부터 뺀다."""
     s = stores()
+    _close(s, "fin-sel.a1")
     for i in range(5):
         s.history.add("fin-sel.a1", i + 1, "assistant", f"영업1팀 available budget update {i}.", ["영업1팀"], "d")
     ev = run(build_evidence(retriever(s, "FIN-SEL"), "영업1팀 available budget", ["영업1팀"]))
     updates = [it.text for it in ev.items if "budget update" in it.text]
     assert updates == [f"영업1팀 available budget update {i}." for i in range(5)]
     assert "attr" not in ev.log
+
+    class ByDay:                                                          # 점수 = 가장 오래된 것이 가장 높다
+        name = "by-day"
+
+        def score(self, q, docs):
+            return [-int(d.rsplit(" ", 1)[-1].rstrip(".")) if "budget update" in d else -99 for d in docs]
     small = RP.model_copy(update={"evidence_cap": 60})
-    ev = run(build_evidence(retriever(s, "FIN-SEL", params=small), "영업1팀 available budget", ["영업1팀"]))
+    r = retriever(s, "FIN-SEL", params=small)
+    r.reranker = ByDay()
+    ev = run(build_evidence(r, "영업1팀 available budget", ["영업1팀"]))
     assert ev.cap_reached and ev.tokens <= 60 and ev.log["cap_reached"]
-    assert ev.items and ev.items[-1].day == max(it.day for it in ev.items), "오래된 것부터 뺀다"
+    kept = [it.text for it in ev.items]
+    assert kept and kept[0] == "영업1팀 available budget update 0.", "점수 높은(오래된) 것이 남고 낮은 것부터 빠진다"
+    assert [it.day for it in ev.items] == sorted(it.day for it in ev.items), "표시는 시간순"
 
 
 # ─────────────────────────── 실제 bge-m3 (선택) ───────────────────────────
@@ -220,7 +273,7 @@ def test_no_version_pruning_and_cap():
 def test_real_bge_m3(tmp_path):
     emb = CachedEmbedder(DeepInfraEmbedder(P.llm, RP.embed_model), EmbeddingCache(tmp_path / "emb.sqlite"), "LIVE")
     report, _ = _recall_report(emb)
-    hy = report["modes"]["hybrid"]
+    hy = report["systems"]["evidence"]
     for disc in ("H0", "H1"):
         assert hy["by_disc"][disc]["recall"] >= 0.9
     total = correct = 0
@@ -263,7 +316,7 @@ def test_exact_lookup_matches_index_keys_not_text():
 def test_recall_criterion_is_dev_seed_mean():
     """H0·H1 기준은 개발 시드 평균 0.9 이상. H2는 보고만 한다."""
     from gbg.cli.retrieval_eval import criterion
-    rep = lambda h0, h1, h2: {"modes": {"index": {"by_disc": {"H0": {"recall": h0}, "H1": {"recall": h1},
+    rep = lambda h0, h1, h2: {"systems": {"index": {"by_disc": {"H0": {"recall": h0}, "H1": {"recall": h1},
                                                               "H2": {"recall": h2}}}}}
     c = criterion([rep(0.95, 0.88, 0.1), rep(0.87, 0.94, 0.0)])
     assert c["mean"] == {"H0": 0.91, "H1": 0.91, "H2": 0.05} and c["pass"]
@@ -293,7 +346,7 @@ def test_eval_seed_runs_only_with_frozen_retrieval_config(tmp_path):
     assert "# 조회 설정 동결" in p.read_text(encoding="utf-8"), "주석 보존"
 
 
-def test_runner_refuses_eval_seed_scenario_before_freeze(tmp_path):
+def test_runner_runs_eval_seed_only_with_frozen_retrieval_config(tmp_path):
     from gbg.contracts.conditions import ConfigError
     from gbg.kernel.runner import Runner
     from gbg.kernel.tools import ToolRegistry
@@ -301,6 +354,10 @@ def test_runner_refuses_eval_seed_scenario_before_freeze(tmp_path):
     from gbg.tests.test_stage3 import ACCESS, CONDITIONS
     a = load_adapter("worldgen_mini")
     a.manifest = {**a.manifest, "params": {**a.manifest.get("params", {}), "seed": 12}}
+    mk = lambda d, rp: Runner(a, condition="direct", seed=0, run_dir=tmp_path / d, conditions=CONDITIONS, access=ACCESS,
+                              tools=ToolRegistry(ACCESS), agent_factory=lambda aid, g, role: None, retrieval=rp)
     with pytest.raises(ConfigError, match="평가 시드 12"):
-        Runner(a, condition="direct", seed=0, run_dir=tmp_path, conditions=CONDITIONS, access=ACCESS,
-               tools=ToolRegistry(ACCESS), agent_factory=lambda aid, g, role: None, retrieval=RP)
+        mk("changed", RP.model_copy(update={"top_k": RP.top_k + 1}))      # 동결 뒤 조회 설정을 바꾸면 거부
+    with pytest.raises(ConfigError, match="평가 시드 12"):
+        mk("missing", None)
+    mk("frozen", RP)                                                       # 동결된 설정 그대로면 실행

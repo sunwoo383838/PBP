@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def error_response(rid: str, reason: str, day: int) -> Response:
-    return Response(rid=rid, status="error", answer=reason, values=[], missing=[], referral_to=None, need=[], as_of=day)
+    return Response(rid=rid, status="error", answer=reason, items=[], missing=[], referral_to=None, need=[], as_of=day)
 
 
 class Bus:
@@ -127,7 +127,10 @@ class Bus:
         return resp
 
     def _requester_policy(self, ctx: "AgentContext", to: str, question: str) -> str | None:
-        """요청자 권한 (defaults.requester): 과제 담당자의 질문 수 상한과 같은 질문 반복 허용 여부."""
+        """요청자 권한 (defaults.requester): 과제 담당자의 질문 수 상한과 같은 질문 반복 허용 여부.
+        응답자의 중첩 질의는 모든 조건에서 끈다 (경계 모듈의 내부 질의는 응답자가 아니라 경계 모듈이 한다)."""
+        if ctx.component == "responder":
+            return "nested_asks_disabled"
         b = self.kernel.budget
         if b is None or ctx.component != "requester":
             return None

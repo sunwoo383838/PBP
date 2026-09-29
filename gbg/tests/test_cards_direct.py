@@ -9,7 +9,10 @@ from gbg.contracts.card import public_id
 from gbg.kernel.tools import ToolCall
 from gbg.stores import Stores
 from gbg.tests import test_stage3 as T
-from gbg.tests.support import load_adapter
+from gbg.tests.support import FIXTURES, load_adapter
+
+
+PUBLISHED = set(json.loads((FIXTURES / "worldgen_mini" / "harness" / "world_init.json").read_text(encoding="utf-8"))["agent_cards"])
 
 
 def _groups():
@@ -32,8 +35,9 @@ def test_swarm_coordinator_skills_from_roles_and_card():
 
 
 def test_group_card_skills_are_union_of_member_cards():
+    """world_init에 공개된 card만 합친다. 역할로 만든 card(워커, card 없이 합류할 구성원)는 프롬프트용이다."""
     for g in _groups().values():
-        union = list({s.id: s for m in g.members if m.card for s in m.card.skills}.values())
+        union = list({s.id: s for m in g.members if m.agent_id in PUBLISHED for s in m.card.skills}.values())
         assert g.card.skills == union
     assert [s.id for s in _groups()["FIN-TYO"].card.skills] == ["coordinator", "budgeting", "payables", "closing", "control"]
 
@@ -74,14 +78,36 @@ def test_ask_agent_by_public_id_reaches_responder_without_group(tmp_path):
         assert not any(g in system for g in _groups()), "system 프롬프트에 그룹 id 없음"
 
 
-def test_rulebook_output_hides_group(tmp_path):
+def test_rules_are_fixed_in_system_prompt_own_group_only_without_group_ids(tmp_path):
+    """규정은 도구가 아니라 system에 고정: 자기 그룹 규정만, 그룹 접두어 없는 id로. full_load는 전 그룹 규정."""
+    from gbg.tests.test_stage5 import run
+    a = load_adapter("worldgen_mini")
+    assert "rulebook.read" not in {t.name for t in a.make_tools(Stores.from_adapter(a, card_mode="static", rounds_per_day=3))}
+    systems = []
+
+    def script(req):
+        systems.append((req["messages"][0]["content"], {t["function"]["name"] for t in req.get("tools", [])}))
+        return T.mk([("submit", {"dept": "", "grade": 0})]) if any(t["function"]["name"] == "submit" for t in req["tools"]) \
+            else T.mk([("reply", {"answer": "x", "items": [], "missing": ["x"]})])
+    run(tmp_path / "d", "direct", script=script, max_day=1)
+    assert any("[Rules of your area]" in sm for sm, tools in systems if "submit" in tools)
+    assert all("rulebook.read" not in tools for _, tools in systems)
+    own = [sm for sm, _ in systems if "transfer_effective_day" in sm]
+    assert own and all(g.id not in sm for sm in own for g in a.groups()), "Direct: 그룹 id 없이"
+    run(tmp_path / "f", "full_load", script=script, max_day=1)
+    fl = [sm for sm, tools in systems if "load_group_history" in tools]
+    assert fl and all(f"[Rules of {g}]" in fl[0] for g in ("FIN-SEL", "HR-SEL", "HR-TYO", "FIN-TYO"))
+
+
+def test_every_member_has_a_card_but_workers_stay_out_of_the_directory():
+    """swarm 워커도 자기 역할 card를 가진다(시스템 프롬프트용). 디렉터리에는 card 대상만 보인다."""
+    from gbg.stores import Stores
     a = load_adapter("worldgen_mini")
     s = Stores.from_adapter(a, card_mode="static", rounds_per_day=3)
-    tool = {t.name: t for t in a.make_tools(s)}["rulebook.read"]
-    rules = s.rulebook.read_all("HR-SEL")
-    assert rules
-    listed = asyncio.run(tool.invoke(ToolCall("hr-sel.a1", "HR-SEL", 1, 1, {"search": rules[0].body[:10]})))
-    listed = getattr(listed, "visible", listed)
-    assert listed and set(listed[0]) == {"id", "title", "text"} and "HR-SEL" not in json.dumps(listed)
-    one = asyncio.run(tool.invoke(ToolCall("hr-sel.a1", "HR-SEL", 1, 1, {"id": listed[0]["id"]})))
-    assert getattr(one, "visible", one) == listed[:1], "접두어 없는 id로 읽힌다"
+    assert all(m.card for g in a.groups() for m in g.members)
+    w = s.cards.agent_cards["fin-tyo.w00001"]
+    assert w.skills[0].id == "worker" and w.skills[0].description == ROLE_CARDS["card"]["worker"]
+    assert "fin-tyo.w00001" not in {c.occupant for c in s.cards.directory("agent_cards")}
+    s.cards.join("fin-tyo.w00009", "FIN-TYO", "worker", None, 2, 1)       # 실행 중 생긴 워커도 역할 card를 받는다
+    assert s.cards.agent_cards["fin-tyo.w00009"].occupant == "fin-tyo.w00009"
+    assert "fin-tyo.w00009" not in {c.occupant for c in s.cards.directory("agent_cards")}

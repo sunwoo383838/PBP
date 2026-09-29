@@ -31,6 +31,19 @@ from gbg.retrieval.alias import AliasResolver
 from . import env_tools
 
 ROLE_CARDS = yaml.safe_load(Path(__file__).with_name("role_cards.yaml").read_text(encoding="utf-8"))
+# 과제별 답 작성 규칙 (슬롯의 뜻, null 규칙, 순서 등 형식만. 업무 규정 없음). 키 = answer_slots를 '|'로 이은 문자열
+_CONV = Path(__file__).with_name("answer_conventions.json")
+ANSWER_CONVENTIONS = json.loads(_CONV.read_text(encoding="utf-8")) if _CONV.exists() else {}
+
+
+def conventions_for(slots: list[str]) -> str | None:
+    """공통 규칙(_general) + 이 답 형식의 슬롯 설명. 키가 없으면 None (공통 규칙도 붙이지 않는다)."""
+    spec = ANSWER_CONVENTIONS.get("|".join(slots))
+    if spec is None:
+        return None
+    lines = [f"- {x}" for x in ANSWER_CONVENTIONS.get("_general", [])]
+    lines += [f"- {k}: {v}" for k, v in spec.items()] if isinstance(spec, dict) else [f"- {spec}"]
+    return "\n".join(lines)
 
 _LINE = {"db_register", "catalog_upsert", "tx", "index_batch", "spawn", "despawn", "agent_leave", "agent_join",
          "local", "cross", "world"}
@@ -89,6 +102,7 @@ class WorldgenAdapter:
         rulebook = json.loads(self.read("rulebook.json"))
         self._domain = {g: v["domain"] for g, v in world["groups"].items()}
         self._region = {g: v["region"] for g, v in world["groups"].items()}
+        self._regions = list(world.get("regions") or [])                  # 공개 지역 목록 (순서 있음)
 
         self._groups = [self._group_spec(g, v, world["agent_cards"], roster, targets.get(g, {}))
                         for g, v in world["groups"].items()]
@@ -134,13 +148,14 @@ class WorldgenAdapter:
         members = []
         for aid in sorted(a for a, r in roster.items() if r["group"] == g):
             r = roster[aid]
-            c = agent_cards.get(aid)
-            card = None if c is None else AgentCard(
-                name=c["name"], description=c["description"], version=1, group=g, scope=None, occupant=aid,
-                region=meta["region"], skills=self._skills(meta, r["role"], c["description"]))
+            c = agent_cards.get(aid) or {"name": f"{g} {r['role']}",               # swarm 워커 등 card가 없는 구성원:
+                                         "description": ROLE_CARDS["card"].get(r["role"], r["role"])}   # 역할 card
+            card = AgentCard(name=c["name"], description=c["description"], version=1, group=g, scope=None, occupant=aid,
+                             region=meta["region"], skills=self._skills(meta, r["role"], c["description"]))
             members.append(MemberSpec(agent_id=aid, role=r["role"], card=card, active=r["active"]))
         # 그룹 card(게이트웨이 조건 전용)의 skills = 구성원 card skills의 합집합
-        skills = list({s.id: s for m in members if m.card for s in m.card.skills}.values())
+        published = {a for a in agent_cards}                                 # world_init에 card가 있는 구성원 (워커 역할 card 제외)
+        skills = list({s.id: s for m in members if m.agent_id in published for s in m.card.skills}.values())
         gcard = GroupCard(name=g, description=f"{meta['domain']} group, region {meta['region']}", version=1,
                           skills=skills, group=g, service_scope=None, endpoint=f"boundary:{g}")
         return GroupSpec(id=g, topology=meta.get("topology", "specialist"), members=members, card=gcard,
@@ -174,15 +189,17 @@ class WorldgenAdapter:
         return {r: sorted(d) for r, d in depts.items()}
 
     # ── 과제와 사건 ──
-    @staticmethod
-    def _schema_for(w: dict) -> OutputSchema:
+    def _schema_for(self, w: dict) -> OutputSchema:
         """과제의 answer_types(템플릿마다 고정)를 닫힌 슬롯으로. 슬롯 이름·순서는 answer_slots와 같아야 한다."""
         types = w.get("answer_types")
         if types is None:
             raise AnswerSchemaError(f"{w['wid']}: answer_types가 없다 (worldgen 4.3 이상 필요)")
         if list(types) != list(w["answer_slots"]):
             raise AnswerSchemaError(f"{w['wid']}: answer_types {list(types)} ≠ answer_slots {w['answer_slots']}")
-        return OutputSchema(slots=[slot_from_spec(k, v) for k, v in types.items()])
+        conv = conventions_for(w["answer_slots"])
+        if conv is not None and self._regions:                            # 과제 문장이 가리키는 "public region list"
+            conv += f"\n- Public region list, in order: {', '.join(self._regions)}."
+        return OutputSchema(slots=[slot_from_spec(k, v) for k, v in types.items()], conventions=conv)
 
     def _event(self, r: dict, work: dict) -> TimelineEvent:
         t = r["type"]

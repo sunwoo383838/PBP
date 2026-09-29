@@ -7,16 +7,25 @@ llm:
   base_url: https://api.deepinfra.com/v1/openai
   api_key_env: DEEPINFRA_API_KEY
   models:                                   # 별칭 → 제공자 모델 id
+    qwen3.5-27b: Qwen/Qwen3.5-27B           # 기본 모델 (2026-09-29): 요청자·응답자·경계 모듈 모두
     qwen3-32b: Qwen/Qwen3-32B
     qwen3-14b: Qwen/Qwen3-14B
-  temperature: 0
-  max_tokens: 1024
-  context_length: 40960                     # DeepInfra /models 기준 (Qwen3-32B, 14B)
+  model: qwen3.5-27b                        # 모든 LLM 호출이 쓰는 별칭
+  temperature: 0                          # 2026-09-29 사용자 결정: 0 (0.7 비교에서 정확도 하락). 아래 샘플링 값은 유지
+  max_tokens: 8000                          # Qwen3.5는 thinking을 꺼도 본문에 풀이를 쓴다: 6k에서도 9%가 제출 전에 잘렸다
+  context_length: 262144                    # DeepInfra /models 기준 (Qwen3.5-27B). 컨텍스트 창 계산은 worldgen 토크나이저(Qwen3)로
   tool_choice: auto                         # DeepInfra 지원 값: auto | none
   extra_body:                               # thinking 끔: DeepInfra 공식 파라미터 (응답 reasoning_content가 비어야 함)
     reasoning_effort: none
+    top_p: 0.8                              # 이하 샘플링: 모델 카드 non-thinking 일반 권장값. temperature 0은 문단 반복 루프를 낳았다
+    top_k: 20
+    min_p: 0
+    presence_penalty: 1.5
+    repetition_penalty: 1.0
+  seed_per_call: true                       # 호출마다 seed = 요청 내용의 해시에서 결정적으로. 기록하고, 재현은 캐시·WAL로
+  service_tier: priority                    # DeepInfra 우선 처리 (실제로 우선 처리된 요청만 1.5배 과금). 응답 내용과 무관해 캐시 키에서 뺀다
   concurrency: 150                          # 모델별 전역 동시 요청 상한 (DeepInfra 기본 한도 200/모델)
-  timeout_s: 120
+  timeout_s: 200                            # 느린 쪽 10분위 62 tok/s에서 8000토큰 128초 × 1.5 (2026-09-29 측정)
   retry: {max_attempts: 6, base_delay_s: 1.0, max_delay_s: 30.0}   # 429·5xx 지수 백오프
 
 tokenizer:                                  # Qwen3 32B·14B 공통 (tokenizer.json 바이트 동일)
@@ -29,7 +38,10 @@ context:
   summary: 2000                             # 창 이전 항목의 digest, 최신부터
 
 agent:
-  max_steps: 10                             # 모든 조건 동일. 한 단계의 여러 도구 호출도 모두 실행한다
+  max_steps: null                           # 단계 상한 없음: 과제 예산(호출 60회)이 실제 상한. 모든 조건 동일
+  safety_steps: 200                         # 예산 상한이 없는 조건(full_load)의 무한 루프 방지. 닿으면 제출 전용 호출 1회
+  responder_max_steps: 10                   # 응답자 루프 상한 (모든 조건 동일, 한 단계의 여러 도구 호출 허용). 닿으면 reply 전용 호출 1회
+  responder_exclude_tools: [entity.search]  # 응답자는 db.query에 이름·별칭·ID를 바로 넣는다 (검색 낭비 방지, 모든 조건 동일)
   format_retries: 1
   full_load_tokens: 40000                   # full_load: 상대 그룹 이력을 이어 붙여 이 토큰에서 자름 (오래된 줄부터)
 
@@ -38,9 +50,9 @@ retrieval:
   embed_batch: 64
   bm25: {k1: 1.5, b: 0.75}
   rrf_k: 60
-  embed_candidates: 50                      # RRF에 넣을 임베딩 상위 후보 수
-  top_k: 20                                 # 하이브리드 결과 상위
-  expand: 1                                 # 적중 항목마다 같은 에이전트 이력의 앞뒤 1개
-  evidence_cap: 12000                       # 증거 블록 토큰 상한, 넘으면 오래된 것부터 제외
+  embed_candidates: 100                     # RRF에 넣을 임베딩 상위 후보 수 (에피소드)
+  top_k: 50                                 # 하이브리드(RRF) 상위 후보 수 (에피소드)
+  rerank_model: Qwen/Qwen3-Reranker-8B     # DeepInfra 재정렬 (bge-reranker-v2-m3는 DeepInfra에 없음). 점수 SQLite 캐시
+  evidence_cap: 12000                       # 증거 블록 토큰 상한. 재정렬 점수 순으로 채우고 넘치면 점수 낮은 것부터 제외
   alias: {max_edit: 2, embed_threshold: 0.85}
   catalog_link_fields: [vendor, type, department, item]   # 정확 조회의 catalog 한 단계 연결에 쓰는 필드

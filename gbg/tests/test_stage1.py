@@ -72,7 +72,7 @@ class JitterAgent(ScriptedAgent):
 
     async def respond(self, ctx, request):
         await self._sleep()
-        return Response(rid=request.rid, status="ok", answer=str(len(ctx.history)), values=[], missing=[],
+        return Response(rid=request.rid, status="ok", answer=str(len(ctx.history)), items=[], missing=[],
                         referral_to=None, need=[], as_of=ctx.day)
 
 
@@ -252,7 +252,8 @@ class Forwarder(ScriptedAgent):
         return await ctx.ask(self.nxt, request.question)
 
 
-def test_hop_limit_ends_in_error(tmp_path):
+def test_nested_asks_from_responders_are_refused(tmp_path):
+    """응답자의 중첩 질의는 모든 조건에서 끈다: 응답 중에 다시 묻는 요청은 전달되지 않고 error로 끝난다."""
     adapter = load_adapter("silo_mini")
     agents = sorted(m.agent_id for g in adapter.groups() for m in g.members)
     nxt = {a: agents[(i + 1) % len(agents)] for i, a in enumerate(agents)}
@@ -260,10 +261,10 @@ def test_hop_limit_ends_in_error(tmp_path):
     asyncio.run(asyncio.wait_for(asyncio.to_thread(runner.run), timeout=20))
     ev = wal_events(tmp_path)
     reqs = [e["payload"]["request"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"]
-    assert max(r["hop"] for r in reqs) == KernelParams().hop_limit + 1        # 상한 다음 홉은 요청만 남고 거부
+    assert max(r["hop"] for r in reqs) == 2, "요청자 → 응답자(홉 1), 응답자의 재질의(홉 2)는 거부"
     refused = [e for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
                and e["payload"]["response"]["status"] == "error"]
-    assert refused and all(e["payload"]["response"]["answer"] == "hop_limit" for e in refused)
+    assert refused and all(e["payload"]["response"]["answer"] == "nested_asks_disabled" for e in refused)
     answers = [e for e in ev if e["type"] == "answer"]
     assert len(answers) == 16 and all(a["payload"]["answer"]["status"] == "error" for a in answers)
 

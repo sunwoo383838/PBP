@@ -43,9 +43,11 @@ class TaskBudget:
     defaults: Defaults
     by: dict[str, Usage] = field(default_factory=lambda: {c: Usage() for c in COMPONENTS})
     exhausted: bool = False
+    exhausted_by: str | None = None             # 처음 걸린 상한: calls | tokens
     final_used: bool = False
     asks: int = 0
     asked: set = field(default_factory=set)
+    responder_step_caps: int = 0                # 응답자가 10단계에 닿아 reply 전용 호출로 답한 횟수 (responder_step_cap)
 
     @property
     def calls(self) -> int:
@@ -63,12 +65,13 @@ class TaskBudget:
         """
         lim, res = self.defaults.budget, self.defaults.final_reserve
         if final:
-            ok = lim.calls is None or self.calls < lim.calls
+            by = None if lim.calls is None or self.calls < lim.calls else "calls"
         else:
-            ok = (lim.calls is None or self.calls + 1 + res.calls <= lim.calls) and \
-                 (lim.tokens is None or self.tokens + estimate + res.tokens <= lim.tokens)
-        if not ok:
+            by = ("calls" if lim.calls is not None and self.calls + 1 + res.calls > lim.calls else
+                  "tokens" if lim.tokens is not None and self.tokens + estimate + res.tokens > lim.tokens else None)
+        if by:
             self.exhausted = True
+            self.exhausted_by = self.exhausted_by or by
             raise BudgetExhausted()
 
     def charge(self, component: str, usage: dict, composition: dict | None, final: bool):
@@ -86,4 +89,6 @@ class TaskBudget:
         return {"limit": self.defaults.budget.model_dump(), "reserve": self.defaults.final_reserve.model_dump(),
                 "used": {"calls": self.calls, "tokens": self.tokens},
                 "by_component": {c: asdict(u) for c, u in self.by.items()},
-                "budget_exhausted": self.exhausted, "final_call_used": self.final_used, "requester_asks": self.asks}
+                "budget_exhausted": self.exhausted, "exhausted_by": self.exhausted_by, "final_call_used": self.final_used,
+                "requester_asks": self.asks,
+                "responder_step_cap": self.responder_step_caps}

@@ -10,9 +10,15 @@ DIR_OPEN, DIR_CLOSE = "<<DIRECTORY>>", "<</DIRECTORY>>"
 
 COMMON = """You are an agent in a company. You handle the work of your role and answer the tasks and questions you receive.
 
-Rules
-- Use tools to look up the database and rulebook you can access. The database shows only values registered as of today.
-- If the information you need is not in your own records or the database you can access, ask elsewhere with the communication tool. Do not guess.
+What you have
+- Your own records (shown to you with each task) and the database and rulebook you can access. They cover only your own area of work. The database shows only values registered as of today.
+- Other parts of the company hold everything else: their records, their databases and their rules. You cannot look these up yourself; you can only ask for them with the communication tool listed below (if there is one).
+
+How to work on a task
+- First decide what information the answer needs and who is likely to hold each piece. Look up what your own area holds, and ask early for the rest. You may ask several times and ask several parties.
+- Do not keep searching your own tools for information your area does not hold. If a lookup finds nothing, ask instead.
+- Apply the rules that govern each piece (your area's rules are listed below; other areas' rules come from the parties you ask), then work out the answer step by step. Do not guess.
+- You can call several tools in one step when you need several lookups or questions.
 - Give your final answer to a task with the submit tool, and your answer to another agent's question with the reply tool. Do not answer in any other form.
 - Each submit slot must follow the task's output format exactly.
 - Write every question, reply, and answer in English. Copy names of people and departments exactly as they are written.
@@ -21,17 +27,27 @@ Rules
 {card}"""
 
 COMM_TOOLS = {
-    "ask_agent": ("ask_agent", "Ask one agent in the directory directly.",
+    "ask_agent": ("ask_agent", "Ask one agent in the directory (by its id) a question. The agent answers from its own "
+                               "records, database and rules only. Choose the agent whose skills match the information "
+                               "you need; ask several agents if the information is spread across areas.",
                   {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
                    "required": ["agent_id", "question"], "additionalProperties": False}),
-    "ask_group": ("ask_group", "Ask a group in the directory. That group's boundary module forwards the question to the "
-                               "right member and returns the answer.",
+    "ask_group": ("ask_group", "Ask a group in the directory (by its id) a question. The group's intake desk finds the "
+                               "members who hold the information, has them answer from their records, database and "
+                               "rules, and returns the group's answer. Ask each group whose area covers a piece you need.",
                   {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
                    "required": ["group", "question"], "additionalProperties": False}),
-    "ask": ("ask", "State the information you need and why. Your group's boundary module finds the right group, sends "
-                   "the request, and returns the answer.",
+    "ask": ("ask", "State the information you need and why. Your outgoing desk decides which group(s) in the directory "
+                   "hold it, sends them the request, and returns their answers. Ask separately for pieces held in "
+                   "different areas if that is clearer.",
             {"type": "object", "properties": {"question": {"type": "string"}, "purpose": {"type": "string"}},
              "required": ["question", "purpose"], "additionalProperties": False}),
+    "ask_member": ("ask_agent", "Ask a member of your own group (listed under 'Members of your group' in the directory, "
+                                "by id) a question. The member answers from their own records, database and rules only. "
+                                "Use this for information held by colleagues in your group; other groups are reached "
+                                "through the other communication tool.",
+                   {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
+                    "required": ["agent_id", "question"], "additionalProperties": False}),
     "load_group_history": ("load_group_history", "Load all records of the members of a group in the directory, oldest "
                                                  "first, into your context. If they are too long, the oldest are cut.",
                            {"type": "object", "properties": {"group": {"type": "string"}},
@@ -66,9 +82,25 @@ def render_directory(cards: list[AgentCard] | list[GroupCard]) -> str:
     return "\n".join(lines) if lines else "(none)"
 
 
-def render_system(card: AgentCard, tools: list[tuple[str, str]], directory: str) -> str:
+def render_members(cards: list[AgentCard], group: str) -> str:
+    """경계 조건의 자기 그룹 구성원 목록 (불투명 id · 지역 · skills). 그룹 메타데이터만 붙인다."""
+    body = render_directory(cards) if cards else "(none)"
+    return f"Members of your group ({group}), reachable with ask_agent:\n{body}"
+
+
+def render_rules(rules, label: str | None = None) -> str:
+    """규정 블록: 그룹 접두어 없는 id, 제목, 본문. label이 있으면(full_load) 그룹마다 제목을 단다."""
+    lines = []
+    for r in rules:
+        rid = r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
+        lines.append(f"- {rid}{f' ({r.title})' if r.title else ''}: {r.body}")
+    head = f"[Rules of {label}]" if label else "[Rules of your area]"
+    return head + "\n" + ("\n".join(lines) if lines else "(none)")
+
+
+def render_system(card: AgentCard, tools: list[tuple[str, str]], directory: str, rules: str = "") -> str:
     tool_lines = "\n".join(f"- {name}: {desc}" for name, desc in tools)
-    return (COMMON.format(card=render_card(card))
+    return (COMMON.format(card=render_card(card)) + (f"\n\n{rules}" if rules else "")
             + f"\n\n{TOOL_OPEN}\n{tool_lines}\n{TOOL_CLOSE}\n\n{DIR_OPEN}\n{directory}\n{DIR_CLOSE}")
 
 

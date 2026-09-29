@@ -57,6 +57,8 @@ class IngressConfig(Contract):
     boundary_state: bool = False                # 경계 상태(과거 교차 문답·제공 버전·진행 중 요청)를 조립에 쓴다
     version_marks: bool = False                 # 조립 답에 버전 표시 (같은 DB 키·버전 번호로 묶은 사실)
     reveal_holders: bool = False                # 전달하지 않고 담당자 목록만 돌려준다 (요청자가 직접 묻는다)
+    internal_query: bool = True                 # False = 담당자에게 묻지 않고 그룹 기록만으로 조립 (gateway_rag)
+    evidence: Literal["search", "oracle"] = "search"   # oracle = 증거 블록을 정답 조각으로 대체 (retrieval_oracle)
 
     @model_validator(mode="after")
     def _deliver(self):
@@ -64,11 +66,16 @@ class IngressConfig(Contract):
             raise ValueError("reveal_holders는 forward(Routing)에서만: 담당자 목록만 돌려준다")
         if self.deliver != "assemble" and (self.requery or self.boundary_state or self.version_marks):
             raise ValueError("재질의·경계 상태·버전 표시는 조립(assemble)하는 게이트웨이에만 있다")
+        if not self.internal_query and (self.deliver != "assemble" or self.requery):
+            raise ValueError("internal_query: false(gateway_rag)는 조립하는 게이트웨이에서만, 재질의 없이")
+        if self.evidence == "oracle" and self.deliver != "assemble":
+            raise ValueError("evidence: oracle(retrieval_oracle)은 조립하는 게이트웨이에서만")
         return self
 
 
 class EgressConfig(Contract):
-    history: bool                               # egress_log 기록을 관련 기록으로 제공
+    history: bool                               # egress_log 기록을 관련 기록으로 제공. False = 요청자 자신의 이력과
+                                                # card만 제공 (참조 행 egress_no_history)
 
 
 class Condition(Contract):

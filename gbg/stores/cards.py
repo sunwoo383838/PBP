@@ -158,7 +158,11 @@ class CardRegistry:
         self.group_of[agent], self.role_of[agent] = group, role
         self.active.add(agent)
         prev = self.agent_cards.get(from_agent) if from_agent else None
-        if prev is None:
+        if prev is None:                                                    # 전임이 없으면(새 워커) 같은 역할의 card를 본뜬다.
+            tmpl = next((c for a, c in sorted(self.agent_cards.items())      # 디렉터리 대상(targets)은 바뀌지 않는다
+                         if self.group_of.get(a) == group and self.role_of.get(a) == role), None)
+            if tmpl is not None:
+                self.agent_cards[agent] = tmpl.model_copy(update={"occupant": agent, "version": 1})
             return []
         card = prev.model_copy(update={"occupant": agent, "version": prev.version + 1})
         ok, obs = self._publish(card, agent, day, seq)
