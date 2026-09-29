@@ -2,11 +2,12 @@
 kernel.parallel_tasks에 따라 동시에). 같은 출력 폴더로 다시 부르면 WAL 체크포인트(라운드 단위)에서 재개하고, 진행 중이던
 라운드는 LLM 응답 캐시로 재생한다. 자동 재개는 supervise.py가 맡는다.
 
-캐시: LLM 응답 캐시는 실행 폴더 안(llm_cache.sqlite). 임베딩·재정렬 캐시는 공유 파일을 처음 한 번 실행 폴더로 복사해
-실행별로 쓴다(여러 실행이 같은 파일을 잠그지 않게).
+캐시: LLM 응답 캐시는 실행 폴더 안(llm_cache.sqlite). 임베딩·재정렬 캐시는 모든 실행이 같은 파일을 공유한다
+(2026-09-30: 실행별 복사본은 같은 질의·문서의 점수를 실행마다 따로 계산해 조건 간에 소수점 차이가 생겨 되돌림.
+먼저 저장된 값이 정본이고, 잠금은 SqliteStore의 재시도로 처리).
 
     uv run python -m gbg.cli.run_one CONDITION SCENARIO_DIR OUT_DIR --max-day 15 \
-        --seed-embed-cache EMB.sqlite --seed-rerank-cache RERANK.sqlite [--tasks W-00001,W-00002] [--scripted]
+        --embed-cache EMB.sqlite --rerank-cache RERANK.sqlite [--tasks W-00001,W-00002] [--scripted]
 
 --scripted: LLM을 부르지 않는 점검 모드. 모든 역할이 형식에 맞는 최소 응답을 결정적으로 낸다(질문 한 번 → 제출,
 응답자는 missing, 게이트웨이는 첫 구성원 선택·빈 조립). 임베딩·재정렬은 실제로 부른다(캐시 사용).
@@ -14,7 +15,6 @@ kernel.parallel_tasks에 따라 동시에). 같은 출력 폴더로 다시 부�
 import argparse
 import json
 import re
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -79,8 +79,8 @@ def main(argv=None):
     ap.add_argument("out", type=Path)
     ap.add_argument("--max-day", type=int, required=True)
     ap.add_argument("--tasks", default=None, help="이 과제만 (그 앞의 세계 사건은 모두). 없으면 전부")
-    ap.add_argument("--seed-embed-cache", type=Path, required=True)
-    ap.add_argument("--seed-rerank-cache", type=Path, required=True)
+    ap.add_argument("--embed-cache", type=Path, required=True, help="공유 임베딩 캐시 (모든 실행이 같은 파일)")
+    ap.add_argument("--rerank-cache", type=Path, required=True, help="공유 재정렬 캐시 (모든 실행이 같은 파일)")
     ap.add_argument("--run-seed", type=int, default=1)
     ap.add_argument("--scripted", action="store_true")
     ap.add_argument("--configs", type=Path, default=ROOT / "configs")
@@ -113,12 +113,7 @@ def main(argv=None):
         ad._events = [e for e in evs if e.seq <= last and (e.kind != "cross" or e.task_id in keep)]
 
     a.out.mkdir(parents=True, exist_ok=True)
-    caches = {}
-    for name, seed in (("embed_cache.sqlite", a.seed_embed_cache), ("rerank_cache.sqlite", a.seed_rerank_cache)):
-        dst = a.out / name                                                  # 실행별 캐시: 처음 한 번 공유 파일을 복사
-        if not dst.exists() and seed.exists():
-            shutil.copyfile(seed, dst)
-        caches[name] = dst
+    caches = {"embed_cache.sqlite": a.embed_cache, "rerank_cache.sqlite": a.rerank_cache}   # 공유 캐시
 
     rt = AgentRuntime(conds[a.condition], ad.group_tools, ContextBuilder(tok.count, P.context.raw_window, P.context.summary),
                       P.agent.max_steps, P.agent.format_retries, P.agent.safety_steps, P.agent.responder_max_steps,
