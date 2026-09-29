@@ -349,6 +349,9 @@ class LLMAgent:
                 return {"ok": False, "error": "bad_arguments"}
             r = await ctx.ask_group(args["group"], args["question"])
         elif tool == "load_group_history":
+            if args.get("group") == ctx.group:                            # 자기 그룹 이력은 없다 (동료에게는 ask_agent)
+                return {"ok": False, "error": "own_group: your own group's records are not loaded; ask your group's "
+                                              "members with ask_agent"}
             out = await ctx.call_tool("load_group_history", **args)
             return {"ok": out["ok"], **(out.get("result") or {"error": out.get("error")})}
         elif tool == "ask":

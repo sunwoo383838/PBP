@@ -48,8 +48,10 @@ COMM_TOOLS = {
                                 "through the other communication tool.",
                    {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
                     "required": ["agent_id", "question"], "additionalProperties": False}),
-    "load_group_history": ("load_group_history", "Load all records of the members of a group in the directory, oldest "
-                                                 "first, into your context. If they are too long, the oldest are cut.",
+    "load_group_history": ("load_group_history", "Load all records of the members of another group in the directory, "
+                                                 "oldest first, into your context. If they are too long, the oldest are "
+                                                 "cut. Your own group's records are not available here; ask your group's "
+                                                 "members with ask_agent.",
                            {"type": "object", "properties": {"group": {"type": "string"}},
                             "required": ["group"], "additionalProperties": False}),
 }

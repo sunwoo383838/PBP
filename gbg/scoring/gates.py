@@ -5,7 +5,7 @@ need마다 결정 필수 조각을 차례로 보며, 전달되지 않은 첫 조
     ok           모두 전달되고 답도 맞음
     L_use        모두 전달됐는데 답이 틀림 (추론·사용 실패)
     L_state      옛 버전만 전달됨
-    L_req        요청자가 그 need의 그룹에 묻지 않음
+    L_req        요청자가 그 need의 그룹에 묻지 않음 (full_load는 그 그룹 이력을 적재하지 않음)
     L_route      그룹에는 물었지만 보유자에게 닿지 않음 (Direct: 다른 에이전트에게 물음 / 경계: 보유자를 고르지 않음,
                  Ingress는 증거에도 없음)
     L_sel.window 보유자에게 물었지만 보유자의 컨텍스트 창에 그 조각이 없음 (창 밖으로 밀려남)
@@ -63,6 +63,8 @@ def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list
     inner = [e["payload"] for e in mine if e["type"] == "message" and e["payload"]["kind"] == "request"
              and e["actor"].startswith("boundary:")]
     llm = [e for e in mine if e["type"] == "llm_call"]
+    loaded = {e["payload"]["args"].get("group") for e in mine if e["type"] == "tool_call"            # full_load: 그룹 이력 적재
+              and e["payload"].get("tool") == "load_group_history" and e["payload"].get("agent") == req}
 
     def prompt_text(e) -> str:
         msgs = prompts.get(e["payload"].get("key")) or []
@@ -73,7 +75,7 @@ def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list
         need = next(n for n in g["needs"] if n["sem"] == row["need"])
         grp = need["group"]
         asked_group = any((a.get("to_group") == grp) or _group_of(a.get("to_agent") or "") == grp for a in asks) \
-            or grp in egress_targets
+            or grp in egress_targets or grp in loaded
         verdict, detail = "ok", {}
         for x in row["frags"]:
             if x["state"] == "delivered":
@@ -97,6 +99,8 @@ def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list
                 verdict = "L_state"
             elif not asked_group:
                 verdict = "L_req"
+            elif grp in loaded and not reached:                             # full_load: 적재했는데 조각이 없음 = 상한에서 잘림
+                verdict = "L_sel.window"
             elif ingress and in_evidence and not reached:
                 verdict = "L_sel.assembly"
             elif not reached:
