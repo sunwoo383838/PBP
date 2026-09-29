@@ -59,6 +59,7 @@ class Runner:
                              defaults=defaults, llm=llm)
         self.card_mode = cond.card_mode
         self.kernel.budget_limit = cond.budget_limit
+        self.kernel.timing_dir = Path(run_dir) / "timing"                  # 벽시계 기록 (결정성 계약 밖)
         if full_load:                                                      # 조직 전체 이력 검색: 게이트웨이와 같은 검색기
             if embedder is None or retrieval is None:
                 raise ConfigError("full_load의 search_memory에는 임베더와 조회 설정(retrieval)이 필요하다")

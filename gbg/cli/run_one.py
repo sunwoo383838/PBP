@@ -139,7 +139,9 @@ def main(argv=None):
     meta.write_text(json.dumps({"condition": a.condition, "scenario": str(a.scenario), "max_day": a.max_day,
                                 "wal_hash": h, "seconds_last_segment": round(time.monotonic() - t0, 1),
                                 "segments": prev.get("segments", 0) + 1, "scripted": a.scripted,
-                                "api_calls_last_segment": getattr(llm, "api_calls", None)}, indent=1))
+                                "api_calls_last_segment": getattr(llm, "api_calls", None),
+                                "embed_computed_last_segment": embedder.computed,
+                                "rerank_computed_last_segment": reranker.computed}, indent=1))
     print("done", a.condition, h)
 
 

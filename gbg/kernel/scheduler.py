@@ -139,12 +139,27 @@ class Kernel:
         self.bus = Bus(self, hop_limit)
         self.llm = llm
         self._budget: ContextVar = ContextVar(f"budget_{id(self)}", default=None)     # 과제 단위 (동시 실행 대비)
+        import time as _time
+        self._clock = _time.perf_counter                                    # obs 기록용 경과 시간(초). WAL에는 넣지 않는다
+        self._t0 = self._clock()
         self._task_cache: ContextVar = ContextVar(f"task_cache_{id(self)}", default=None)
         self.boundaries: dict = {}                 # 그룹 → 경계 모듈 (경계 조건에서만)
         self.budget_limit = True                   # False면 과제 예산 상한 미적용 (참조 행 full_load)
 
 
     # ── 상태: 번호가 매겨진 사건으로만 바뀐다 ──
+    # 벽시계 기록 (진단·그래프용): 결정성 계약(WAL·obs·groups 파일은 같은 입력이면 바이트까지 같다) 밖의 timing/ 폴더에
+    # 바로 덧붙인다. 재개하면 같은 과제가 다시 기록될 수 있어 segment(실행 조각 시작 시각 기준)를 함께 적는다.
+    timing_dir = None
+
+    def timing(self, name: str, rec: dict):
+        if self.timing_dir is None:
+            return
+        import json as _json
+        self.timing_dir.mkdir(parents=True, exist_ok=True)
+        with (self.timing_dir / f"{name}.jsonl").open("a", encoding="utf-8") as f:
+            f.write(_json.dumps({"t_s": round(self._clock() - self._t0, 3), **rec}, ensure_ascii=False) + "\n")
+
     # 실행 중인 과제의 예산과 과제 안 도구 캐시. 같은 라운드의 과제를 동시에 실행하므로 전역이 아니라 과제의 실행
     # 문맥(asyncio 작업마다 복사되는 ContextVar)에 둔다. 응답자·경계 모듈 호출도 같은 문맥에서 돌아 같은 예산에 청구된다.
     @property
@@ -215,6 +230,7 @@ class Kernel:
             update={"budget": self.defaults.budget.model_copy(update={"calls": None, "tokens": None})})
         self.budget = TaskBudget(te.task_id, te.agent, defaults)
         self.task_cache = {}
+        t_start = round(self._clock() - self._t0, 3)                        # obs tasks.jsonl (병렬 묶음의 겹침·과제 소요 시간)
         head = {"task_id": te.task_id, "agent": te.agent}
         try:
             if not self.is_active(te.agent):
@@ -236,6 +252,10 @@ class Kernel:
                 raise HarnessError(f"과제 {te.task_id} 수행 중 하네스 예외 {type(e).__name__}: {e}") from e
             return drafts
         finally:
+            b = self.budget
+            used = b.summary()["used"] if b else {}
+            self.timing("tasks", {"task_id": te.task_id, "agent": te.agent, "day": day, "round": rnd,
+                                  "t_start_s": t_start, "calls": used.get("calls"), "tokens": used.get("tokens")})
             self.budget = None
 
     def _world(self, span: Span, te: TimelineEvent):
@@ -297,7 +317,13 @@ class Kernel:
                         "tokens": int(res.usage.get("prompt_tokens", 0)) + int(res.usage.get("completion_tokens", 0)),
                         "provider_cached_tokens": int(res.usage.get("provider_cached_tokens", 0) or 0),
                         "service_tier": res.usage.get("service_tier"), "seed": res.seed,
-                        "cached_tool_result": bool((composition or {}).get("cached_tool_result"))})]
+                        "cached_tool_result": bool((composition or {}).get("cached_tool_result")),
+                        "boundary": ctx.boundary, "boundary_step": (composition or {}).get("boundary_step"),
+                        "finish_reason": res.finish_reason})]
+        self.timing("llm", {"task_id": ctx.task_id, "agent": ctx.agent_id, "component": component,
+                            "boundary_step": (composition or {}).get("boundary_step"), "step": step,
+                            "latency_ms": res.latency_ms, "cached": res.cached, "attempts": res.attempts,
+                            "prompt_tokens": res.usage.get("prompt_tokens"), "completion_tokens": res.usage.get("completion_tokens")})
         if composition is not None:
             obs.append(("context_windows", {"day": ctx.day, "round": ctx.round, **head, **composition}))
         ctx.span.emit("llm_call", ctx.actor, {**head, "model": res.model, "key": res.key,

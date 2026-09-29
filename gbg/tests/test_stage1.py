@@ -97,7 +97,8 @@ def wal_events(run_dir):
 
 def tree_bytes(run_dir):
     run_dir = Path(run_dir)
-    return {p.relative_to(run_dir).as_posix(): p.read_bytes() for p in sorted(run_dir.rglob("*")) if p.is_file()}
+    return {p.relative_to(run_dir).as_posix(): p.read_bytes() for p in sorted(run_dir.rglob("*"))
+            if p.is_file() and "timing" not in p.relative_to(run_dir).parts}   # timing/은 벽시계 기록 (결정성 계약 밖)
 
 
 @pytest.fixture(scope="module")
