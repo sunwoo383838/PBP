@@ -29,6 +29,16 @@ class Bus:
     def _rid(self, ctx: "AgentContext", span) -> str:
         return f"{ctx.task_id}/" + ".".join(str(x) for x in span.prefix[2:])
 
+    @staticmethod
+    def _msg_obs(ctx: "AgentContext", req: Request, kind: str, text: str, via: str) -> list:
+        """분석 기록 (obs/messages 전용, WAL 페이로드는 그대로): 경계 통과 여부·송수신 그룹·홉·원 과제·글자 수."""
+        to_group = req.to_group or ctx.group                              # Egress 요청은 자기 그룹 창구로 간다
+        return [("messages", {"day": ctx.day, "round": ctx.round, "task_id": ctx.task_id, "rid": req.rid, "kind": kind,
+                              "via": via, "from_agent": req.from_agent, "from_group": req.from_group,
+                              "to_agent": req.to_agent, "to_group": to_group, "crossing": req.from_group != to_group,
+                              "hop": req.hop, "lineage": list(req.lineage), "origin_task": req.origin_task,
+                              "serving": ctx.serving, "chars": len(text or "")})]
+
     def _request(self, ctx: "AgentContext", rid: str, to_group: str, to_agent: str | None, question: str,
                  purpose: str | None, hop: int | None = None) -> Request:
         return Request(rid=rid, from_group=ctx.group, from_agent=ctx.agent_id, to_group=to_group, to_agent=to_agent,
@@ -51,13 +61,13 @@ class Bus:
         if refused is None and not k.is_active(to_agent):
             refused = "agent_unavailable"
         span.emit("message", ctx.actor, {**head, "kind": "request", "delivered": refused is None,
-                                          "request": req.model_dump(mode="json")})
+                                          "request": req.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "request", question, "agent"))
         if refused:
             resp, actor = error_response(rid, refused, ctx.day), "kernel"
         else:
             resp, actor = await self._respond(ctx, span, req, to_agent, to.group, to.role), f"agent:{to_agent}"
         span.emit("message", actor, {**head, "kind": "response", "question": question,
-                                      "response": resp.model_dump(mode="json")})
+                                      "response": resp.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "response", resp.answer, "agent"))
         return resp
 
     async def _respond(self, ctx: "AgentContext", span, req: Request, agent: str, group: str, role: str) -> Response:
@@ -92,7 +102,7 @@ class Bus:
         if refused is None and (group not in k.boundaries or group == ctx.group):
             refused = "unknown_group"
         span.emit("message", ctx.actor, {**head, "kind": "request", "delivered": refused is None,
-                                          "request": req.model_dump(mode="json")})
+                                          "request": req.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "request", question, "group"))
         actor = f"boundary:{group}"
         if refused:
             resp, actor = error_response(rid, refused, ctx.day), "kernel"
@@ -102,7 +112,7 @@ class Bus:
             except BudgetExhausted:                                         # 경계 모듈이 예산에 막힘: 요청자는 최종 답변으로
                 resp = error_response(rid, "budget_exhausted", ctx.day)
         span.emit("message", actor, {**head, "kind": "response", "question": question,
-                                      "response": resp.model_dump(mode="json")})
+                                      "response": resp.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "response", resp.answer, "group"))
         return resp
 
     async def ask_egress(self, ctx: "AgentContext", question: str, purpose: str | None) -> Response:
@@ -115,7 +125,7 @@ class Bus:
                 "serving": ctx.serving}
         refused = self._requester_policy(ctx, "egress", question)
         span.emit("message", ctx.actor, {**head, "kind": "request", "delivered": refused is None,
-                                          "request": req.model_dump(mode="json")})
+                                          "request": req.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "request", question, "egress"))
         actor = f"boundary:{ctx.group}"
         if refused:
             resp, actor = error_response(rid, refused, ctx.day), "kernel"
@@ -125,7 +135,7 @@ class Bus:
             except BudgetExhausted:
                 resp = error_response(rid, "budget_exhausted", ctx.day)
         span.emit("message", actor, {**head, "kind": "response", "question": question,
-                                      "response": resp.model_dump(mode="json")})
+                                      "response": resp.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "response", resp.answer, "egress"))
         return resp
 
     def _requester_policy(self, ctx: "AgentContext", to: str, question: str) -> str | None:

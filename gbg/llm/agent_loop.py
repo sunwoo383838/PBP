@@ -213,6 +213,31 @@ def _dumps(x) -> str:
 class LLMAgent:
     def __init__(self, agent_id: str, rt: AgentRuntime):
         self.agent_id, self.rt = agent_id, rt
+        self._last_rid: dict[int, str | None] = {}                         # 분석 기록: 컨텍스트별 마지막 통신 응답 rid
+
+    ELIDED_MARK = "earlier tool result removed to fit the context window"
+
+    def _manifest(self, ctx: AgentContext, context, messages: list[dict], loop_meta: dict) -> dict:
+        """분석 기록 (obs/context_windows 전용, 프롬프트·캐시 키·WAL과 무관): 이번 호출 입력에 든 것의 출처.
+        context_items: 창·요약 이력 항목에 출처 태그 (own_task = 이 과제의 앞선 사건, other_task = 다른 과제의 잔여,
+        history = 워밍업·로컬 업무). loop_items: 이번 루프에서 쌓인 메시지 (own_output, tool_result, protocol)."""
+        def tag(task):
+            return "own_task" if task is not None and task == ctx.task_id else "other_task" if task is not None else "history"
+        comp = context.composition
+        items = [{"where": w, "seq": x[0], "day": x[1], "role": x[2], "task": x[3], "order": x[4], "source": tag(x[3])}
+                 for w, key in (("summary", "summary_items"), ("raw", "raw_items")) for x in comp.get(key, [])]
+        loop = []
+        for m in messages[len(context.messages):]:
+            if m["role"] == "assistant":
+                loop.append({"kind": "own_output", "tool_calls": len(m.get("tool_calls") or [])})
+            elif m["role"] == "tool":
+                meta = loop_meta.get(m.get("tool_call_id"), {})
+                loop.append({"kind": "tool_result", **meta, "elided": self.ELIDED_MARK in (m.get("content") or ""),
+                             "chars": len(m.get("content") or "")})
+            else:
+                loop.append({"kind": "protocol", "chars": len(m.get("content") or "")})
+        return {"context_items": items, "loop_items": loop,
+                "input_sources": {"current_task": "serving" if ctx.serving is not None else "task"}}
 
     def env(self, ctx_or_group) -> list[ToolSpec]:
         """환경 도구 명세. full_load는 모든 그룹의 도구를 조직 전체 도구 하나로 합친다(group 인자 없음). 응답 중에는
@@ -338,6 +363,7 @@ class LLMAgent:
         comm = {COMM_TOOLS[t][0] for t in self.comm(ctx)}              # 도구 이름 (ask_member → ask_agent)
         errors = 0
         n_results = {"D": 0, "R": 0}                                       # 도구 결과 ID (D# 조회, R# 받은 답)
+        loop_meta: dict[str, dict] = {}                                    # 분석 기록: tool_call_id → 도구 결과 출처
         cached_in_context = False                                          # 캐시된 도구 결과가 입력에 들어갔는가
 
         def fail_format(call_id: str | None, why: str):
@@ -356,16 +382,17 @@ class LLMAgent:
         limit = self.rt.responder_max_steps if responding else (self.rt.max_steps or
                                                                  (10 ** 9 if capped else self.rt.safety_steps))
         for step in range(1, limit + 1):
-            comp = {**context.composition, "tool_def_tokens": tool_def_tokens,
-                    "loop_messages": len(messages) - len(context.messages), "cached_tool_result": cached_in_context}
             self._fit(ctx, messages, len(context.messages), tool_def_tokens)
+            comp = {**context.composition, "tool_def_tokens": tool_def_tokens,
+                    "loop_messages": len(messages) - len(context.messages), "cached_tool_result": cached_in_context,
+                    **self._manifest(ctx, context, messages, loop_meta)}
             estimate = self.rt.builder.count(_dumps(messages)) + tool_def_tokens    # 호출 전 프롬프트 추정
             try:
                 res = await ctx.llm(messages, tools, step, comp, estimate=estimate)
             except BudgetExhausted:
                 if finish["name"] != "submit":
                     raise
-                return await self._final(ctx, messages, finish, check, step, context.composition)
+                return await self._final(ctx, messages, finish, check, step, context.composition, (context, loop_meta))
             calls = [{"id": f"call_{step}_{i}", **c} for i, c in enumerate(res.message["tool_calls"], 1)]
             messages.append({"role": "assistant", "content": res.message["content"],
                              **({"tool_calls": [{"id": c["id"], "type": "function",
@@ -406,11 +433,18 @@ class LLMAgent:
                     out = {"id": f"{kind}{n_results[kind]}", **out}
                     if refs is not None:
                         refs.add(out["id"], out)
+                loop_meta[c["id"]] = {"ref": out.get("id") if isinstance(out, dict) else None, "tool": c["name"],
+                                      "args": args, "ok": out.get("ok") if isinstance(out, dict) else None,
+                                      "status": (out.get("status") or (out.get("result") or {}).get("status")
+                                                 if isinstance(out, dict) and isinstance(out.get("result", {}), dict)
+                                                 else None) if isinstance(out, dict) else None,
+                                      "rid": self._last_rid.pop(id(ctx), None) if kind == "R" else None,
+                                      "cached": bool(isinstance(out, dict) and out.get("cached"))}
                 cached_in_context = cached_in_context or bool(isinstance(out, dict) and out.get("cached"))
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": _dumps(out)})
         if finish["name"] == "submit":                                     # 단계 한도: 제출 전용 호출 1회로 끝낸다
-            return await self._final(ctx, messages, finish, check, limit + 1, context.composition)
-        return await self._last_reply(ctx, messages, finish, check, limit + 1, context.composition)
+            return await self._final(ctx, messages, finish, check, limit + 1, context.composition, (context, loop_meta))
+        return await self._last_reply(ctx, messages, finish, check, limit + 1, context.composition, (context, loop_meta))
 
     ELIDED = _dumps({"elided": "earlier tool result removed to fit the context window"})
 
@@ -429,14 +463,15 @@ class LLMAgent:
                 return
             messages[i] = {**messages[i], "content": self.ELIDED}
 
-    async def _last_reply(self, ctx: AgentContext, messages: list[dict], finish: dict, check, step: int, composition: dict):
+    async def _last_reply(self, ctx: AgentContext, messages: list[dict], finish: dict, check, step: int, composition: dict,
+                          manifest: tuple | None = None):
         """응답자 단계 한도: reply 도구만 주는 호출 1회 (최종 예약분이 아니라 과제 예산에서 쓴다). responder_step_cap으로 센다."""
         if ctx.kernel.budget is not None:
             ctx.kernel.budget.responder_step_caps += 1
         messages = messages + [{"role": "user", "content": REPLY_NUDGE}]
         tools = [_fn(finish["name"], finish["description"], finish["parameters"])]
         comp = {**composition, "tool_def_tokens": self.rt.builder.count(_dumps(tools)), "loop_messages": -1,
-                "responder_step_cap": True}
+                "responder_step_cap": True, **(self._manifest(ctx, manifest[0], messages, manifest[1]) if manifest else {})}
         res = await ctx.llm(messages, tools, step, comp, estimate=self.rt.builder.count(_dumps(messages)), force=finish["name"])
         for c in res.message["tool_calls"]:
             if c["name"] != finish["name"]:
@@ -451,12 +486,14 @@ class LLMAgent:
             break
         raise AgentFailure("step_limit")
 
-    async def _final(self, ctx: AgentContext, messages: list[dict], finish: dict, check, step: int, composition: dict):
+    async def _final(self, ctx: AgentContext, messages: list[dict], finish: dict, check, step: int, composition: dict,
+                     manifest: tuple | None = None):
         """예산 소진: 예약된 최종 호출 1회, submit 도구만."""
         messages = messages + [{"role": "user", "content": BUDGET_NUDGE}]
         tools = [_fn(finish["name"], finish["description"], finish["parameters"])]
         self._fit(ctx, messages, 2, self.rt.builder.count(_dumps(tools)))
-        comp = {**composition, "tool_def_tokens": self.rt.builder.count(_dumps(tools)), "loop_messages": -1}
+        comp = {**composition, "tool_def_tokens": self.rt.builder.count(_dumps(tools)), "loop_messages": -1,
+                **(self._manifest(ctx, manifest[0], messages, manifest[1]) if manifest else {})}
         res = await ctx.llm(messages, tools, step, comp, final=True, force=finish["name"])   # 제출 도구 강제
         for c in res.message["tool_calls"]:
             if c["name"] != finish["name"]:
@@ -493,6 +530,7 @@ class LLMAgent:
             r = await ctx.ask_egress(args["question"], args["purpose"])
         else:
             return {"ok": False, "error": "not_available"}
+        self._last_rid[id(ctx)] = getattr(r, "rid", None)                  # 분석 기록 (결과 문자열에는 넣지 않는다)
         out = {"ok": r.status != "error", "status": r.status, "answer": r.answer,
                "items": [x.model_dump(mode="json") for x in r.items], "missing": r.missing}
         if r.referral_to:

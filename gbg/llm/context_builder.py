@@ -58,5 +58,8 @@ class ContextBuilder:
             "system_tokens": self.count(system), "directory_tokens": directory_tokens,
             "raw": _span(window, raw_tokens), "summary": _span(list(reversed(summarized)), sum_tokens),
             "dropped": start - len(summarized), "task_tokens": self.count(task), "history_len": len(history),
+            # 분석 기록 (obs 전용, 프롬프트와 무관): 창·요약에 든 이력 항목 [seq, day, role, 원 과제 id, WAL 순번]
+            "raw_items": [[e.seq, e.day, e.role, e.task, e.order] for e in window],
+            "summary_items": [[e.seq, e.day, e.role, e.task, e.order] for e in reversed(summarized)],
         }
         return Context([{"role": "system", "content": system}, {"role": "user", "content": user}], composition)

@@ -80,6 +80,44 @@ class BoundaryModule:
         self.format_retries, self.egress_cap = format_retries, egress_cap
         self.in_progress: dict[str, list[dict]] = {}                      # 과제 → 이 창구가 그 과제로 처리 중인 요청
         self.oracle = oracle                                              # retrieval_oracle: 과제 → 그룹 → 정답 조각
+        self._gw: dict[str, dict] = {}                                    # 분석 기록: 요청 rid → obs/gateway 레코드
+
+    # ── 분석 기록 (obs 전용: 프롬프트·캐시 키·WAL과 무관) ──
+    def _ev_cites(self, ev) -> dict:
+        """증거 인용 E# → 에피소드 (에이전트, 첫 seq, 전체 seq 목록)."""
+        eps = self.retriever.episodes
+        return {it.cite: {"agent": it.agent, "seq": it.seq, "day": it.day, "source": it.source, "score": it.score,
+                          "tokens": it.tokens,
+                          "seqs": list(eps[(it.agent, it.seq)].seqs) if (it.agent, it.seq) in eps else None}
+                for it in getattr(ev, "items", [])}
+
+    def _version_refs(self, stores, entities: list[str], day: int) -> list[dict]:
+        """_versions와 같은 순서의 구조화 목록: V# → DB 키·버전."""
+        out = []
+        for key in stores.db.keys(self.group):
+            if not set(key.split("/")[1:]) & set(entities):
+                continue
+            for v in stores.db.versions(self.group, key):
+                if v.db_day <= day:
+                    out.append({"key": key, "v": v.v, "db_day": v.db_day})
+        return out
+
+    def _state_refs(self, stores, entities: list[str], task_id: str) -> list[dict]:
+        """_state와 같은 순서의 구조화 목록: S# → 과거 교환(일자·요청 그룹·제공 버전) 또는 진행 중 요청."""
+        out = [{"kind": "past", "day": x["day"], "from_group": x["from_group"], "versions": x["versions"]}
+               for x in stores.boundary_log.lookup(self.group, entities)]
+        out += [{"kind": "in_progress", "rid": x["rid"], "from_group": x["from_group"]}
+                for x in self.in_progress.get(task_id, [])[:-1]]
+        return out
+
+    def _record_counts(self, stores, entities: list[str]) -> dict:
+        """요청 시점의 그룹 기록 건수: 엔티티마다 그룹 구성원 이력 항목 수와 이 창구의 과거 교환 수 (학습 곡선용)."""
+        agents = [a for a, (g, _) in stores.members.items() if g == self.group]
+        out = {}
+        for ent in entities:
+            n = sum(1 for a in agents for e in stores.history.entries(a) if ent in e.entities)
+            out[ent] = {"history_entries": n, "boundary_exchanges": len(stores.boundary_log.lookup(self.group, [ent]))}
+        return out
 
     # ─────────────────────────── 공통 ───────────────────────────
     def _ctx(self, ctx, span, req: Request):
@@ -94,7 +132,7 @@ class BoundaryModule:
         return (f"{self.group} ({c.description}). Work: " + "; ".join(f"{s.name}: {s.description}" for s in c.skills)
                 + "\n\n" + render_rules(stores.rulebook.read_all(self.group), self.group))
 
-    async def _tool(self, bctx, step: list, name: str, system: str, user: str, tool: dict, check):
+    async def _tool(self, bctx, step: list, name: str, system: str, user: str, tool: dict, check, extra: dict | None = None):
         """도구 하나만 부르게 하고 인자를 검사한다. 형식 오류는 format_retries번까지 다시 묻고, 끝내 실패하면 None."""
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         tools = [_fn(tool)]
@@ -102,7 +140,8 @@ class BoundaryModule:
         for _ in range(self.format_retries + 1):
             step[0] += 1
             est = self.count(_dumps(messages)) + tdt
-            res = await bctx.llm(messages, tools, step[0], {"boundary_step": name, "tool_def_tokens": tdt}, estimate=est)
+            res = await bctx.llm(messages, tools, step[0], {"boundary_step": name, "tool_def_tokens": tdt, **(extra or {})},
+                                 estimate=est)                        # extra: 분석 기록 (obs/context_windows 전용)
             why = "no_tool_call"
             for c in res.message["tool_calls"]:
                 if c["name"] != tool["name"]:
@@ -129,6 +168,7 @@ class BoundaryModule:
         step = [0]
         trace = {"stage": "ingress", "group": self.group, "rid": req.rid, "from_group": req.from_group,
                  "question": req.question, "deliver": self.cond.ingress.deliver}
+        self._gw[req.rid] = {"rid": req.rid, "group": self.group, "from_group": req.from_group}   # 분석 기록 (obs 전용)
         mine = self.in_progress.setdefault(ctx.task_id, [])              # 동시에 도는 다른 과제의 요청은 섞지 않는다
         mine.append({"rid": req.rid, "question": req.question, "from_group": req.from_group})
         try:
@@ -143,7 +183,9 @@ class BoundaryModule:
             resp = resp.model_copy(update={"redirects": redirects, "missing": list(dict.fromkeys([*resp.missing, *texts])),
                                            "status": "partial" if resp.status == "ok" else resp.status})
         trace["status"] = resp.status
-        span.emit("boundary_decision", bctx.actor, {"task_id": ctx.task_id, **trace})
+        gw = self._gw.pop(req.rid, None)
+        span.emit("boundary_decision", bctx.actor, {"task_id": ctx.task_id, **trace},
+                  obs=[("gateway", {"day": bctx.day, "round": bctx.round, "task_id": ctx.task_id, **gw})] if gw else None)
         return resp
 
     async def _ingress(self, bctx, span, req, stores, step, trace) -> Response:
@@ -177,6 +219,9 @@ class BoundaryModule:
                 resolved[key] = None
         entities = list(resolved)
         trace["entities"] = entities
+        gw = self._gw.get(req.rid)
+        if gw is not None:
+            gw["record_counts"] = self._record_counts(stores, entities)
 
         # 4 그룹 기록 검색
         rec = authorize(bctx.kernel.guard, bctx.actor, self.group, self.group)
@@ -224,7 +269,9 @@ class BoundaryModule:
                 return False, "items must be a list of {entity, attribute, scope: here|elsewhere, target_group}"
             return True, a
         route = await self._tool(bctx, step, "route", P.ROUTE_SYSTEM.format(group_desc=self._group_desc(stores)),
-                                 route_user, P.ROUTE_TOOL, check_route) or {"action": "select", "agents": []}
+                                 route_user, P.ROUTE_TOOL, check_route,
+                                 {"rid": req.rid, "evidence_cites": self._ev_cites(ev),
+                                  "members": [a for a, _, _ in members]}) or {"action": "select", "agents": []}
         if self.cond.ingress.deliver == "forward":                        # 라우터가 만든 출력의 카나리 가림 (Routing)
             route = self._mask_route(route, ev, req, trace)
         if route["action"] == "referral":                                  # 근거 기록이 증거 블록에 없으면 referral 아님
@@ -251,10 +298,18 @@ class BoundaryModule:
                             items=[], missing=texts, need=[], as_of=day, redirects=redirects)
         trace["_redirects"] = redirects
         chosen = [a for a in dict.fromkeys(route.get("agents", [])) if a in active]
+        basis = "llm"
         if not chosen:                                                     # LLM이 고르지 못함: 검색된 처리자 중 활동 중인 사람
-            chosen = [a for a in ev.log.get("holders", []) if a in active]
+            chosen, basis = [a for a in ev.log.get("holders", []) if a in active], "index_holders"
         if not chosen:                                                     # 그래도 없으면 그룹의 card 대상(역할 담당자)
             chosen = [a for a in dict.fromkeys(stores.cards.targets.get(self.group, {}).values()) if a in active]
+            basis = "card_targets"
+        gw = self._gw.get(req.rid)
+        if gw is not None:
+            gw.update(members=[a for a, _, _ in members], proposed=list(route.get("agents", [])), selected=list(chosen),
+                      select_basis=basis if chosen else "none",
+                      index_holders=[a for a in ev.log.get("holders", []) if a in active],
+                      evidence_holders=sorted({it.agent for it in ev.items} & active))
         trace.update(action="select", selected=chosen, proposed=route.get("agents", []))
         if not chosen:
             return Response(rid=req.rid, status="partial", answer="No member of this group could be identified for "
@@ -523,7 +578,18 @@ class BoundaryModule:
             lines += [f"proposed: {x.item} = {x.value} ({' '.join(x.refs)}) — {x.rationale}" for x in props]
             return P.DRAFT_TEXT.format(items="\n".join(lines), missing=f"\nmissing: {miss}" if miss else "")
 
-        out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer)
+        def cites(replies):                                            # 분석 기록: 조립 입력의 인용 → 출처 id
+            return {"rid": req.rid, "evidence_cites": self._ev_cites(ev),
+                    "reply_cites": {f"R{i}": {"agent": a, "rid": r.rid, "status": r.status}
+                                    for i, (a, r) in enumerate(replies, 1)},
+                    "version_cites": {f"V{i}": v for i, v in enumerate(
+                        self._version_refs(stores, entities, bctx.day) if cfg.version_marks else [], 1)},
+                    "state_cites": {f"S{i}": x for i, x in enumerate(
+                        self._state_refs(stores, entities, bctx.task_id) if cfg.boundary_state else [], 1)},
+                    "uncovered": _uncovered(ev, replies)}
+
+        out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer,
+                               cites(replies))
         requeried = []
         first_dropped = list(out[5]) if out is not None else []
         if out is not None and out[4] and cfg.requery:                     # 빠진 항목만 1회 재질의
@@ -532,7 +598,7 @@ class BoundaryModule:
             if more:                                                       # 2차 조립: 1차 결과를 초안으로 받아 병합
                 replies = replies + more
                 out = await self._tool(bctx, step, "assemble", system, user_text(replies) + "\n\n" + draft_text(out),
-                                       P.ANSWER_TOOL, check_answer) or out
+                                       P.ANSWER_TOOL, check_answer, {**cites(replies), "draft": True}) or out
         trace["requery"] = requeried
         if out is None:
             return Response(rid=req.rid, status="error", answer="assembly_failed", items=[], missing=[],

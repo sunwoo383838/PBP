@@ -28,6 +28,8 @@ class Hit:
     score: float
     bm25_rank: int | None
     embed_rank: int | None
+    bm25_score: float | None = None             # 분석 기록용 (검색 결과·순서에는 쓰지 않는다)
+    embed_score: float | None = None
 
 
 class RetrievalDenied(PermissionError):
@@ -54,6 +56,7 @@ class GroupRetriever:
         self.of_line: dict[tuple[str, int], Doc] = {}      # (agent, 줄 seq) → 에피소드
         self.norm: dict[tuple[str, int], str] = {}         # (agent, 줄 seq) → 정규화한 원문 (태그·일지 대조용)
         self._synced: dict[str, int] = {}
+        self.last_search: dict = {}                           # 분석 기록용 (evidence 로그)
 
     def agents(self) -> list[str]:
         return sorted(a for a, (g, _) in self.stores.members.items() if g == self.group)
@@ -99,13 +102,22 @@ class GroupRetriever:
     async def search(self, query: str, mode: Mode = "hybrid", top: int | None = None) -> list[Hit]:
         await self.sync()
         top = top or self.p.top_k
-        bm = self._ranked(self.bm25.scores(query)) if mode in ("hybrid", "bm25") else []
+        bs = self.bm25.scores(query) if mode in ("hybrid", "bm25") else {}
+        bm = self._ranked(bs)
         em: list[Doc] = []
+        es: dict = {}
         if mode in ("hybrid", "embed") and self.vectors.ids:
             q = (await self.embedder.embed([query]))[0]
-            em = self._ranked(self.vectors.scores(q))[: self.p.embed_candidates]
+            es = self.vectors.scores(q)
+            em = self._ranked(es)[: self.p.embed_candidates]
         br = {d: i for i, d in enumerate(bm, 1)}
         er = {d: i for i, d in enumerate(em, 1)}
         k = self.p.rrf_k
         fused = {d: (1 / (k + br[d]) if d in br else 0.0) + (1 / (k + er[d]) if d in er else 0.0) for d in {*br, *er}}
-        return [Hit(d, round(fused[d], 9), br.get(d), er.get(d)) for d in self._ranked(fused)[:top]]
+        ranked = self._ranked(fused)
+        hit = lambda d: Hit(d, round(fused[d], 9), br.get(d), er.get(d),
+                            round(float(bs[d]), 6) if d in bs else None, round(float(es[d]), 6) if d in es else None)
+        # 분석 기록: top_k 밖으로 밀린 후보 (바로 다음 top_k개까지). 결과에는 영향 없음
+        self.last_search = {"fused_candidates": len(fused), "bm25_hits": len(bm), "embed_hits": len(em),
+                            "outside_top_k": [hit(d) for d in ranked[top:2 * top]]}
+        return [hit(d) for d in ranked[:top]]

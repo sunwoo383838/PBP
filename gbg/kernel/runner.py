@@ -58,6 +58,7 @@ class Runner:
                              stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
                              defaults=defaults, llm=llm)
         self.card_mode = cond.card_mode
+        self._manifest = self._manifest_info(cond, retrieval, freeze, llm, embedder, reranker)
         self.kernel.budget_limit = cond.budget_limit
         self.kernel.timing_dir = Path(run_dir) / "timing"                  # 벽시계 기록 (결정성 계약 밖)
         if full_load:                                                      # 조직 전체 이력 검색: 게이트웨이와 같은 검색기
@@ -104,9 +105,46 @@ class Runner:
             self.run_dir.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(cfg, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
+    def _manifest_info(self, cond, retrieval, freeze, llm, embedder, reranker) -> dict:
+        """분석용 런 매니페스트 (manifest.json). run.json(재개 설정 비교용)과 분리하고 실행에는 쓰지 않는다."""
+        import subprocess
+        from gbg.contracts.freeze import retrieval_hash
+        root = Path(__file__).resolve().parents[2]
+
+        def git(*args):
+            try:
+                return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=10).stdout.strip()
+            except Exception:
+                return None
+        scen = getattr(self.adapter, "manifest", None) or {}
+        lp = getattr(llm, "params", None)
+        return {"benchmark": self.adapter.name, "condition": self.condition,
+                "condition_resolved": cond.model_dump(mode="json"), "seed": self.seed, "max_day": self.max_day,
+                "kernel_params": self.params.model_dump(mode="json"),
+                "task_budget": self.kernel.defaults.model_dump(mode="json"),
+                "scenario": {k: scen.get(k) for k in ("world_hash", "generator", "seed", "params", "days")},
+                "harness": {"commit": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain", "--", "gbg", "configs"))},
+                "llm": {"mode": getattr(llm, "mode", None), "model_alias": getattr(llm, "model", None),
+                        "params": lp.model_dump(mode="json") if lp is not None else None},
+                "retrieval": {"params": retrieval.model_dump(mode="json") if retrieval is not None else None,
+                              "params_sha256": retrieval_hash(retrieval) if retrieval is not None else None,
+                              "freeze_sha256": getattr(freeze, "retrieval_params_sha256", None),
+                              "embedder": getattr(embedder, "name", None) or type(embedder).__name__ if embedder else None,
+                              "reranker": getattr(reranker, "name", None) or type(reranker).__name__ if reranker else None}}
+
+    def _write_manifest(self):
+        path = self.run_dir / "manifest.json"
+        text = json.dumps(self._manifest, ensure_ascii=False, sort_keys=True, default=str)
+        if not path.exists():
+            path.write_text(text + "\n", encoding="utf-8")
+        elif path.read_text(encoding="utf-8").strip() != text:            # 재개 때 달라졌으면 이력으로 남긴다
+            with open(self.run_dir / "manifest_history.jsonl", "a", encoding="utf-8") as f:
+                f.write(text + "\n")
+
     def run(self) -> str:
         """끝까지 실행하고 WAL 해시를 돌려준다."""
         self._check_config()
+        self._write_manifest()
         k = self.kernel
         for g in self.adapter.groups():
             for m in g.members:
@@ -138,9 +176,14 @@ class Runner:
                 events: list = []
                 side: dict[str, list[dict]] = {}
                 for batch in self._batches(sorted(by_slot.get((day, rnd), []), key=lambda e: e.seq)):
+                    before = len(events)
                     for drafts in asyncio.run(self._run_batch(day, rnd, batch)):    # 결과는 seq 순서로 반영
                         evs, s = k.number(day, rnd, drafts)
                         self._absorb(evs, s, events, side)                # 다음 묶음은 반영된 세계를 본다
+                    if any(te.kind == "cross" for te in batch) and len(events) > before:
+                        side.setdefault("obs/batches.jsonl", []).append(  # 분석 기록: 같은 세계를 본 동시 과제 묶음
+                            {"seq": events[before].seq, "day": day, "round": rnd, "size": len(batch),
+                             "tasks": [te.task_id for te in batch if te.kind == "cross"]})
                 self._absorb([k.marker(day, rnd, len(events))], {}, events, side)
                 self.wal.commit(events, side)
         return self.wal.hash()

@@ -73,6 +73,9 @@ class _Pool:
     holders: list[str]
     t_cand: float
     t_rr: float
+    hits: dict = None                             # 분석 기록: 문서 → Hit (BM25·벡터 순위·점수)
+    search: dict = None                           # 분석 기록: 하이브리드 검색 통계와 top_k 밖 후보
+    seqs: dict = None                             # 분석 기록: 문서 → 에피소드의 이력 seq 목록
 
 
 async def _pool(retriever: GroupRetriever, query: str, entities: list[str], mode: Mode) -> _Pool:
@@ -131,7 +134,9 @@ async def _pool(retriever: GroupRetriever, query: str, entities: list[str], mode
             for i, d in enumerate(docs)]
     rows += [(scores[len(docs) + i], x.day, x.agent, None, x.text, stores.history.tokens(x.text), "journal", "")
              for i, x in enumerate(journal_units)]
-    return _Pool(group, rows, fused, list(entities), ents, list(lk.holders), t_cand - t0, t_rr - t_cand)
+    return _Pool(group, rows, fused, list(entities), ents, list(lk.holders), t_cand - t0, t_rr - t_cand,
+                 {h.doc: h for h in hits}, dict(getattr(retriever, "last_search", {}) or {}),
+                 {d: list(eps[d].seqs) for d in docs})
 
 
 def _select(pools: list[_Pool], cap: int):
@@ -163,12 +168,30 @@ async def build_evidence(retriever: GroupRetriever, query: str, entities: list[s
     log = {"group": retriever.group, "query": q, "entities": list(entities), "expanded": pl.expanded, "holders": pl.holders,
            "mode": mode, "reranker": retriever.reranker.name,
            "candidates": [{"agent": t[3], "seq": t[4], "day": t[2], "source": t[7], "rerank": round(t[1], 4),
-                           "hybrid": fused.get((t[0], t[3], t[4])), "tokens": t[6]} for t in pool],
+                           "hybrid": fused.get((t[0], t[3], t[4])), "tokens": t[6], **_analysis(pl, t, chosen)}
+                          for t in pool],
            "selected": [{"cite": it.cite, "agent": it.agent, "seq": it.seq, "source": it.source, "rerank": it.score}
                         for it in items],
-           "tokens": total, "cap_reached": capped}
+           "tokens": total, "cap_reached": capped,
+           # 분석 기록 (obs 전용. WAL retrieval 사건에는 selected·cap_reached만 간다)
+           "cap": p.evidence_cap, "search_stats": {k: v for k, v in (pl.search or {}).items() if k != "outside_top_k"},
+           "outside_top_k": [_hit_log(h, pl) for h in (pl.search or {}).get("outside_top_k", [])],
+           "selected_seqs": {it.cite: (pl.seqs or {}).get((it.agent, it.seq), [it.seq]) for it in items if it.seq is not None}}
     secs = {"candidates": round(pl.t_cand, 3), "rerank": round(pl.t_rr, 3), "total": round(time.perf_counter() - t0, 3)}
     return Evidence(items, rendered, total, capped, log, [t[5] for t in pool], secs)
+
+
+def _analysis(pl: _Pool, t: tuple, chosen: list) -> dict:
+    """후보 한 줄의 분석 기록: 채널별 순위·점수, 에피소드 seq, 채택/탈락 이유 (selected | cap_cut)."""
+    h = (pl.hits or {}).get((t[3], t[4]))
+    return {"bm25_rank": h.bm25_rank if h else None, "bm25_score": h.bm25_score if h else None,
+            "embed_rank": h.embed_rank if h else None, "embed_score": h.embed_score if h else None,
+            "seqs": (pl.seqs or {}).get((t[3], t[4])), "reason": "selected" if t in chosen else "cap_cut"}
+
+
+def _hit_log(h, pl: _Pool) -> dict:
+    return {"agent": h.doc[0], "seq": h.doc[1], "hybrid": h.score, "bm25_rank": h.bm25_rank, "bm25_score": h.bm25_score,
+            "embed_rank": h.embed_rank, "embed_score": h.embed_score, "reason": "outside_top_k"}
 
 
 async def org_evidence(retrievers: dict, query: str, entities_of, label, episode_entities,
