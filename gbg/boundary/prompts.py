@@ -49,7 +49,7 @@ ASSEMBLE_SYSTEM = """You are the intake desk of a business group. The replies of
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
 - proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]{state_cite}), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
-- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.{version_rule}
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. Raise such cases as conflicts or proposals.{version_rule}
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
 

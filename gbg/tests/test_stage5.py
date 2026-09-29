@@ -763,3 +763,24 @@ def test_output_format_names_each_slot_with_its_value_type():
         "assets: list of IDs (each copied exactly), any order"
     assert render_slot(Slot(name="approver", type="enum", options=["team_lead", "cfo"])) == "approver: one of: team_lead | cfo"
     assert render_slot(Slot(name="grade", type="int")) == "grade: integer"
+
+
+def test_out_of_scope_items_are_not_requeried_in_the_same_group(tmp_path):
+    """접수부가 소관 밖으로 판정한 항목은 조립 missing에 있어도 같은 그룹 담당자에게 재질의하지 않는다."""
+    plan = {("HR-SEL", "하린 과장"): [{"entity": "하린 과장", "attribute": "grade", "scope": "here"},
+                                    {"entity": "하린 과장", "attribute": "laptop asset tag", "scope": "elsewhere",
+                                     "target_group": "HR-TYO"}]}
+    base = _route_script(plan)
+    done = set()
+
+    def script(req):
+        tools, user = _tools(req), req["messages"][1]["content"]
+        if "answer" in tools and "하린 과장" in user.split("Replies:", 1)[0] and "W-001" not in done:
+            done.add("W-001")
+            return oracle(req, assemble_missing=[["laptop asset tag of 하린 과장", "grade record of 하린 과장"]])
+        return base(req)
+    _, ev = run(tmp_path, "ingress", script=script, max_day=1)
+    d = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["task_id"] == "W-001"
+             and e["payload"]["stage"] == "ingress")
+    assert [x["attribute"] for x in d["redirects"]] == ["laptop asset tag"]
+    assert all("laptop asset tag" not in m for m in d.get("requery_items", [])), "소관 밖 항목은 재질의 대상이 아니다"

@@ -244,7 +244,7 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -334,7 +334,7 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -408,7 +408,7 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -496,7 +496,7 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -557,7 +557,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -589,7 +589,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -669,7 +669,7 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -757,7 +757,7 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -818,7 +818,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -850,7 +850,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -909,7 +909,7 @@ You are the intake desk of a business group. The replies of the members you aske
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
 - proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
-- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
@@ -920,7 +920,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -974,7 +974,7 @@ You are the intake desk of a business group. The replies of the members you aske
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
 - proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
-- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
@@ -985,7 +985,7 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1119,7 +1119,7 @@ Skills: budgeting: Budget lines, allocations, and balances
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1207,7 +1207,7 @@ Skills: records: Look up and update employee department, grade, and contract typ
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1269,7 +1269,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1302,7 +1302,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1362,7 +1362,7 @@ You are the intake desk of a business group. The replies of the members you aske
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
 - proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
-- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
@@ -1373,7 +1373,7 @@ This group: HR-SEL (HR group, region SEL). Work: records: Look up and update emp
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1428,7 +1428,7 @@ You are the intake desk of a business group. The replies of the members you aske
 - conflicts: where replies disagree with each other or with the group records, name the item, say what disagrees, and cite the refs.
 - proposals: where the replies and records support a different value than a reply gives, name the item, give the value you propose, cite the refs it rests on ([R1], [E1], [V1]), and give a one-sentence rationale.
 - missing: requested items that neither the replies nor the records confirm. Do not guess.
-- When sources disagree, the most recent record counts. Raise such cases as conflicts or proposals.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. Raise such cases as conflicts or proposals.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12").
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention. A reply covers only what its sender's records hold and can be incomplete.
 First work through the request, the replies and the records step by step in your reply text, then call the answer tool once.
@@ -1439,7 +1439,7 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1558,7 +1558,7 @@ This group: FIN-SEL (FIN group, region SEL). Work: budgeting: Budget lines, allo
 - pending_deduction (Pending deduction): The available amount is the line balance minus provisional approvals under review or pending.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.
@@ -1625,7 +1625,7 @@ Skills: budgeting: Budget lines, allocations, and balances
 - transfer_effective_day (Transfer effective day): A department transfer takes effect on its effective day.
 - Periods: anything recorded as lasting "until day N" (a hold, reservation, exclusion, delay or exception) is still in effect on day N.
 - Records and the database: database registration can lag by a few days. A record made while processing work (a hold, reservation, earmark, review, exclusion, exception, delay notice, approved transfer, or a status change such as a confirmed exit or cancellation) can be newer than the database version and still counts, within its stated period or from its effective day; informal remarks or undecided suggestions do not change anything. How a dated record applies is decided by the relevant rule (some rules count changes that take effect soon). Colleagues in the same area read the same database, so identical database values from several of them are one source, not independent confirmations.
-- When sources disagree, the most recent record counts.
+- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones.
 - A reply covers only what its sender's records hold and can be incomplete.
 - Task IDs (such as W-00070) appear only in tasks, not in other areas' records.

@@ -12,7 +12,7 @@
 
 | # | 문장 |
 |---|---|
-| K1 | When sources disagree, the most recent record counts. |
+| K1 | When records disagree, the one with the later record date counts; the order in which replies arrive does not matter. (2026-09-30 교체: 원문 "When sources disagree, the most recent record counts."를 요청자가 '나중에 받은 답'으로 읽음) |
 | K2 | Database versions of the same key are the same fact: the latest registered version replaces earlier ones. |
 | K3 | A reply covers only what its sender's records hold and can be incomplete. |
 | K4 | Task IDs (such as W-00070) appear only in tasks, not in other areas' records. |

@@ -555,6 +555,9 @@ class BoundaryModule:
             nm = normalize(m)
             return any(re.search(rf"(?<!\w){re.escape(x)}(?!\w)", nm) for x in keys)
 
+        # 이 창구가 소관 밖(out_of_scope)으로 판정한 항목은 같은 그룹 담당자에게 다시 묻지 않는다 (코드 내부 모순 수정)
+        away = [normalize(x.attribute) for x in trace.get("_redirects") or [] if normalize(x.attribute)]
+        missing = [m for m in missing if not any(a in normalize(m) for a in away)]
         hits = {m: ev_hits(m) for m in missing}
         items = [m for m in missing if hits[m] or indexed(m)]
         trace["requery_items"] = items

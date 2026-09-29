@@ -137,7 +137,7 @@ RECORDS_NOTE = ("- Records and the database: database registration can lag by a 
 # 공통 지식 (경계 모듈 전용 줄에서 끌어올림, 2026-09-30): 모든 조건·모든 역할의 규정 블록에 같은 문장.
 # 게이트웨이 프롬프트는 이 문장을 그대로 쓰고 자기 메커니즘 지시만 덧붙인다. Direct에 그룹 개념을 드러내지 않는다.
 KNOWLEDGE = (
-    "- When sources disagree, the most recent record counts.",
+    "- When records disagree, the one with the later record date counts; the order in which replies arrive does not matter.",
     "- Database versions of the same key are the same fact: the latest registered version replaces earlier ones.",
     "- A reply covers only what its sender's records hold and can be incomplete.",
     "- Task IDs (such as W-00070) appear only in tasks, not in other areas' records.",
