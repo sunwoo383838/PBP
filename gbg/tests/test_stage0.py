@@ -219,7 +219,7 @@ def test_conditions_load_ladder_and_reference_rows():
     assert all(c.card_mode == "static" for c in conds.values())
     assert all(c.responder_session == "persistent" for c in conds.values())
     d = conds.defaults
-    assert (d.budget.calls, d.budget.tokens) == (500, 6700000), "파일럿 상한. 본 실행 값은 파일럿 사용량 분포로 확정"
+    assert (d.budget.calls, d.budget.tokens) == (300, 4000000), "본 실행 상한 (2026-09-30 사용자 결정)"
     assert d.final_reserve.calls == 1 and d.requester.max_asks is None and d.requester.requery
 
 
