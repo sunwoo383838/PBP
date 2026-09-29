@@ -237,6 +237,9 @@ def test_retrieval_authorization_follows_access_table():
             authorize(guard, "boundary:FIN-SEL", "FIN-SEL", "HR-SEL")
     for cond in conds:
         guard = AccessGuard(access, cond)
+        if cond == "full_load":                                            # 정의: 모든 권한 (자기 그룹 이력 포함)
+            assert authorize(guard, "agent:fin-sel.a1", "FIN-SEL", "FIN-SEL")["allowed"]
+            continue
         with pytest.raises(RetrievalDenied):
             authorize(guard, "agent:fin-sel.a1", "FIN-SEL", "FIN-SEL")             # 에이전트는 그룹 이력 불가
 

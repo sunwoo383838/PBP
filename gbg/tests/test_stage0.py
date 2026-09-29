@@ -309,8 +309,10 @@ def access() -> AccessTable:
 ])
 def test_access_table_matches_plan(access, subject, action, resource, scope, expected):
     for cond in ("direct", "routing", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load", "gateway_rag"):
-        if cond == "full_load" and subject == "agent" and scope == "other" and resource in ("db", "rulebook", "group_history"):
-            continue                                                       # full_load만 다른 그룹 조회 허용 (아래 테스트)
+        if cond == "full_load" and subject == "agent" and action == "r" and (
+                (scope == "other" and resource in ("db", "rulebook", "group_history")) or
+                (scope == "own" and resource == "group_history")):
+            continue                                                       # full_load만: 모든 그룹 조회·이력 (아래 테스트)
         assert access.allows(subject, action, resource, scope, cond) is expected
 
 

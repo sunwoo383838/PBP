@@ -47,3 +47,4 @@ overrides:
     - {subject: agent, resource: db,            scope: other, perm: r}
     - {subject: agent, resource: rulebook,      scope: other, perm: r}
     - {subject: agent, resource: group_history, scope: other, perm: r}
+    - {subject: agent, resource: group_history, scope: own,   perm: r}   # 자기 그룹 이력도 (정의: 모든 권한)

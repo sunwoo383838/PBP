@@ -154,7 +154,7 @@ class LLMAgent:
             listed = {c.occupant for c in entries}
             entries += [c for c in self.members(ctx) if c.occupant not in listed]
         directory = render_directory(entries) if self.comm(ctx) else "(none)"   # 응답 중에는 아무에게도 묻지 않는다
-        if "ask_member" in self.comm(ctx):                                  # 그룹 추상화 조건: 자기 그룹 구성원 (그룹 표시만)
+        if self._member_only(ctx):                                          # 그룹 추상화 조건: 자기 그룹 구성원 (그룹 표시만)
             directory += "\n\n" + render_members(self.members(ctx), ctx.group)
         tools = [(s.name, s.description) for s in self.env(ctx)] + [(COMM_TOOLS[t][0], COMM_TOOLS[t][1]) for t in self.comm(ctx)]
         rb = ctx.kernel.stores.rulebook                                     # 자기 그룹 규정 고정 (full_load는 전 그룹)
@@ -164,7 +164,8 @@ class LLMAgent:
             rules = render_rules(rb.read_all(ctx.group))
         if ctx.serving is not None and (scope := self.records_scope(ctx)):   # 응답자 자신의 system에만 (card에는 없음)
             rules = rules + "\n\n" + scope
-        return render_system(own, tools, directory, rules), self.rt.builder.count(directory)
+        return (render_system(own, tools, directory, rules, full_load=cond.agent_tool == "load_group_history"),
+                self.rt.builder.count(directory))
 
     def comm(self, ctx=None) -> list[str]:
         """통신 도구. 응답 중(serving)에는 없다: 응답자의 중첩 질의는 모든 조건에서 끈다(자기 이력과 자기 그룹
@@ -176,7 +177,13 @@ class LLMAgent:
         c = self.rt.condition
         if c.agent_tool == "ask_agent":
             return ["ask_agent"]
+        if c.agent_tool == "load_group_history":                          # full_load: 경계 없음, 다른 도구를 가리키지 않는 설명
+            return ["load_group_history", "ask_member_full"]
         return [c.agent_tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
+
+    def _member_only(self, ctx) -> bool:
+        """ask_agent가 자기 그룹 구성원 한정인가 (Direct가 아닌 조건)."""
+        return bool({"ask_member", "ask_member_full"} & set(self.comm(ctx)))
 
     def members(self, ctx: AgentContext) -> list[AgentCard]:
         """자기 그룹의 활동 중인 다른 구성원 전원의 card (디렉터리에 오르지 않는 구성원은 역할 card). 구성원은
@@ -341,17 +348,14 @@ class LLMAgent:
                 return {"ok": False, "error": "bad_arguments"}
             to = ctx.kernel.stores.cards.resolve(args["agent_id"]) or args["agent_id"]    # 불투명 id → 실제 id
             m = ctx.kernel.members.get(to)
-            if "ask_member" in self.comm(ctx) and (m is None or m.group != ctx.group):    # 경계 조건: 자기 그룹만
+            if self._member_only(ctx) and (m is None or m.group != ctx.group):          # 경계 조건: 자기 그룹만
                 return {"ok": False, "error": "not_a_member_of_your_group: ask other groups with the other communication tool"}
             r = await ctx.ask(to, args["question"])
         elif tool == "ask_group":
             if not isinstance(args.get("group"), str) or not isinstance(args.get("question"), str):
                 return {"ok": False, "error": "bad_arguments"}
             r = await ctx.ask_group(args["group"], args["question"])
-        elif tool == "load_group_history":
-            if args.get("group") == ctx.group:                            # 자기 그룹 이력은 없다 (동료에게는 ask_agent)
-                return {"ok": False, "error": "own_group: your own group's records are not loaded; ask your group's "
-                                              "members with ask_agent"}
+        elif tool == "load_group_history":                                 # full_load: 자기 그룹 포함 모든 그룹
             out = await ctx.call_tool("load_group_history", **args)
             return {"ok": out["ok"], **(out.get("result") or {"error": out.get("error")})}
         elif tool == "ask":

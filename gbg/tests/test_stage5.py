@@ -359,6 +359,34 @@ def test_full_load_tools_history_cache_and_no_budget_cap(tmp_path):
     assert q and all(x["ok"] for x in q), "다른 그룹 DB 조회 허용"
 
 
+def test_full_load_is_unbounded_own_group_history_prompt_and_group_hint(tmp_path):
+    """full_load 정의("경계 없이 모든 권한을 가진 단일 에이전트") 준수: 자기 그룹 이력도 불러오고, "직접 볼 수 없다" 문구가
+    없으며, 다른 그룹 기록 종류를 group 없이 조회하면 group 인자를 쓰라는 힌트. 다른 조건의 문구는 그대로."""
+    systems = []
+
+    def script(req):
+        tools, msgs = _tools(req), req["messages"]
+        systems.append(msgs[0]["content"])
+        if "submit" in tools and "load_group_history" in tools:
+            own = re.search(r"Members of your group \(([^)]+)\)", msgs[0]["content"]).group(1)
+            n = sum(1 for m in msgs if m["role"] == "tool")
+            if n == 0:
+                return _call("load_group_history", {"group": own})
+            if n == 1:
+                return _call("db.query", {"entity": "영업1팀", "record_type": "no_such_type"})
+        return oracle(req)
+    _, ev = run(tmp_path / "f", "full_load", script=script, max_day=1)
+    loads = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "load_group_history"]
+    assert loads and all(x["ok"] and x["result"]["records"] for x in loads), "자기 그룹 이력도 적재"
+    q = [e["payload"] for e in ev if e["type"] == "tool_result" and e["payload"]["tool"] == "db.query"]
+    assert q and all("group argument" in (x.get("result") or {}).get("hint", "") for x in q)
+    req_sys = [x for x in systems if "load_group_history" in x]
+    assert req_sys and all("You cannot look these up" not in x and "other communication tool" not in x for x in req_sys)
+    direct = []
+    run(tmp_path / "d", "direct", script=lambda req: (direct.append(req["messages"][0]["content"]), oracle(req))[1], max_day=1)
+    assert direct and all("You cannot look these up" in x for x in direct if "[Your role]" in x), "다른 조건은 그대로"
+
+
 def test_full_load_truncates_oldest_lines_at_limit(tmp_path):
     from gbg.kernel.full_load import load_history_tool
     from gbg.kernel.tools import ToolCall

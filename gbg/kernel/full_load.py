@@ -1,7 +1,8 @@
 """참조 행 full_load: 권한을 풀어 준 참조(상한 아님). 통신 대신 컨텍스트로 풀면 어떤가.
 
     - 요청자에게 모든 그룹의 조회 도구(DB·catalog·규정)를 자기 그룹과 똑같이 열어 준다: 같은 도구에 group 인자를 더한다.
-    - load_group_history(group): 그 그룹 에이전트 전원(이탈자 포함)의 이력 원문을 시간순((일차, 라운드, WAL 순번))으로
+    - 조회 결과가 INVALID_TYPE·NOT_FOUND면 힌트를 "group 인자로 그 그룹을 지정하라"로 바꾼다.
+    - load_group_history(group): 자기 그룹을 포함한 모든 그룹. 그 그룹 에이전트 전원(이탈자 포함)의 이력 원문을 시간순((일차, 라운드, WAL 순번))으로
       이어 붙여 돌려준다.
       검색·필터는 없다. 상한(기본 40k 토큰)을 넘으면 오래된 줄부터 버리고, 잘림 여부와 버린 토큰 수를 기록한다.
     - 같은 과제 안에서 같은 그룹을 다시 불러오면 캐시로 처리한다(도구 실행만 생략. 결과가 다음 호출의 입력에 들어가면
@@ -17,6 +18,8 @@ from gbg.contracts.schemas import ToolSpec
 from .tools import Resource, Tool, ToolCall, ToolOutput
 
 GROUP_ARG = {"type": "string", "description": "Group id from the directory. Omit for your own group."}
+FULL_HINT = ("If the entity or record type belongs to another group, set the group argument to that group's id "
+             "(a group from the directory) and look it up again.")
 
 
 def all_groups_tool(tool: Tool) -> Tool:
@@ -26,7 +29,12 @@ def all_groups_tool(tool: Tool) -> Tool:
     async def fn(call: ToolCall):
         args = dict(call.args)
         group = args.pop("group", None) or call.group
-        return await tool.invoke(ToolCall(call.agent, group, call.day, call.round, args))
+        out = await tool.invoke(ToolCall(call.agent, group, call.day, call.round, args))
+        vis = out.result if isinstance(out, ToolOutput) else out
+        if isinstance(vis, dict) and vis.get("status") in ("INVALID_TYPE", "NOT_FOUND"):      # 다른 그룹을 가리키게
+            vis = {**vis, "hint": f"Looked up in group {group}. " + FULL_HINT}
+            out = ToolOutput(vis, out.obs) if isinstance(out, ToolOutput) else vis
+        return out
     return Tool(tool.name, tool.description, resources, fn)
 
 
