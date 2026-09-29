@@ -3,7 +3,8 @@
 Routing에서 요청 원문과 응답 원문은 코드가 그대로 옮기므로 검사하지 않는다. 검사 대상은 **라우터가 만든 출력**,
 즉 선택 결과(담당자 id)와 referral(대상 그룹, 근거 인용 id)이다. 선택 도구에는 자유 문장 사유가 없다. 실행 중에는 카나리 목록(private)을 읽을 수 없으므로
 검색 결과에 있던 카나리 형태의 값(쉼표를 뺀 4자리 이상 정수, id의 일부는 제외)을 모아 대조한다. 요청 원문에 원래
-있던 값은 뺀다. 걸리면 버그로 보고 실행을 멈춘다(호출하는 쪽이 FatalError). 카나리 목록과의 정규화 매칭은
+있던 값은 뺀다. 걸리면 그 값을 "[value removed]"로 가리고 기록한 뒤 계속한다(2026-09-30 사양 변경, 승인: 임선우.
+이전에는 FatalError로 실행을 멈췄으나, 재개해도 캐시가 같은 출력을 재생해 영구히 멈춘다). 카나리 목록과의 정규화 매칭은
 채점기(Stage 7)가 오프라인으로 한다.
 """
 import re
@@ -25,3 +26,20 @@ def canary_values(texts: list[str]) -> set[str]:
 def router_leaks(outputs: list[str], retrieved: list[str], request: str) -> list[str]:
     """라우터가 만든 출력에 들어간, 검색 결과의 카나리 형태 값 (요청 원문에 있던 값 제외)."""
     return sorted((canary_values(retrieved) - canary_values([request])) & canary_values(outputs))
+
+
+MASK = "[value removed]"
+
+
+def mask_values(text: str, values: set[str]) -> tuple[str, int]:
+    """text 안의 values(쉼표 뺀 수치)를 쉼표 표기 여부와 상관없이 가린다. (가린 문자열, 가린 횟수)."""
+    n = 0
+
+    def sub(m):
+        nonlocal n
+        if m.group(0).replace(",", "") in values:
+            n += 1
+            return MASK
+        return m.group(0)
+    return _NUM.sub(sub, text or ""), n
+

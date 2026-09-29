@@ -107,9 +107,8 @@ class DeepInfraEmbedder:
 
 class EmbeddingCache:
     def __init__(self, path: Path):
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, isolation_level=None, timeout=60)
-        self.db.execute("PRAGMA journal_mode=WAL")
+        from gbg.llm.sqlite_store import SqliteStore
+        self.db = SqliteStore(path)                                       # WAL·busy_timeout·잠금 재시도
         self.db.execute("CREATE TABLE IF NOT EXISTS embeddings (model TEXT NOT NULL, key TEXT NOT NULL, "
                         "vec BLOB NOT NULL, PRIMARY KEY (model, key))")
 
@@ -118,15 +117,15 @@ class EmbeddingCache:
         return hashlib.sha256(text.encode()).hexdigest()
 
     def get(self, model: str, text: str) -> np.ndarray | None:
-        row = self.db.execute("SELECT vec FROM embeddings WHERE model = ? AND key = ?", (model, self.key(text))).fetchone()
-        return np.frombuffer(row[0], dtype=np.float32) if row else None
+        rows = self.db.execute("SELECT vec FROM embeddings WHERE model = ? AND key = ?", (model, self.key(text)))
+        return np.frombuffer(rows[0][0], dtype=np.float32) if rows else None
 
     def put(self, model: str, text: str, vec: np.ndarray):
         self.db.execute("INSERT OR IGNORE INTO embeddings (model, key, vec) VALUES (?, ?, ?)",
                         (model, self.key(text), np.asarray(vec, dtype=np.float32).tobytes()))
 
     def __len__(self):
-        return self.db.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
+        return self.db.execute("SELECT COUNT(*) FROM embeddings")[0][0]
 
 
 class CachedEmbedder:

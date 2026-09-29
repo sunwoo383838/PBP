@@ -448,3 +448,31 @@ def test_seed_per_call_is_derived_from_request_and_recorded(tmp_path):
     r1, r2 = asyncio.run(b.complete(m, [])), asyncio.run(b.complete(m, []))
     r3 = asyncio.run(b.complete([{"role": "user", "content": "y"}], []))
     assert r1.seed is not None and r1.seed == r2.seed == seen[0] and r3.seed != r1.seed
+
+
+def test_cache_store_retries_on_lock_and_serialises_threads(tmp_path, monkeypatch):
+    """캐시 잠금: 다른 프로세스가 쓰기 잠금을 잡고 있어도 기다렸다가 성공, 여러 스레드가 같은 연결을 써도 안전."""
+    import sqlite3, threading, time as _t
+    from gbg.llm import sqlite_store
+    from gbg.llm.cache import ResponseCache
+    c = ResponseCache(tmp_path / "c.sqlite")
+    monkeypatch.setattr(sqlite_store.SqliteStore, "MAX_WAIT_S", 20.0)
+    other = sqlite3.connect(tmp_path / "c.sqlite", isolation_level=None, timeout=0, check_same_thread=False)
+    other.execute("BEGIN IMMEDIATE")                                       # 쓰기 잠금을 잡는다
+    c.db.db.execute("PRAGMA busy_timeout=10")                             # 대기 대신 재시도 경로를 타게
+    threading.Timer(0.3, lambda: other.execute("COMMIT")).start()
+    req = {"model": "m", "messages": []}
+    assert c.put("k", req, {"ok": 1}) == {"ok": 1}
+    errs = []
+
+    def worker(i):
+        try:
+            for j in range(20):
+                c.put(f"k{i}-{j}", req, {"i": i})
+                c.get(f"k{i}-{j}")
+        except Exception as e:
+            errs.append(e)
+    ts = [threading.Thread(target=worker, args=(i,)) for i in range(4)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert not errs and len(c) == 81

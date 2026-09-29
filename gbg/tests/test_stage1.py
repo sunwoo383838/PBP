@@ -310,3 +310,26 @@ def test_no_global_random_or_wall_clock():
                 assert "random" not in names, f"{path}: random은 kernel/rng.py의 NamedRNG로만"
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
                 assert (node.value.id, node.attr) not in banned_calls, f"{path}: 벽시계 {node.value.id}.{node.attr}"
+
+
+def test_supervisor_restarts_and_stops_after_three_failures_at_the_same_point(tmp_path, monkeypatch):
+    """자동 재개: 비정상 종료면 다시 시작하고, 같은 지점(마지막 커밋 day·round)에서 3번 연속 실패하면 멈추고 ALERT."""
+    import json as _j
+    from gbg.cli import supervise as S
+    monkeypatch.setattr(S, "BACKOFF_S", (0, 0, 0))
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    wal = tmp_path / "wal"
+    wal.mkdir()
+    calls = []
+
+    def fake_call(cmd, stdout=None, stderr=None):
+        calls.append(cmd)
+        if len(calls) == 1:                                                # 첫 실패 전에 한 라운드 진척
+            (wal / "events.jsonl").write_text(_j.dumps({"type": "round_commit", "day": 2, "round": 1}) + "\n")
+        return 1
+    monkeypatch.setattr(S.subprocess, "call", fake_call)
+    assert S.main([str(tmp_path), "--", "x"]) == 2
+    assert len(calls) == 3, "같은 지점(2일 1라운드)에서 3번 연속 실패하면 멈춘다"
+    assert _j.loads((tmp_path / "ALERT").read_text())["point"] == [2, 1]
+    log = [_j.loads(l) for l in (tmp_path / "supervise.jsonl").read_text().splitlines()]
+    assert [x["event"] for x in log].count("restart") == 3 and log[-1]["event"] == "stop"

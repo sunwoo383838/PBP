@@ -26,7 +26,7 @@ from .access_guard import AccessGuard
 from contextvars import ContextVar
 
 from .budget import UNLIMITED, TaskBudget
-from .errors import AgentFailure, FatalError
+from .errors import AgentFailure, FatalError, HarnessError
 from .rng import NamedRNG
 from .tools import ToolCall, ToolOutput, ToolRegistry
 
@@ -232,9 +232,8 @@ class Kernel:
                 raise
             except AgentFailure as e:
                 span.emit("answer", actor, {**head, "answer": None, "error": e.reason, "budget": self.budget.summary()})
-            except Exception as e:                                          # 에이전트 오류는 기록하고 런은 계속
-                span.emit("answer", actor, {**head, "answer": None, "error": f"agent_exception:{type(e).__name__}",
-                                            "budget": self.budget.summary()})
+            except Exception as e:                                          # 하네스 예외: 오답으로 기록하지 않고 멈춤 → 재개
+                raise HarnessError(f"과제 {te.task_id} 수행 중 하네스 예외 {type(e).__name__}: {e}") from e
             return drafts
         finally:
             self.budget = None

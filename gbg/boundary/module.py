@@ -32,7 +32,7 @@ from gbg.kernel.errors import FatalError
 from gbg.retrieval.normalize import normalize
 
 from . import prompts as P
-from .router_guard import router_leaks
+from .router_guard import mask_values, router_leaks
 
 
 def _dumps(x) -> str:
@@ -225,13 +225,8 @@ class BoundaryModule:
             return True, a
         route = await self._tool(bctx, step, "route", P.ROUTE_SYSTEM.format(group_desc=self._group_desc(stores)),
                                  route_user, P.ROUTE_TOOL, check_route) or {"action": "select", "agents": []}
-        if self.cond.ingress.deliver == "forward":                        # 라우터가 만든 출력의 카나리 검사
-            leaked = router_leaks([*route.get("agents", []), route.get("referral_to") or "", *(route.get("evidence") or []),
-                                   *(f"{x.get('entity', '')} {x.get('attribute', '')} {x.get('target_group') or ''}"
-                                     for x in route.get("items") or [])],
-                                  [x.text for x in ev.items], req.question)
-            if leaked:
-                raise FatalError(f"라우터 출력에 검색 결과의 값이 들어감 ({self.group}, {req.rid}): {leaked}")
+        if self.cond.ingress.deliver == "forward":                        # 라우터가 만든 출력의 카나리 가림 (Routing)
+            route = self._mask_route(route, ev, req, trace)
         if route["action"] == "referral":                                  # 근거 기록이 증거 블록에 없으면 referral 아님
             basis = [c for c in route.get("evidence") or [] if c.strip("[]") in cites]
             if not basis:
@@ -275,6 +270,34 @@ class BoundaryModule:
         if cfg.deliver in ("forward", "read"):                            # read = 검색된 기록 원문 첨부 (ingress_read)
             return self._forward(bctx, req, replies, ev if cfg.deliver == "read" else None, trace)
         return await self._assemble(bctx, span, req, text, it, entities, ev, replies, stores, step, trace)
+
+    def _mask_route(self, route: dict, ev: Evidence, req, trace) -> dict:
+        """Routing: 라우터 출력(항목의 엔티티·속성·대상, referral 대상, 인용)에서 요청 원문에 없고 검색 결과에만 있는
+        4자리 이상 수치를 가린다. 담당자에게 가는 질문은 요청 원문 그대로라 대상이 아니다. 가린 수와 출력 수를 기록."""
+        outs = [*route.get("agents", []), route.get("referral_to") or "", *(route.get("evidence") or []),
+                *(str(x.get(k) or "") for x in route.get("items") or [] if isinstance(x, dict)
+                  for k in ("entity", "attribute", "target_group"))]
+        leaked = set(router_leaks(outs, [x.text for x in ev.items], req.question))
+        masked = 0
+        if leaked:
+            items = []
+            for x in route.get("items") or []:
+                y = dict(x) if isinstance(x, dict) else x
+                if isinstance(y, dict):
+                    for k in ("entity", "attribute", "target_group"):
+                        if isinstance(y.get(k), str):
+                            y[k], n = mask_values(y[k], leaked)
+                            masked += n
+                items.append(y)
+            route = {**route, "items": items}
+            for k in ("referral_to",):
+                if isinstance(route.get(k), str):
+                    route[k], n = mask_values(route[k], leaked)
+                    masked += n
+            route["evidence"] = [mask_values(e, leaked)[0] if isinstance(e, str) else e for e in route.get("evidence") or []]
+        trace["route_outputs"] = len([o for o in outs if o])
+        trace["route_masked"] = masked
+        return route
 
     _STOP = {"record", "records", "current", "total", "number", "list", "details", "information", "data", "value",
              "values", "status", "employee", "employees", "department", "item", "items", "with", "from", "that", "this",

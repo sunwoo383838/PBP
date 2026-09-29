@@ -101,9 +101,8 @@ class DeepInfraReranker:
 
 class RerankCache:
     def __init__(self, path: Path):
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False, timeout=60)   # 재정렬은 작업 스레드에서 돈다
-        self.db.execute("PRAGMA journal_mode=WAL")
+        from gbg.llm.sqlite_store import SqliteStore
+        self.db = SqliteStore(path)                  # 재정렬은 작업 스레드에서 돈다: 연결 잠금·잠금 재시도
         self.db.execute("CREATE TABLE IF NOT EXISTS rerank (model TEXT NOT NULL, key TEXT NOT NULL, "
                         "score REAL NOT NULL, PRIMARY KEY (model, key))")
 
@@ -112,9 +111,8 @@ class RerankCache:
         return hashlib.sha256(f"{query}\x00{doc}".encode()).hexdigest()
 
     def get(self, model: str, query: str, doc: str) -> float | None:
-        row = self.db.execute("SELECT score FROM rerank WHERE model = ? AND key = ?",
-                              (model, self.key(query, doc))).fetchone()
-        return row[0] if row else None
+        rows = self.db.execute("SELECT score FROM rerank WHERE model = ? AND key = ?", (model, self.key(query, doc)))
+        return rows[0][0] if rows else None
 
     def put(self, model: str, query: str, doc: str, score: float):
         self.db.execute("INSERT OR IGNORE INTO rerank (model, key, score) VALUES (?, ?, ?)",

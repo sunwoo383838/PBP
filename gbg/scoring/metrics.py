@@ -49,7 +49,9 @@ def gate_table(needs: list[dict]) -> dict:
 
 
 def summarize(ledger: dict) -> dict:
-    tasks, needs = ledger["tasks"], ledger["needs"]
+    harness = [t for t in ledger["tasks"] if t["error"] == "E_harness"]    # 하네스 실패: 채점하지 않고 재실행 대상
+    tasks = [t for t in ledger["tasks"] if t["error"] != "E_harness"]
+    needs = [n for n in ledger["needs"] if n["task_id"] not in {t["task_id"] for t in harness}]
     reach = [t for t in tasks if not t["unreachable"]]
     tokens = sum(t["tokens"] for t in tasks)
     success = sum(t["exact"] for t in tasks)
@@ -64,6 +66,7 @@ def summarize(ledger: dict) -> dict:
     calls = [t["calls"] for t in tasks]
     return {
         "headline": {"acc_exact": _acc(reach), "acc_exact_all": _acc(tasks), "unreachable_tasks": len(tasks) - len(reach),
+                     "harness_failures": len(harness), "harness_failed_tasks": [t["task_id"] for t in harness],
                      "tokens_per_task": round(tokens / len(tasks)) if tasks else None,
                      "tok_per_success": round(tokens / success) if success else None},
         "slot_acc": round(sum(slots) / len(slots), 4) if slots else None,

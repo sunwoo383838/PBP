@@ -165,20 +165,31 @@ def test_routing_forwards_original_request_and_returns_replies_verbatim(tmp_path
     assert got and all(a.startswith("[Reply 1] ") for a in got if a)
 
 
-def test_router_output_leak_stops_the_run_as_a_bug(tmp_path):
-    """라우터가 만든 출력(선택 결과·referral 사유)에 검색 결과의 값이 들어가면 버그: 실행을 멈춘다."""
-    from gbg.kernel.errors import FatalError
+def test_router_output_values_from_evidence_are_masked_and_the_run_continues(tmp_path):
+    """Routing: 라우터 출력(항목·인용 등)에 요청 원문에 없고 검색 결과에만 있는 4자리 이상 수치가 들어가면 코드가 가리고
+    기록한 뒤 계속한다 (2026-09-30 사양 변경: 이전에는 실행을 멈췄다)."""
+    seen = {}
 
     def script(req):
         if "route" in _tools(req):
-            records = req["messages"][1]["content"].split("Group records found:\n", 1)[1]
+            user = req["messages"][1]["content"]
+            records = user.split("Group records found:\n", 1)[1]
             amount = re.search(r"\d{1,3}(?:,\d{3})+", records)
-            if amount:
-                return _call("route", {"action": "referral", "agents": [], "referral_to": "FIN-TYO",
-                                       "evidence": [amount.group(0)]})                    # 인용 칸에 값을 넣은 버그 흉내
+            if amount and amount.group(0) not in user.split("Group records found:", 1)[0] and not seen:
+                seen["v"] = amount.group(0)
+                members = re.findall(r"^- (\S+) \|", user.split("Members:\n", 1)[1].split("\n\n", 1)[0], re.M)
+                return _call("route", {"action": "select", "agents": members[:1], "items": [
+                    {"entity": "budget line", "attribute": f"balance after {amount.group(0)} deduction", "scope": "elsewhere",
+                     "target_group": "FIN-TYO"}]})
         return oracle(req)
-    with pytest.raises(FatalError, match="라우터 출력"):
-        run(tmp_path, "routing", script=script)
+    _, ev = run(tmp_path, "routing", script=script)
+    assert seen, "증거에 금액이 있는 라우팅이 한 번은 있어야 한다"
+    d = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"].get("route_masked"))
+    assert d["route_masked"] >= 1 and d["route_outputs"] >= 1
+    assert all(seen["v"] not in json.dumps(x, ensure_ascii=False) and seen["v"].replace(",", "") not in json.dumps(x)
+               for x in d["items"]), "밖으로 나가는 항목에서 값이 가려진다"
+    assert any("[value removed]" in x["attribute"] for x in d["items"])
+    assert any(e["type"] == "answer" for e in ev), "실행은 멈추지 않는다"
 
 
 def test_boundary_calls_are_charged_to_the_task_budget(tmp_path):

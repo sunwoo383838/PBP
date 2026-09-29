@@ -42,6 +42,8 @@ def _error_code(ans: dict | None) -> str | None:
     err = ans.get("error")
     if err is None:
         return None
+    if err.startswith("agent_exception"):                                  # 하네스 예외: 오답이 아니라 하네스 실패
+        return "E_harness"
     if "budget" in err:
         return "E_budget"
     if "format" in err:

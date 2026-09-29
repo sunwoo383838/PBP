@@ -62,7 +62,7 @@ class Bus:
 
     async def _respond(self, ctx: "AgentContext", span, req: Request, agent: str, group: str, role: str) -> Response:
         from .scheduler import AgentContext, FatalError
-        from .errors import AgentFailure
+        from .errors import AgentFailure, HarnessError
         k = self.kernel
         rctx = AgentContext(k, span, agent, group, role, ctx.day, ctx.round, ctx.task_id, req.hop, req.lineage,
                             k.stores.history.entries(agent), serving=req.rid)
@@ -73,8 +73,8 @@ class Bus:
             raise
         except AgentFailure as e:
             return error_response(req.rid, e.reason, ctx.day)
-        except Exception as e:
-            return error_response(req.rid, f"agent_exception:{type(e).__name__}", ctx.day)
+        except Exception as e:                                              # 하네스 예외: 응답 오류로 삼키지 않는다
+            raise HarnessError(f"{agent} 응답 중 하네스 예외 {type(e).__name__}: {e}") from e
 
     async def ask_group(self, ctx: "AgentContext", group: str, question: str, purpose: str | None = None,
                         hop: int | None = None) -> Response:
