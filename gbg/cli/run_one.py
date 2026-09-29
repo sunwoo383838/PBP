@@ -82,6 +82,7 @@ def main(argv=None):
     ap.add_argument("--embed-cache", type=Path, required=True, help="공유 임베딩 캐시 (모든 실행이 같은 파일)")
     ap.add_argument("--rerank-cache", type=Path, required=True, help="공유 재정렬 캐시 (모든 실행이 같은 파일)")
     ap.add_argument("--run-seed", type=int, default=1)
+    ap.add_argument("--model", default=None, help="params.yaml llm.models의 별칭 (없으면 llm.model)")
     ap.add_argument("--scripted", action="store_true")
     ap.add_argument("--configs", type=Path, default=ROOT / "configs")
     a = ap.parse_args(argv)
@@ -119,7 +120,7 @@ def main(argv=None):
                       P.agent.max_steps, P.agent.format_retries, P.agent.safety_steps, P.agent.responder_max_steps,
                       tuple(P.agent.responder_exclude_tools))
     llm = (LLMBackend(P.llm, mode="SCRIPTED", script=scripted) if a.scripted
-           else LLMBackend(P.llm, mode="LIVE", cache=ResponseCache(a.out / "llm_cache.sqlite")))
+           else LLMBackend(P.llm, mode="LIVE", model=a.model, cache=ResponseCache(a.out / "llm_cache.sqlite")))
     embedder = CachedEmbedder(DeepInfraEmbedder(P.llm, P.retrieval.embed_model), EmbeddingCache(caches["embed_cache.sqlite"]),
                               "LIVE", P.retrieval.embed_batch)
     reranker = CachedReranker(DeepInfraReranker(P.llm, P.retrieval.rerank_model), RerankCache(caches["rerank_cache.sqlite"]))
