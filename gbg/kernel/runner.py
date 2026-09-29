@@ -2,12 +2,12 @@
 import asyncio
 import json
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from gbg.contracts.access import AccessTable
 from gbg.contracts.adapter import BenchmarkAdapter
 from gbg.contracts.conditions import Condition, resolve_condition
+from gbg.contracts.params import KernelParams
 from gbg.stores import Stores
 
 from .access_guard import AccessGuard
@@ -20,33 +20,30 @@ class RunConfigError(RuntimeError):
     """이미 있는 런 디렉터리를 다른 설정으로 재개하려 함."""
 
 
-@dataclass(frozen=True)
-class KernelParams:
-    rounds_per_day: int = 3
-    hop_limit: int = 4
-
-
 class Runner:
     def __init__(self, adapter: BenchmarkAdapter, *, condition: str, seed: int, run_dir: Path,
                  conditions: dict[str, Condition], access: AccessTable, tools: ToolRegistry,
                  agent_factory: AgentFactory, env_tools: Callable[[Stores], list[Tool]] | None = None,
                  params: KernelParams = KernelParams(), fault: Fault | None = None,
-                 launch_order: Callable[[list[str]], list[str]] | None = None):
+                 launch_order: Callable[[list[str]], list[str]] | None = None, llm=None,
+                 tokens: Callable[[str], int] | None = None, max_day: int | None = None):
         cond = resolve_condition(conditions, condition)
         self.adapter, self.condition, self.seed, self.params = adapter, condition, seed, params
         self.run_dir = Path(run_dir)
         self.wal = WAL(self.run_dir, fault)
-        self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day)
+        extra = {"tokens": tokens} if tokens else {}
+        self.stores = Stores.from_adapter(adapter, card_mode=cond.card_mode, rounds_per_day=params.rounds_per_day, **extra)
+        self.max_day = max_day
         for tool in env_tools(self.stores) if env_tools else []:
             tools.register(tool)
         self.kernel = Kernel(seed=seed, condition=condition, guard=AccessGuard(access, condition), tools=tools,
                              stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
-                             launch_order=launch_order)
+                             launch_order=launch_order, llm=llm)
         self.card_mode = cond.card_mode
 
     def _check_config(self):
         cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,
-               "seed": self.seed, "params": asdict(self.params)}
+               "seed": self.seed, "params": self.params.model_dump()}
         path = self.run_dir / "run.json"
         if path.exists():
             old = json.loads(path.read_text(encoding="utf-8"))
@@ -74,6 +71,8 @@ class Runner:
                 raise ValueError(f"{te.eid}: round {te.round}는 0..{self.params.rounds_per_day} 밖")
             by_slot.setdefault((te.day, te.round), []).append(te)
         last_day = max(d for d, _ in by_slot) if by_slot else 0
+        if self.max_day is not None:
+            last_day = min(last_day, self.max_day)
 
         for day in range(1, last_day + 1):
             for rnd in range(self.params.rounds_per_day + 1):

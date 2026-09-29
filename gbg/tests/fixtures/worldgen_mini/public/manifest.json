@@ -1,6 +1,6 @@
 {
  "benchmark": "worldgen",
- "world_hash": "8e33240035f616f4",
+ "world_hash": "10298a51199cc228",
  "seed": 0,
  "days": 5,
  "generator": "gbg.tests.fixtures.build_fixtures",

@@ -22,7 +22,18 @@ from gbg.stores import Stores
 
 from .access_guard import AccessGuard
 from .rng import NamedRNG
-from .tools import ToolCall, ToolRegistry
+from .tools import ToolCall, ToolOutput, ToolRegistry
+
+
+class FatalError(Exception):
+    """런 전체를 멈춰야 하는 오류 (REPLAY 캐시 미스, API 영구 실패). 커널이 삼키지 않는다."""
+
+
+class AgentFailure(Exception):
+    """에이전트가 작업을 끝내지 못함 (format_error, step_limit). 답 사건에 사유로 남고 런은 계속된다."""
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
 
 
 class Agent(Protocol):
@@ -84,6 +95,9 @@ class AgentContext:
     async def ask(self, to_agent: str, question: str, purpose: str | None = None) -> Response:
         return await self.kernel.bus.ask(self, to_agent, question, purpose)
 
+    async def llm(self, messages: list[dict], tools: list[dict], step: int, composition: dict | None = None):
+        return await self.kernel.llm_call(self, messages, tools, step, composition)
+
 
 # ─────────────────────────── 커널 ───────────────────────────
 @dataclass
@@ -96,7 +110,7 @@ class Member:
 class Kernel:
     def __init__(self, *, seed: int, condition: str, guard: AccessGuard, tools: ToolRegistry, stores: Stores,
                  agent_factory: AgentFactory, hop_limit: int,
-                 launch_order: Callable[[list[str]], list[str]] | None = None):
+                 launch_order: Callable[[list[str]], list[str]] | None = None, llm=None):
         from .bus import Bus
         self.rng = NamedRNG(seed)
         self.condition, self.guard, self.tools, self.stores = condition, guard, tools, stores
@@ -105,6 +119,7 @@ class Kernel:
         self.agents: dict[str, Agent] = {}
         self.last_seq = 0
         self.bus = Bus(self, hop_limit)
+        self.llm = llm
 
     # ── 상태: 커밋된 사건으로만 바뀐다 ──
     def add_member(self, agent_id: str, group: str, role: str):
@@ -190,6 +205,11 @@ class Kernel:
             try:
                 answer = await self.agents[agent_id].work(ctx, te)
                 span.emit("answer", f"agent:{agent_id}", {"task_id": te.task_id, "agent": agent_id, "answer": answer})
+            except FatalError:
+                raise
+            except AgentFailure as e:
+                span.emit("answer", f"agent:{agent_id}", {"task_id": te.task_id, "agent": agent_id, "answer": None,
+                                                          "error": e.reason})
             except Exception as e:                                          # 에이전트 오류는 기록하고 런은 계속
                 span.emit("answer", f"agent:{agent_id}", {"task_id": te.task_id, "agent": agent_id, "answer": None,
                                                           "error": f"agent_exception:{type(e).__name__}"})
@@ -199,6 +219,7 @@ class Kernel:
         span = ctx.span
         base = {"task_id": ctx.task_id, "agent": ctx.agent_id, "tool": name}
         tool = self.tools.get(name)
+        extra_obs: list[tuple[str, dict]] = []
         if tool is None:
             span.emit("tool_call", f"agent:{ctx.agent_id}", {**base, "args": args})
             result = {"ok": False, "error": "unknown_tool"}
@@ -212,9 +233,28 @@ class Kernel:
                           "scope": denied[0]["scope"]}
             else:
                 out = await tool.invoke(ToolCall(ctx.agent_id, ctx.group, ctx.day, ctx.round, dict(args)))
+                if isinstance(out, ToolOutput):
+                    extra_obs = [(n, {"day": ctx.day, "round": ctx.round, **base, **rec}) for n, rec in out.obs]
+                    out = out.result
                 result = {"ok": True, "result": out}
-        span.emit("tool_result", "kernel", {**base, **result})
+        span.emit("tool_result", "kernel", {**base, **result}, obs=extra_obs)
         return result
+
+    # ── LLM 호출 (기록) ──
+    async def llm_call(self, ctx: AgentContext, messages: list[dict], tools: list[dict], step: int,
+                       composition: dict | None):
+        if self.llm is None:
+            raise FatalError("LLM 백엔드 없이 LLM 에이전트를 실행함")
+        res = await self.llm.complete(messages, tools)
+        head = {"task_id": ctx.task_id, "agent": ctx.agent_id, "step": step}
+        obs = [("llm", {"day": ctx.day, "round": ctx.round, **head, "model": res.model, "key": res.key,
+                        "cached": res.cached, "attempts": res.attempts, "latency_ms": res.latency_ms, "usage": res.usage})]
+        if composition is not None:
+            obs.append(("context_windows", {"day": ctx.day, "round": ctx.round, **head, **composition}))
+        ctx.span.emit("llm_call", f"agent:{ctx.agent_id}", {**head, "model": res.model, "key": res.key,
+                                                             "usage": res.usage, "finish_reason": res.finish_reason,
+                                                             "message": res.message}, obs=obs)
+        return res
 
     # ── 커밋 ──
     def seal(self, day: int, rnd: int, drafts: list[Draft]) -> tuple[list[Event], dict[str, list[dict]]]:

@@ -15,6 +15,16 @@ class VersionedDB:
             raise ValueError(f"{group}:{key}: 버전 {version.v}가 {len(vs) + 1}번째 자리에 옴")
         vs.append(version)
 
+    def groups(self) -> list[str]:
+        return sorted(self._db)
+
+    def keys(self, group: str) -> list[str]:
+        return sorted(self._db.get(group, {}))
+
+    def versions(self, group: str, key: str) -> list[DbVersion]:
+        """등록 여부와 무관한 전체 버전. 에이전트 조회 경로는 query만 쓴다."""
+        return list(self._db.get(group, {}).get(key, []))
+
     def query(self, group: str, key: str, day: int) -> DbVersion | None:
         vs = [v for v in self._db.get(group, {}).get(key, []) if v.db_day <= day]
         return vs[-1] if vs else None

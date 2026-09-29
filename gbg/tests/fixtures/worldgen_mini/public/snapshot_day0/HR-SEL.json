@@ -6,45 +6,45 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 김하린 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 김하린's HR record",
+    "tokens": 30,
     "entities": [
      "E-SEL-1000"
     ],
-    "digest": "-5일차 E-SEL-1000 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1000)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "김하린 인사 기록 확정: 영업1팀, 3급, regular.",
-    "tokens": 35,
+    "text": "김하린 HR record confirmed: 영업1팀, grade 3, regular.",
+    "tokens": 52,
     "entities": [
      "E-SEL-1000"
     ],
-    "digest": "-5일차 E-SEL-1000 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1000)"
    },
    {
     "seq": 3,
     "day": -5,
     "role": "user",
-    "text": "[작업] 이서준 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 이서준's HR record",
+    "tokens": 30,
     "entities": [
      "E-SEL-1002"
     ],
-    "digest": "-5일차 E-SEL-1002 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1002)"
    },
    {
     "seq": 4,
     "day": -5,
     "role": "assistant",
-    "text": "이서준 인사 기록 확정: 영업1팀, 4급, regular.",
-    "tokens": 35,
+    "text": "이서준 HR record confirmed: 영업1팀, grade 4, regular.",
+    "tokens": 52,
     "entities": [
      "E-SEL-1002"
     ],
-    "digest": "-5일차 E-SEL-1002 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1002)"
    }
   ],
   "hr-sel.a2": [
@@ -52,69 +52,69 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 박도윤 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 박도윤's HR record",
+    "tokens": 30,
     "entities": [
      "E-SEL-1001"
     ],
-    "digest": "-5일차 E-SEL-1001 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1001)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "박도윤 인사 기록 확정: 개발1팀, 2급, contractor.",
-    "tokens": 38,
+    "text": "박도윤 HR record confirmed: 개발1팀, grade 2, contractor.",
+    "tokens": 56,
     "entities": [
      "E-SEL-1001"
     ],
-    "digest": "-5일차 E-SEL-1001 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1001)"
    },
    {
     "seq": 3,
     "day": -5,
     "role": "user",
-    "text": "[작업] 최지우 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 최지우's HR record",
+    "tokens": 30,
     "entities": [
      "E-SEL-1003"
     ],
-    "digest": "-5일차 E-SEL-1003 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1003)"
    },
    {
     "seq": 4,
     "day": -5,
     "role": "assistant",
-    "text": "최지우 인사 기록 확정: 개발1팀, 1급, regular.",
-    "tokens": 35,
+    "text": "최지우 HR record confirmed: 개발1팀, grade 1, regular.",
+    "tokens": 52,
     "entities": [
      "E-SEL-1003"
     ],
-    "digest": "-5일차 E-SEL-1003 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-SEL-1003)"
    },
    {
     "seq": 5,
     "day": 0,
     "role": "user",
-    "text": "[작업] 박도윤 부서 이동 요청 검토",
-    "tokens": 22,
+    "text": "[Task] Review 박도윤's transfer request",
+    "tokens": 39,
     "entities": [
      "E-SEL-1001",
      "영업1팀"
     ],
-    "digest": "0일차 E-SEL-1001 부서 이동 승인 (인사기록 담당)"
+    "digest": "Day 0: approved transfer (E-SEL-1001)"
    },
    {
     "seq": 6,
     "day": 0,
     "role": "assistant",
-    "text": "박도윤 영업1팀 이동 승인, 3일 발효.",
-    "tokens": 24,
+    "text": "박도윤 transfer to 영업1팀 approved, effective day 3.",
+    "tokens": 51,
     "entities": [
      "E-SEL-1001",
      "영업1팀"
     ],
-    "digest": "0일차 E-SEL-1001 부서 이동 승인 (인사기록 담당)"
+    "digest": "Day 0: approved transfer (E-SEL-1001)"
    }
   ]
  },
@@ -155,7 +155,7 @@
    "entity": "개발1팀",
    "attr": "available_budget",
    "to_group": "FIN-SEL",
-   "question": "개발1팀 장비 예산 여유 있는지 확인 부탁드립니다.",
+   "question": "Please check whether 개발1팀 has room in its equipment budget.",
    "status": "ok",
    "referral_to": null
   }

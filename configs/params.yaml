@@ -1,0 +1,45 @@
+# 실행 파라미터. 조건과 무관하게 모든 런이 공유한다.
+kernel:
+  rounds_per_day: 3
+  hop_limit: 4
+
+llm:
+  base_url: https://api.deepinfra.com/v1/openai
+  api_key_env: DEEPINFRA_API_KEY
+  models:                                   # 별칭 → 제공자 모델 id
+    qwen3-32b: Qwen/Qwen3-32B
+    qwen3-14b: Qwen/Qwen3-14B
+  temperature: 0
+  max_tokens: 1024
+  context_length: 40960                     # DeepInfra /models 기준 (Qwen3-32B, 14B)
+  tool_choice: auto                         # DeepInfra 지원 값: auto | none
+  extra_body:                               # thinking 끔: DeepInfra 공식 파라미터 (응답 reasoning_content가 비어야 함)
+    reasoning_effort: none
+  concurrency: 150                          # 모델별 전역 동시 요청 상한 (DeepInfra 기본 한도 200/모델)
+  timeout_s: 120
+  retry: {max_attempts: 6, base_delay_s: 1.0, max_delay_s: 30.0}   # 429·5xx 지수 백오프
+
+tokenizer:                                  # Qwen3 32B·14B 공통 (tokenizer.json 바이트 동일)
+  repo: Qwen/Qwen3-32B
+  revision: 9216db5781bf21249d130ec9da846c4624c16137
+  sha256: aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4
+
+context:
+  raw_window: 8000                          # K: 최근 원문 창 (토큰)
+  summary: 2000                             # 창 이전 항목의 digest, 최신부터
+
+agent:
+  max_steps: 6
+  format_retries: 1
+
+retrieval:
+  embed_model: BAAI/bge-m3                  # DeepInfra, 1024차원. 텍스트 해시로 SQLite 캐시
+  embed_batch: 64
+  bm25: {k1: 1.5, b: 0.75}
+  rrf_k: 60
+  embed_candidates: 50                      # RRF에 넣을 임베딩 상위 후보 수
+  top_k: 20                                 # 하이브리드 결과 상위
+  versions_per_attr: 2                      # (엔티티, 속성) 태그가 있으면 최신 2개 버전만
+  expand: 1                                 # 적중 항목마다 같은 에이전트 이력의 앞뒤 1개
+  evidence_cap: 12000                       # 증거 블록 토큰 상한, 넘으면 오래된 것부터 제외
+  alias: {max_edit: 2, embed_threshold: 0.85}

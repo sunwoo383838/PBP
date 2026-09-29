@@ -5,8 +5,11 @@ description = "경계 실험 하네스: 권한으로 나뉜 LLM 에이전트 그
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "httpx>=0.28.1",
+    "numpy>=2.4.6",
     "pydantic>=2.13.5",
     "pyyaml>=6.0.3",
+    "tokenizers>=0.23.2",
 ]
 
 [dependency-groups]

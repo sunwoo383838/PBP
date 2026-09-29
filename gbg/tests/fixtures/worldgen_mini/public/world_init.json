@@ -8,14 +8,14 @@
      "agent_id": "hr-sel.a1",
      "role": "records",
      "card": {
-      "name": "HR-SEL 인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR-SEL HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "version": 1,
       "skills": [
        {
         "id": "records",
-        "name": "인사기록",
-        "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+        "name": "HR records",
+        "description": "Look up and update employee department, grade, and contract type",
         "tags": [
          "hr",
          "records"
@@ -25,7 +25,7 @@
       ],
       "group": "HR-SEL",
       "kind": "agent",
-      "scope": "SEL 영업1팀 인사기록",
+      "scope": "SEL 영업1팀 HR records",
       "occupant": "hr-sel.a1"
      }
     },
@@ -33,14 +33,14 @@
      "agent_id": "hr-sel.a2",
      "role": "records",
      "card": {
-      "name": "HR-SEL 인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR-SEL HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "version": 1,
       "skills": [
        {
         "id": "records",
-        "name": "인사기록",
-        "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+        "name": "HR records",
+        "description": "Look up and update employee department, grade, and contract type",
         "tags": [
          "hr",
          "records"
@@ -50,7 +50,7 @@
       ],
       "group": "HR-SEL",
       "kind": "agent",
-      "scope": "SEL 개발1팀 인사기록",
+      "scope": "SEL 개발1팀 HR records",
       "occupant": "hr-sel.a2"
      }
     },
@@ -58,14 +58,14 @@
      "agent_id": "hr-sel.a3",
      "role": "payroll",
      "card": {
-      "name": "HR-SEL 급여",
-      "description": "급여 등급, 장비 지원 판단",
+      "name": "HR-SEL Payroll",
+      "description": "Pay grades and equipment support decisions",
       "version": 1,
       "skills": [
        {
         "id": "payroll",
-        "name": "급여",
-        "description": "급여 등급, 장비 지원 판단",
+        "name": "Payroll",
+        "description": "Pay grades and equipment support decisions",
         "tags": [
          "hr",
          "payroll"
@@ -75,20 +75,20 @@
       ],
       "group": "HR-SEL",
       "kind": "agent",
-      "scope": "SEL 급여",
+      "scope": "SEL Payroll",
       "occupant": "hr-sel.a3"
      }
     }
    ],
    "card": {
     "name": "HR-SEL",
-    "description": "인사: 직원 소속·직급·계약 기록과 급여",
+    "description": "Human resources: employee department, grade, contract records, and payroll",
     "version": 1,
     "skills": [
      {
       "id": "records",
-      "name": "인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "tags": [
        "hr",
        "records"
@@ -97,8 +97,8 @@
      },
      {
       "id": "payroll",
-      "name": "급여",
-      "description": "급여 등급, 장비 지원 판단",
+      "name": "Payroll",
+      "description": "Pay grades and equipment support decisions",
       "tags": [
        "hr",
        "payroll"
@@ -108,7 +108,7 @@
     ],
     "group": "HR-SEL",
     "kind": "group",
-    "service_scope": "SEL 지역 영업1팀, 개발1팀",
+    "service_scope": "SEL region: 영업1팀, 개발1팀",
     "endpoint": "boundary:HR-SEL"
    }
   },
@@ -119,14 +119,14 @@
      "agent_id": "hr-tyo.a1",
      "role": "records",
      "card": {
-      "name": "HR-TYO 인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR-TYO HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "version": 1,
       "skills": [
        {
         "id": "records",
-        "name": "인사기록",
-        "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+        "name": "HR records",
+        "description": "Look up and update employee department, grade, and contract type",
         "tags": [
          "hr",
          "records"
@@ -136,7 +136,7 @@
       ],
       "group": "HR-TYO",
       "kind": "agent",
-      "scope": "TYO 営業1課 인사기록",
+      "scope": "TYO 営業1課 HR records",
       "occupant": "hr-tyo.a1"
      }
     },
@@ -144,14 +144,14 @@
      "agent_id": "hr-tyo.a2",
      "role": "records",
      "card": {
-      "name": "HR-TYO 인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR-TYO HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "version": 1,
       "skills": [
        {
         "id": "records",
-        "name": "인사기록",
-        "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+        "name": "HR records",
+        "description": "Look up and update employee department, grade, and contract type",
         "tags": [
          "hr",
          "records"
@@ -161,7 +161,7 @@
       ],
       "group": "HR-TYO",
       "kind": "agent",
-      "scope": "TYO 開発1課 인사기록",
+      "scope": "TYO 開発1課 HR records",
       "occupant": "hr-tyo.a2"
      }
     },
@@ -169,14 +169,14 @@
      "agent_id": "hr-tyo.a3",
      "role": "payroll",
      "card": {
-      "name": "HR-TYO 급여",
-      "description": "급여 등급, 장비 지원 판단",
+      "name": "HR-TYO Payroll",
+      "description": "Pay grades and equipment support decisions",
       "version": 1,
       "skills": [
        {
         "id": "payroll",
-        "name": "급여",
-        "description": "급여 등급, 장비 지원 판단",
+        "name": "Payroll",
+        "description": "Pay grades and equipment support decisions",
         "tags": [
          "hr",
          "payroll"
@@ -186,20 +186,20 @@
       ],
       "group": "HR-TYO",
       "kind": "agent",
-      "scope": "TYO 급여",
+      "scope": "TYO Payroll",
       "occupant": "hr-tyo.a3"
      }
     }
    ],
    "card": {
     "name": "HR-TYO",
-    "description": "인사: 직원 소속·직급·계약 기록과 급여",
+    "description": "Human resources: employee department, grade, contract records, and payroll",
     "version": 1,
     "skills": [
      {
       "id": "records",
-      "name": "인사기록",
-      "description": "직원 소속·직급·계약 유형 기록 조회와 갱신",
+      "name": "HR records",
+      "description": "Look up and update employee department, grade, and contract type",
       "tags": [
        "hr",
        "records"
@@ -208,8 +208,8 @@
      },
      {
       "id": "payroll",
-      "name": "급여",
-      "description": "급여 등급, 장비 지원 판단",
+      "name": "Payroll",
+      "description": "Pay grades and equipment support decisions",
       "tags": [
        "hr",
        "payroll"
@@ -219,7 +219,7 @@
     ],
     "group": "HR-TYO",
     "kind": "group",
-    "service_scope": "TYO 지역 営業1課, 開発1課",
+    "service_scope": "TYO region: 営業1課, 開発1課",
     "endpoint": "boundary:HR-TYO"
    }
   },
@@ -230,14 +230,14 @@
      "agent_id": "fin-sel.a1",
      "role": "budgeting",
      "card": {
-      "name": "FIN-SEL 예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "FIN-SEL Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "version": 1,
       "skills": [
        {
         "id": "budgeting",
-        "name": "예산",
-        "description": "예산 라인 편성·조정·잔액 조회",
+        "name": "Budgeting",
+        "description": "Plan, adjust, and look up budget lines and balances",
         "tags": [
          "fin",
          "budgeting"
@@ -247,7 +247,7 @@
       ],
       "group": "FIN-SEL",
       "kind": "agent",
-      "scope": "SEL 영업1팀 예산",
+      "scope": "SEL 영업1팀 Budgeting",
       "occupant": "fin-sel.a1"
      }
     },
@@ -255,14 +255,14 @@
      "agent_id": "fin-sel.a2",
      "role": "budgeting",
      "card": {
-      "name": "FIN-SEL 예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "FIN-SEL Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "version": 1,
       "skills": [
        {
         "id": "budgeting",
-        "name": "예산",
-        "description": "예산 라인 편성·조정·잔액 조회",
+        "name": "Budgeting",
+        "description": "Plan, adjust, and look up budget lines and balances",
         "tags": [
          "fin",
          "budgeting"
@@ -272,7 +272,7 @@
       ],
       "group": "FIN-SEL",
       "kind": "agent",
-      "scope": "SEL 개발1팀 예산",
+      "scope": "SEL 개발1팀 Budgeting",
       "occupant": "fin-sel.a2"
      }
     },
@@ -280,14 +280,14 @@
      "agent_id": "fin-sel.a3",
      "role": "payables",
      "card": {
-      "name": "FIN-SEL 지급",
-      "description": "가승인 검토·등록, 정산",
+      "name": "FIN-SEL Payables",
+      "description": "Review and register provisional approvals, settlement",
       "version": 1,
       "skills": [
        {
         "id": "payables",
-        "name": "지급",
-        "description": "가승인 검토·등록, 정산",
+        "name": "Payables",
+        "description": "Review and register provisional approvals, settlement",
         "tags": [
          "fin",
          "payables"
@@ -297,20 +297,20 @@
       ],
       "group": "FIN-SEL",
       "kind": "agent",
-      "scope": "SEL 지급",
+      "scope": "SEL Payables",
       "occupant": "fin-sel.a3"
      }
     }
    ],
    "card": {
     "name": "FIN-SEL",
-    "description": "재무: 예산 라인, 가승인, 정산",
+    "description": "Finance: budget lines, provisional approvals, settlement",
     "version": 1,
     "skills": [
      {
       "id": "budgeting",
-      "name": "예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "tags": [
        "fin",
        "budgeting"
@@ -319,8 +319,8 @@
      },
      {
       "id": "payables",
-      "name": "지급",
-      "description": "가승인 검토·등록, 정산",
+      "name": "Payables",
+      "description": "Review and register provisional approvals, settlement",
       "tags": [
        "fin",
        "payables"
@@ -330,7 +330,7 @@
     ],
     "group": "FIN-SEL",
     "kind": "group",
-    "service_scope": "SEL 지역 영업1팀, 개발1팀",
+    "service_scope": "SEL region: 영업1팀, 개발1팀",
     "endpoint": "boundary:FIN-SEL"
    }
   },
@@ -341,14 +341,14 @@
      "agent_id": "fin-tyo.a1",
      "role": "budgeting",
      "card": {
-      "name": "FIN-TYO 예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "FIN-TYO Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "version": 1,
       "skills": [
        {
         "id": "budgeting",
-        "name": "예산",
-        "description": "예산 라인 편성·조정·잔액 조회",
+        "name": "Budgeting",
+        "description": "Plan, adjust, and look up budget lines and balances",
         "tags": [
          "fin",
          "budgeting"
@@ -358,7 +358,7 @@
       ],
       "group": "FIN-TYO",
       "kind": "agent",
-      "scope": "TYO 営業1課 예산",
+      "scope": "TYO 営業1課 Budgeting",
       "occupant": "fin-tyo.a1"
      }
     },
@@ -366,14 +366,14 @@
      "agent_id": "fin-tyo.a2",
      "role": "budgeting",
      "card": {
-      "name": "FIN-TYO 예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "FIN-TYO Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "version": 1,
       "skills": [
        {
         "id": "budgeting",
-        "name": "예산",
-        "description": "예산 라인 편성·조정·잔액 조회",
+        "name": "Budgeting",
+        "description": "Plan, adjust, and look up budget lines and balances",
         "tags": [
          "fin",
          "budgeting"
@@ -383,7 +383,7 @@
       ],
       "group": "FIN-TYO",
       "kind": "agent",
-      "scope": "TYO 開発1課 예산",
+      "scope": "TYO 開発1課 Budgeting",
       "occupant": "fin-tyo.a2"
      }
     },
@@ -391,14 +391,14 @@
      "agent_id": "fin-tyo.a3",
      "role": "payables",
      "card": {
-      "name": "FIN-TYO 지급",
-      "description": "가승인 검토·등록, 정산",
+      "name": "FIN-TYO Payables",
+      "description": "Review and register provisional approvals, settlement",
       "version": 1,
       "skills": [
        {
         "id": "payables",
-        "name": "지급",
-        "description": "가승인 검토·등록, 정산",
+        "name": "Payables",
+        "description": "Review and register provisional approvals, settlement",
         "tags": [
          "fin",
          "payables"
@@ -408,20 +408,20 @@
       ],
       "group": "FIN-TYO",
       "kind": "agent",
-      "scope": "TYO 지급",
+      "scope": "TYO Payables",
       "occupant": "fin-tyo.a3"
      }
     }
    ],
    "card": {
     "name": "FIN-TYO",
-    "description": "재무: 예산 라인, 가승인, 정산",
+    "description": "Finance: budget lines, provisional approvals, settlement",
     "version": 1,
     "skills": [
      {
       "id": "budgeting",
-      "name": "예산",
-      "description": "예산 라인 편성·조정·잔액 조회",
+      "name": "Budgeting",
+      "description": "Plan, adjust, and look up budget lines and balances",
       "tags": [
        "fin",
        "budgeting"
@@ -430,8 +430,8 @@
      },
      {
       "id": "payables",
-      "name": "지급",
-      "description": "가승인 검토·등록, 정산",
+      "name": "Payables",
+      "description": "Review and register provisional approvals, settlement",
       "tags": [
        "fin",
        "payables"
@@ -441,7 +441,7 @@
     ],
     "group": "FIN-TYO",
     "kind": "group",
-    "service_scope": "TYO 지역 営業1課, 開発1課",
+    "service_scope": "TYO region: 営業1課, 開発1課",
     "endpoint": "boundary:FIN-TYO"
    }
   }

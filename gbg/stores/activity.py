@@ -25,6 +25,9 @@ class ActivityIndex:
                 out.setdefault(r.agent, []).append(r)
         return out
 
+    def records(self, group: str) -> list:
+        return [r for ent in sorted(self._idx.get(group, {})) for r in self._idx[group][ent]]
+
     def dump(self):
         return {g: {e: [r.model_dump(mode="json") for r in rs] for e, rs in sorted(t.items())}
                 for g, t in sorted(self._idx.items())}

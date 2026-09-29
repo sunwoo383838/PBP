@@ -20,7 +20,7 @@ class Bus:
         self.kernel, self.hop_limit = kernel, hop_limit
 
     async def ask(self, ctx: "AgentContext", to_agent: str, question: str, purpose: str | None) -> Response:
-        from .scheduler import AgentContext
+        from .scheduler import AgentContext, AgentFailure, FatalError
         k = self.kernel
         span = ctx.span.child()                                      # 이 문답 전체가 한 슬롯을 차지한다
         rid = f"{ctx.task_id}/" + ".".join(str(x) for x in span.prefix[2:])
@@ -42,6 +42,10 @@ class Bus:
                 resp = await k.agents[to_agent].respond(rctx, req)
                 if resp.rid != rid:
                     resp = resp.model_copy(update={"rid": rid})
+            except FatalError:
+                raise
+            except AgentFailure as e:
+                resp = error_response(rid, e.reason, ctx.day)
             except Exception as e:
                 resp = error_response(rid, f"agent_exception:{type(e).__name__}", ctx.day)
         span.emit("message", actor, {**head, "kind": "response", "response": resp.model_dump(mode="json")})

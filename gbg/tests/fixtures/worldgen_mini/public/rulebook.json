@@ -2,21 +2,21 @@
  {
   "id": "HR-SEL.transfer_effective",
   "group": "HR-SEL",
-  "body": "부서 이동은 발효일부터 소속에 반영한다. 발효 전에는 이전 부서 소속이다."
+  "body": "A department transfer takes effect on its effective day. Before that day the employee belongs to the previous department."
  },
  {
   "id": "FIN-SEL.pending_deducted",
   "group": "FIN-SEL",
-  "body": "집행 가능액은 예산 라인 잔액에서 검토 중이거나 확정 대기인 가승인 합계를 뺀 값이다."
+  "body": "The available amount is the budget line balance minus the total of provisional approvals that are under review or pending."
  },
  {
   "id": "HR-TYO.transfer_effective",
   "group": "HR-TYO",
-  "body": "부서 이동은 발효일부터 소속에 반영한다. 발효 전에는 이전 부서 소속이다."
+  "body": "A department transfer takes effect on its effective day. Before that day the employee belongs to the previous department."
  },
  {
   "id": "FIN-TYO.pending_deducted",
   "group": "FIN-TYO",
-  "body": "집행 가능액은 예산 라인 잔액에서 검토 중이거나 확정 대기인 가승인 합계를 뺀 값이다."
+  "body": "The available amount is the budget line balance minus the total of provisional approvals that are under review or pending."
  }
 ]

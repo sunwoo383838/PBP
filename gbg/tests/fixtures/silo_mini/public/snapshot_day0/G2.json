@@ -6,12 +6,12 @@
     "seq": 1,
     "day": 0,
     "role": "user",
-    "text": "[안내] 당신은 조각 하나를 가지고 있다. shard.read로 확인할 수 있다.",
-    "tokens": 49,
+    "text": "[Notice] You hold one shard. You can read it with shard.read.",
+    "tokens": 67,
     "entities": [
      "SH-g2.a1"
     ],
-    "digest": "0일차 조각 안내"
+    "digest": "Day 0: shard notice"
    }
   ],
   "g2.a2": [
@@ -19,12 +19,12 @@
     "seq": 1,
     "day": 0,
     "role": "user",
-    "text": "[안내] 당신은 조각 하나를 가지고 있다. shard.read로 확인할 수 있다.",
-    "tokens": 49,
+    "text": "[Notice] You hold one shard. You can read it with shard.read.",
+    "tokens": 67,
     "entities": [
      "SH-g2.a2"
     ],
-    "digest": "0일차 조각 안내"
+    "digest": "Day 0: shard notice"
    }
   ]
  },

@@ -8,14 +8,14 @@
      "agent_id": "g1.a1",
      "role": "holder",
      "card": {
-      "name": "G1 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G1 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -32,14 +32,14 @@
      "agent_id": "g1.a2",
      "role": "holder",
      "card": {
-      "name": "G1 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G1 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -55,13 +55,13 @@
    ],
    "card": {
     "name": "G1",
-    "description": "조각 보유자 두 명의 그룹",
+    "description": "A group of two shard holders",
     "version": 1,
     "skills": [
      {
       "id": "shard",
-      "name": "조각 보유",
-      "description": "자기 조각의 원소를 읽고 답한다",
+      "name": "Shard holder",
+      "description": "Reads the elements of its own shard and answers",
       "tags": [
        "silo"
       ],
@@ -81,14 +81,14 @@
      "agent_id": "g2.a1",
      "role": "holder",
      "card": {
-      "name": "G2 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G2 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -105,14 +105,14 @@
      "agent_id": "g2.a2",
      "role": "holder",
      "card": {
-      "name": "G2 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G2 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -128,13 +128,13 @@
    ],
    "card": {
     "name": "G2",
-    "description": "조각 보유자 두 명의 그룹",
+    "description": "A group of two shard holders",
     "version": 1,
     "skills": [
      {
       "id": "shard",
-      "name": "조각 보유",
-      "description": "자기 조각의 원소를 읽고 답한다",
+      "name": "Shard holder",
+      "description": "Reads the elements of its own shard and answers",
       "tags": [
        "silo"
       ],
@@ -154,14 +154,14 @@
      "agent_id": "g3.a1",
      "role": "holder",
      "card": {
-      "name": "G3 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G3 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -178,14 +178,14 @@
      "agent_id": "g3.a2",
      "role": "holder",
      "card": {
-      "name": "G3 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G3 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -201,13 +201,13 @@
    ],
    "card": {
     "name": "G3",
-    "description": "조각 보유자 두 명의 그룹",
+    "description": "A group of two shard holders",
     "version": 1,
     "skills": [
      {
       "id": "shard",
-      "name": "조각 보유",
-      "description": "자기 조각의 원소를 읽고 답한다",
+      "name": "Shard holder",
+      "description": "Reads the elements of its own shard and answers",
       "tags": [
        "silo"
       ],
@@ -227,14 +227,14 @@
      "agent_id": "g4.a1",
      "role": "holder",
      "card": {
-      "name": "G4 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G4 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -251,14 +251,14 @@
      "agent_id": "g4.a2",
      "role": "holder",
      "card": {
-      "name": "G4 조각 보유자",
-      "description": "조각 하나를 가진 에이전트",
+      "name": "G4 shard holder",
+      "description": "An agent that holds one shard",
       "version": 1,
       "skills": [
        {
         "id": "shard",
-        "name": "조각 보유",
-        "description": "자기 조각의 원소를 읽고 답한다",
+        "name": "Shard holder",
+        "description": "Reads the elements of its own shard and answers",
         "tags": [
          "silo"
         ],
@@ -274,13 +274,13 @@
    ],
    "card": {
     "name": "G4",
-    "description": "조각 보유자 두 명의 그룹",
+    "description": "A group of two shard holders",
     "version": 1,
     "skills": [
      {
       "id": "shard",
-      "name": "조각 보유",
-      "description": "자기 조각의 원소를 읽고 답한다",
+      "name": "Shard holder",
+      "description": "Reads the elements of its own shard and answers",
       "tags": [
        "silo"
       ],

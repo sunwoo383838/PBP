@@ -6,45 +6,45 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 佐藤結衣 인사 기록 확인",
-    "tokens": 19,
+    "text": "[Task] Check 佐藤結衣's HR record",
+    "tokens": 31,
     "entities": [
      "E-TYO-1000"
     ],
-    "digest": "-5일차 E-TYO-1000 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1000)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "佐藤結衣 인사 기록 확정: 営業1課, 3급, regular.",
-    "tokens": 36,
+    "text": "佐藤結衣 HR record confirmed: 営業1課, grade 3, regular.",
+    "tokens": 53,
     "entities": [
      "E-TYO-1000"
     ],
-    "digest": "-5일차 E-TYO-1000 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1000)"
    },
    {
     "seq": 3,
     "day": -5,
     "role": "user",
-    "text": "[작업] 田中翔 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 田中翔's HR record",
+    "tokens": 30,
     "entities": [
      "E-TYO-1002"
     ],
-    "digest": "-5일차 E-TYO-1002 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1002)"
    },
    {
     "seq": 4,
     "day": -5,
     "role": "assistant",
-    "text": "田中翔 인사 기록 확정: 営業1課, 5급, contractor.",
-    "tokens": 38,
+    "text": "田中翔 HR record confirmed: 営業1課, grade 5, contractor.",
+    "tokens": 56,
     "entities": [
      "E-TYO-1002"
     ],
-    "digest": "-5일차 E-TYO-1002 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1002)"
    }
   ],
   "hr-tyo.a2": [
@@ -52,45 +52,45 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 小野健 인사 기록 확인",
-    "tokens": 18,
+    "text": "[Task] Check 小野健's HR record",
+    "tokens": 30,
     "entities": [
      "E-TYO-1001"
     ],
-    "digest": "-5일차 E-TYO-1001 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1001)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "小野健 인사 기록 확정: 開発1課, 2급, regular.",
-    "tokens": 35,
+    "text": "小野健 HR record confirmed: 開発1課, grade 2, regular.",
+    "tokens": 52,
     "entities": [
      "E-TYO-1001"
     ],
-    "digest": "-5일차 E-TYO-1001 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1001)"
    },
    {
     "seq": 3,
     "day": -5,
     "role": "user",
-    "text": "[작업] 高橋美咲 인사 기록 확인",
-    "tokens": 19,
+    "text": "[Task] Check 高橋美咲's HR record",
+    "tokens": 31,
     "entities": [
      "E-TYO-1003"
     ],
-    "digest": "-5일차 E-TYO-1003 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1003)"
    },
    {
     "seq": 4,
     "day": -5,
     "role": "assistant",
-    "text": "高橋美咲 인사 기록 확정: 開発1課, 2급, regular.",
-    "tokens": 36,
+    "text": "高橋美咲 HR record confirmed: 開発1課, grade 2, regular.",
+    "tokens": 53,
     "entities": [
      "E-TYO-1003"
     ],
-    "digest": "-5일차 E-TYO-1003 인사 기록 확정 (인사기록 담당)"
+    "digest": "Day -5: confirmed HR record (E-TYO-1003)"
    }
   ]
  },

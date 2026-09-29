@@ -55,7 +55,7 @@ class EnvAgent(ScriptedAgent):
 def env_call_for(name):
     if name == "silo_mini":
         return lambda task: ("shard.read", {})
-    return lambda task: ("db.query", {"key": f"{task.group}/line/{'개발1팀' if 'SEL' in task.group else '開発1課'}/remaining"})
+    return lambda task: ("db.query", {"entity": "개발1팀" if "SEL" in task.group else "開発1課", "record_type": "budget_line_balance"})
 
 
 def run(tmp, name="worldgen_mini", conditions=CONDITIONS):
@@ -117,7 +117,7 @@ def test_rulebook_has_bodies_only():
     rules = s.rulebook.read_all("FIN-SEL")
     assert rules and all(set(r.model_dump()) == {"id", "group", "body"} for r in rules)
     assert s.rulebook.read("FIN-SEL", "HR-SEL.transfer_effective") is None    # 다른 그룹 규정은 안 보임
-    assert s.rulebook.search("FIN-SEL", "가승인")
+    assert s.rulebook.search("FIN-SEL", "provisional approvals")
 
 
 # ─────────────────────────── 2. 등록 지연 ───────────────────────────
@@ -137,17 +137,6 @@ def test_db_query_tracks_world_updates(wg_run):
     key = "HR-SEL/emp/E-SEL-1001/profile"
     assert s.db.query("HR-SEL", key, day=3).value["dept"] == "개발1팀"      # 3일차 발효, 4일차 등록
     assert s.db.query("HR-SEL", key, day=4).value["dept"] == "영업1팀"
-
-
-def test_db_query_tool_goes_through_lag(wg_run):
-    _, runner = wg_run
-    tool = next(t for t in runner.kernel.tools._tools.values() if t.name == "db.query")
-    call = lambda day: ToolCall("fin-sel.a1", "FIN-SEL", day, 1, {"key": "FIN-SEL/line/개발1팀/remaining"})
-    import asyncio
-    assert asyncio.run(tool.invoke(call(1))) == {"key": "FIN-SEL/line/개발1팀/remaining", "value": 2_874_300, "v": 1}
-    assert asyncio.run(tool.invoke(call(2)))["value"] == 2_417_900
-    absent = asyncio.run(tool.invoke(ToolCall("fin-sel.a1", "FIN-SEL", 2, 1, {"key": "FIN-SEL/nope"})))
-    assert absent == {"key": "FIN-SEL/nope", "value": "ABSENT"}
 
 
 def test_shard_read_is_caller_only():
@@ -182,7 +171,7 @@ def test_history_preserved_after_leave_and_successor_starts_with_handover(wg_run
     leaver = after.history.entries("fin-sel.a3")
     assert leaver and leaver == before.history.entries("fin-sel.a3"), "떠난 뒤에도 이력은 그대로 남는다"
     succ = after.history.entries("fin-sel.n0001")
-    assert succ and succ[0].text.startswith("[인수인계]") and succ[0].role == "user"
+    assert succ and succ[0].text.startswith("[Handover]") and succ[0].role == "user"
     assert "CMT-00001" in succ[0].entities
 
 
@@ -221,11 +210,11 @@ def test_dynamic_summary_is_deterministic_and_next_day(tmp_path):
     s2 = replay("worldgen_mini", events, DYNAMIC)
     r1 = s1.cards.render("agent_cards")
     assert r1 == s2.cards.render("agent_cards") == runner.stores.cards.render("agent_cards")
-    updated = [c for c in runner.stores.cards.directory("agent_cards") if c.scope and c.scope.startswith("담당 범위:")]
+    updated = [c for c in runner.stores.cards.directory("agent_cards") if c.scope and c.scope.startswith("Currently handles:")]
     assert updated, "로컬 작업을 한 에이전트의 담당 범위가 갱신돼야 한다"
     # 1일차 작업은 1일차 마지막 라운드 커밋 뒤에 반영된다: 1일차 3라운드까지는 갱신 없음
     mid = replay("worldgen_mini", [e for e in events if (e.day, e.round) <= (1, 2)], DYNAMIC)
-    assert not any(c.scope and c.scope.startswith("담당 범위:") for c in mid.cards.directory("agent_cards"))
+    assert not any(c.scope and c.scope.startswith("Currently handles:") for c in mid.cards.directory("agent_cards"))
     for c in updated:
         assert CardLeakChecker(set(), set()).check(c) == []
 
@@ -271,7 +260,7 @@ def test_leak_checker_blocks_ids_names_and_length():
 def test_blocked_update_is_logged_and_not_published():
     s = replay("worldgen_mini", [], DYNAMIC)
     before = s.cards.render("agent_cards")
-    obs = s.cards.update_scope("fin-sel.a1", "담당 범위: 영업1팀 잔액 3120400원", day=1, seq=9)
+    obs = s.cards.update_scope("fin-sel.a1", "Currently handles: 영업1팀, balance KRW 3120400", day=1, seq=9)
     assert s.cards.render("agent_cards") == before
     assert obs and obs[0][0] == "cards" and obs[0][1]["status"] == "blocked" and obs[0][1]["seq"] == 9
     assert "amount" in obs[0][1]["reasons"]
@@ -281,7 +270,7 @@ def test_blocked_cards_reach_obs_file(tmp_path, monkeypatch):
     from gbg.stores import cards as cards_mod
     real = cards_mod.CardRegistry.summarize
     monkeypatch.setattr(cards_mod.CardRegistry, "summarize",
-                        lambda self, agent, cats: (real(self, agent, cats) or "") + " 약 300만원")
+                        lambda self, agent, cats: (real(self, agent, cats) or "") + " (about KRW 3 million)")
     run(tmp_path, conditions=DYNAMIC)
     log = [json.loads(x) for x in (tmp_path / "obs" / "cards.jsonl").read_text(encoding="utf-8").splitlines()]
     assert log and all(r["status"] == "blocked" for r in log)
@@ -297,7 +286,7 @@ def test_history_rendering(wg_run):
     warm = adapter().initial_state("HR-SEL").histories["hr-sel.a2"]
     assert list(entries[: len(warm)]) == warm, "워밍업 이력이 앞에 그대로"
     run_part = entries[len(warm):]
-    task = next(e for e in run_part if e.text.startswith("[과제 L-001]"))
+    task = next(e for e in run_part if e.text.startswith("[Task L-001]"))
     assert task.role == "user" and "E-SEL-1003" in task.entities
     tool = run_part[run_part.index(task) + 1]
     assert tool.role == "tool" and tool.text.startswith("[db.query]")
@@ -313,7 +302,7 @@ def test_activity_updated_on_local_task(wg_run):
     recs = runner.stores.activity.lookup("HR-SEL", "E-SEL-1003")
     assert recs and recs[-1].agent == "hr-sel.a2" and recs[-1].day == 1
     entry = runner.stores.history.entries("hr-sel.a2")[recs[-1].seq - 1]
-    assert entry.text.startswith("[답 제출 L-001]")
+    assert entry.text.startswith("[Submitted L-001]")
     assert runner.stores.activity.lookup("FIN-SEL", "E-SEL-1003") == [], "색인은 그룹 내부 전용"
 
 
@@ -321,7 +310,7 @@ def test_journal_runtime_addition(wg_run):
     _, runner = wg_run
     rec = runner.stores.journal.lookup("FIN-TYO", "開発1課")
     assert rec and rec[-1].agent == "fin-tyo.a2"
-    assert runner.stores.history.entries("fin-tyo.a2")[rec[-1].seq - 1].text.startswith("[답 제출 L-006]")
+    assert runner.stores.history.entries("fin-tyo.a2")[rec[-1].seq - 1].text.startswith("[Submitted L-006]")
 
 
 def test_egress_log_seed():

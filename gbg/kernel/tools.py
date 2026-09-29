@@ -26,6 +26,13 @@ class ToolCall:
 
 
 @dataclass(frozen=True)
+class ToolOutput:
+    """에이전트에게 보일 결과와, obs에만 남길 기록을 나눠 돌려줄 때 쓴다."""
+    result: Any
+    obs: list[tuple[str, dict]] = field(default_factory=list)      # (obs 파일 이름, 기록)
+
+
+@dataclass(frozen=True)
 class Tool:
     name: str
     description: str

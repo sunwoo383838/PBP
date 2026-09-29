@@ -157,7 +157,7 @@ class CardRegistry:
     def summarize(self, agent: str, cats: list[str]) -> str | None:
         if not cats:
             return None
-        return f"담당 범위: {'·'.join(cats)} {self.agent_cards[agent].skills[0].name}"
+        return f"Currently handles: {', '.join(cats)} ({self.agent_cards[agent].skills[0].name})"
 
     def day_end(self, day: int, activity: ActivityIndex, seq: int) -> list:
         if self.card_mode != "dynamic":

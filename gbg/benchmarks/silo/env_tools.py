@@ -3,7 +3,7 @@ from gbg.contracts.schemas import ToolSpec
 from gbg.kernel.tools import Tool, ToolCall
 
 SPECS = [
-    ToolSpec(name="shard.read", description="내가 가진 조각의 원소를 읽는다.",
+    ToolSpec(name="shard.read", description="Read the elements of the shard you hold.",
              parameters={"type": "object", "properties": {}}, resources=[]),
 ]
 

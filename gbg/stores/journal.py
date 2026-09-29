@@ -15,6 +15,9 @@ class Journal:
     def lookup(self, group: str, entity: str) -> list[JournalRecord]:
         return list(self._j.get(group, {}).get(entity, []))
 
+    def records(self, group: str) -> list:
+        return [r for ent in sorted(self._j.get(group, {})) for r in self._j[group][ent]]
+
     def dump(self):
         return {g: {e: [r.model_dump(mode="json") for r in rs] for e, rs in sorted(t.items())}
                 for g, t in sorted(self._j.items())}

@@ -63,18 +63,19 @@ class Histories:
 
     def work(self, agent, day, task, result, entities, digest):
         """워밍업 작업 하나 = 과제(user) + 처리 결과(assistant). 색인은 결과 항목을 가리킨다."""
-        self.add(agent, day, "user", "[작업] " + task, entities, digest)
+        self.add(agent, day, "user", "[Task] " + task, entities, digest)
         return self.add(agent, day, "assistant", result, entities, digest)
 
 
 # ═════════════════════════════ worldgen_mini ═════════════════════════════
 REGIONS = ["SEL", "TYO"]
 ROLES = {"HR": ["records", "records", "payroll"], "FIN": ["budgeting", "budgeting", "payables"]}
-ROLE_DESC = {"records": ("인사기록", "직원 소속·직급·계약 유형 기록 조회와 갱신"),
-             "payroll": ("급여", "급여 등급, 장비 지원 판단"),
-             "budgeting": ("예산", "예산 라인 편성·조정·잔액 조회"),
-             "payables": ("지급", "가승인 검토·등록, 정산")}
-GROUP_DESC = {"HR": "인사: 직원 소속·직급·계약 기록과 급여", "FIN": "재무: 예산 라인, 가승인, 정산"}
+ROLE_DESC = {"records": ("HR records", "Look up and update employee department, grade, and contract type"),
+             "payroll": ("Payroll", "Pay grades and equipment support decisions"),
+             "budgeting": ("Budgeting", "Plan, adjust, and look up budget lines and balances"),
+             "payables": ("Payables", "Review and register provisional approvals, settlement")}
+GROUP_DESC = {"HR": "Human resources: employee department, grade, contract records, and payroll",
+              "FIN": "Finance: budget lines, provisional approvals, settlement"}
 DEPTS = {"SEL": ["영업1팀", "개발1팀"], "TYO": ["営業1課", "開発1課"]}
 EMPS = {  # id: (이름, 별칭, 부서 index, 직급, 계약)
     "E-SEL-1000": ("김하린", "하린 과장", 0, 3, "regular"),
@@ -132,16 +133,16 @@ def build_worldgen(out: Path):
         skills = list({m.role: m.card.skills[0] for m in members}.values())
         specs.append(GroupSpec(id=g, members=members, card=GroupCard(
             name=g, description=GROUP_DESC[dom], version=1, skills=skills, group=g,
-            service_scope=f"{reg} 지역 {', '.join(DEPTS[reg])}", endpoint=f"boundary:{g}")))
+            service_scope=f"{reg} region: {', '.join(DEPTS[reg])}", endpoint=f"boundary:{g}")))
 
     # ── 규정 (본문 공개, 파라미터 비공개) ──
     rules, params = [], {}
     for r in REGIONS:
         rules.append(RuleText(id=f"HR-{r}.transfer_effective", group=f"HR-{r}",
-                              body="부서 이동은 발효일부터 소속에 반영한다. 발효 전에는 이전 부서 소속이다."))
+                              body="A department transfer takes effect on its effective day. Before that day the employee belongs to the previous department."))
         params[f"HR-{r}.transfer_effective"] = {"effective_inclusive": True}
         rules.append(RuleText(id=f"FIN-{r}.pending_deducted", group=f"FIN-{r}",
-                              body="집행 가능액은 예산 라인 잔액에서 검토 중이거나 확정 대기인 가승인 합계를 뺀 값이다."))
+                              body="The available amount is the budget line balance minus the total of provisional approvals that are under review or pending."))
         params[f"FIN-{r}.pending_deducted"] = {"deduct_status": ["reviewing", "pending"]}
 
     # ── 워밍업 (0일 이하): DB, 이력, 색인 ──
@@ -159,27 +160,27 @@ def build_worldgen(out: Path):
         g, a = f"HR-{region_of(e)}", records_agent(e)
         p = profile(e)
         put(g, f"{g}/emp/{e}/profile", -5, -5, p)
-        seq = H[g].work(a, -5, f"{name} 인사 기록 확인", f"{name} 인사 기록 확정: {p['dept']}, {grade}급, {contract}.",
-                        [e], f"-5일차 {e} 인사 기록 확정 (인사기록 담당)")
+        seq = H[g].work(a, -5, f"Check {name}'s HR record", f"{name} HR record confirmed: {p['dept']}, grade {grade}, {contract}.",
+                        [e], f"Day -5: confirmed HR record ({e})")
         journal[g].append(JournalRecord(entity=e, agent=a, seq=seq))
 
     for (r, d), v in LINES.items():
         g, a, dept = f"FIN-{r}", budgeting_agent(r, d), DEPTS[r][d]
         put(g, f"{g}/line/{dept}/remaining", -5, -5, v)
-        seq = H[g].work(a, -5, f"{dept} 예산 라인 확인", f"{dept} capex 잔액 {v:,}원 확정.", [dept],
-                        f"-5일차 {dept} 예산 잔액 확정 (예산 담당)")
+        seq = H[g].work(a, -5, f"Check the {dept} budget line", f"{dept} capex balance confirmed at KRW {v:,}.", [dept],
+                        f"Day -5: confirmed budget balance ({dept})")
         journal[g].append(JournalRecord(entity=dept, agent=a, seq=seq))
 
     # db_pending 조각: 0일차 개발1팀 잔액 조정, DB 등록은 2일차
     put("FIN-SEL", "FIN-SEL/line/개발1팀/remaining", 0, 2, 2_417_900)
-    seq = H["FIN-SEL"].work("fin-sel.a2", 0, "개발1팀 예산 조정", "개발1팀 capex 잔액 2,417,900원으로 조정 (본부 재배정). DB 반영은 2일차.",
-                            ["개발1팀"], "0일차 개발1팀 예산 조정 (예산 담당)")
+    seq = H["FIN-SEL"].work("fin-sel.a2", 0, "Adjust the 개발1팀 budget", "개발1팀 capex balance adjusted to KRW 2,417,900 (division reallocation). Registered in the DB on day 2.",
+                            ["개발1팀"], "Day 0: adjusted budget (개발1팀)")
     journal["FIN-SEL"].append(JournalRecord(entity="개발1팀", agent="fin-sel.a2", seq=seq))
 
     # 부서 이동 승인 (db_pending): 0일차 승인, 2일차 등록, 3일차 발효
     put("HR-SEL", "HR-SEL/emp/E-SEL-1001/transfer", 0, 2, {"to": "영업1팀", "effective": 3, "status": "approved"})
-    seq = H["HR-SEL"].work("hr-sel.a2", 0, "박도윤 부서 이동 요청 검토", "박도윤 영업1팀 이동 승인, 3일 발효.", ["E-SEL-1001", "영업1팀"],
-                           "0일차 E-SEL-1001 부서 이동 승인 (인사기록 담당)")
+    seq = H["HR-SEL"].work("hr-sel.a2", 0, "Review 박도윤's transfer request", "박도윤 transfer to 영업1팀 approved, effective day 3.", ["E-SEL-1001", "영업1팀"],
+                           "Day 0: approved transfer (E-SEL-1001)")
     activity["HR-SEL"].append(ActivityRecord(entity="E-SEL-1001", agent="hr-sel.a2", seq=seq, day=0, role="records"))
 
     # operational 조각: 가승인 검토 (DB에 없음, 지급 담당 이력에만)
@@ -191,8 +192,8 @@ def build_worldgen(out: Path):
     commit_seq = {}
     for cid, (r, d, amt, day, a, disc) in commits.items():
         g, dept = f"FIN-{r}", DEPTS[r][d]
-        seq = H[g].work(a, day, f"{dept} 장비 가승인 검토", f"{cid} {dept} 장비 {amt:,}원 가승인 검토 시작, 8일 정산 예정.",
-                        [cid, dept], f"{day}일차 {cid} 가승인 검토 시작 (지급 담당)")
+        seq = H[g].work(a, day, f"Review a provisional approval for {dept} equipment", f"{cid} {dept} equipment KRW {amt:,}: provisional approval review started, settlement due day 8.",
+                        [cid, dept], f"Day {day}: started provisional approval review ({cid})")
         commit_seq[cid] = seq
         if disc == "H0":
             journal[g].append(JournalRecord(entity=cid, agent=a, seq=seq))
@@ -202,9 +203,9 @@ def build_worldgen(out: Path):
     # 워밍업의 정형 그룹 간 교류
     egress = {g: [] for g in groups}
     egress["FIN-SEL"].append(EgressRecord(day=-1, entity="E-SEL-1001", attr="profile", to_group="HR-SEL",
-                                          question="도윤 대리 소속 확인 부탁드립니다.", status="ok", referral_to=None))
+                                          question="Please confirm the department of 도윤 대리.", status="ok", referral_to=None))
     egress["HR-SEL"].append(EgressRecord(day=0, entity="개발1팀", attr="available_budget", to_group="FIN-SEL",
-                                         question="개발1팀 장비 예산 여유 있는지 확인 부탁드립니다.", status="ok", referral_to=None))
+                                         question="Please check whether 개발1팀 has room in its equipment budget.", status="ok", referral_to=None))
 
     aliases = {}
     for r in REGIONS:
@@ -236,28 +237,28 @@ def build_worldgen(out: Path):
     status_schema = OutputSchema(slots=[Slot(name="status", type="enum", options=["reviewing", "pending", "settled", "cancelled"])])
     amount_schema = OutputSchema(slots=[Slot(name="remaining", type="number")])
 
-    local(1, 1, "HR-SEL", "hr-sel.a2", "L-001", "지우 과장 직급 조정 요청 반영하고 반영된 직급 알려줘.",
-          [("db.query", "E-SEL-1003 profile: 개발1팀, 1급, regular, active"), ("hr.grade_request", "승인된 조정: +1")],
+    local(1, 1, "HR-SEL", "hr-sel.a2", "L-001", "Apply the grade adjustment request for 지우 과장 and tell me the resulting grade.",
+          [("db.query", "E-SEL-1003 profile: 개발1팀, grade 1, regular, active"), ("hr.grade_request", "Approved adjustment: +1")],
           ["E-SEL-1003"], grade_schema, {"grade": 2})
     db_write(1, 1, "HR-SEL", "HR-SEL/emp/E-SEL-1003/profile", 2, profile("E-SEL-1003", grade=2))
-    local(1, 2, "FIN-TYO", "fin-tyo.a1", "L-002", "営業1課 예산 라인 잔액 점검해 줘.",
+    local(1, 2, "FIN-TYO", "fin-tyo.a1", "L-002", "Check the balance of the 営業1課 budget line.",
           [("db.query", "FIN-TYO 営業1課 remaining: 4,051,700")], ["営業1課"], amount_schema, {"remaining": 4_051_700})
-    local(2, 1, "FIN-SEL", "fin-sel.a3", "L-003", "CMT-00001 가승인 확정 처리하고 상태 알려줘.",
-          [("payables.confirm", "CMT-00001 영업1팀 612,300원 확정 대기 등록")], ["CMT-00001", "영업1팀"], status_schema,
+    local(2, 1, "FIN-SEL", "fin-sel.a3", "L-003", "Confirm provisional approval CMT-00001 and tell me its status.",
+          [("payables.confirm", "CMT-00001 영업1팀 KRW 612,300 registered as pending")], ["CMT-00001", "영업1팀"], status_schema,
           {"status": "pending"}, disc="H1")
     db_write(2, 1, "FIN-SEL", "FIN-SEL/commit/CMT-00001/status", 3, {"status": "pending", "amount": 612_300, "dept": "영업1팀"})
     world(3, 0, "FIN-SEL", "agent_leave", agent="fin-sel.a3")
-    local(3, 1, "HR-SEL", "hr-sel.a2", "L-004", "도윤 대리 부서 이동 발효 처리해 줘.",
-          [("db.query", "E-SEL-1001 transfer: 영업1팀, 3일 발효, approved")], ["E-SEL-1001", "영업1팀"], done_schema, {"done": True})
+    local(3, 1, "HR-SEL", "hr-sel.a2", "L-004", "Put the department transfer of 도윤 대리 into effect.",
+          [("db.query", "E-SEL-1001 transfer: 영업1팀, effective day 3, approved")], ["E-SEL-1001", "영업1팀"], done_schema, {"done": True})
     db_write(3, 1, "HR-SEL", "HR-SEL/emp/E-SEL-1001/profile", 4, profile("E-SEL-1001", dept="영업1팀"))
     world(4, 0, "FIN-SEL", "agent_join", agent="fin-sel.n0001", payload={
         "from": "fin-sel.a3", "role": "payables",
-        "handover_notes": ["[인수인계] CMT-00001 영업1팀 가승인 확정 대기, 8일 정산 예정."]},
+        "handover_notes": ["[Handover] CMT-00001 영업1팀 provisional approval pending, settlement due day 8."]},
           entities=["CMT-00001", "영업1팀"])
-    local(4, 2, "HR-TYO", "hr-tyo.a3", "L-005", "小野さん 급여 등급 확인해 줘.",
-          [("db.query", "E-TYO-1001 profile: 開発1課, 2급, regular, active")], ["E-TYO-1001"], grade_schema, {"grade": 2})
-    local(5, 1, "FIN-TYO", "fin-tyo.a2", "L-006", "開発1課 예산 조정 반영하고 조정 후 잔액 알려줘.",
-          [("fin.adjust_request", "開発1課 capex 잔액 2,988,600원으로 조정 (분기 이월 반영)")], ["開発1課"], amount_schema,
+    local(4, 2, "HR-TYO", "hr-tyo.a3", "L-005", "Check the pay grade of 小野さん.",
+          [("db.query", "E-TYO-1001 profile: 開発1課, grade 2, regular, active")], ["E-TYO-1001"], grade_schema, {"grade": 2})
+    local(5, 1, "FIN-TYO", "fin-tyo.a2", "L-006", "Apply the 開発1課 budget adjustment and tell me the balance after it.",
+          [("fin.adjust_request", "開発1課 capex balance adjusted to KRW 2,988,600 (quarterly carry-over)")], ["開発1課"], amount_schema,
           {"remaining": 2_988_600}, disc="H0")
     db_write(5, 1, "FIN-TYO", "FIN-TYO/line/開発1課/remaining", 7, 2_988_600)
 
@@ -331,14 +332,14 @@ def build_worldgen(out: Path):
     def lookup(tid, day, rnd, e):
         r = region_of(e); root = f"FIN-{r}"
         n, prof = hr_need(tid, 1, e, day, root)
-        cross(tid, day, rnd, root, agent_id(root, 0), f"{EMPS[e][1]} 현재 소속이랑 직급 확인해 줘.", [e], LOOKUP, {"dept": prof["dept"], "grade": prof["grade"]}, [n])
+        cross(tid, day, rnd, root, agent_id(root, 0), f"Check the current department and grade of {EMPS[e][1]}.", [e], LOOKUP, {"dept": prof["dept"], "grade": prof["grade"]}, [n])
 
     def budget(tid, day, rnd, e, amount, pending, fh=frag_h):
         r = region_of(e); root = f"HR-{r}"
         n1, prof = hr_need(tid, 1, e, day, root)
         d = DEPTS[r].index(prof["dept"])
         n2, avail = fin_need(tid, 2, r, d, day, pending, fh)
-        cross(tid, day, rnd, root, agent_id(root, 2), f"{EMPS[e][1]} 장비 {amount:,}원, 소속 부서 예산으로 지금 집행 가능한지 봐줘. 가능액도 알려줘.",
+        cross(tid, day, rnd, root, agent_id(root, 2), f"{EMPS[e][1]} needs equipment for KRW {amount:,}. Can it be paid from their department budget right now? Also tell me the available amount.",
               [e], BUDGET, {"decision": "approve" if amount <= avail else "insufficient", "available": avail}, [n1, n2])
 
     lookup("W-001", 1, 2, "E-SEL-1000")                                                          # A
@@ -371,10 +372,10 @@ SHARDS = {
     "g4.a1": ["apple", "river", "lemon", "falcon"], "g4.a2": ["apple", "river", "maple", "violet"],
 }
 QUESTIONS = {
-    "Q1": ("모든 에이전트의 조각에 공통으로 들어 있는 단어를 전부 찾아라.",
+    "Q1": ("Find every word that appears in the shards of all agents.",
            OutputSchema(slots=[Slot(name="words", type="set")]),
            {"words": sorted(set.intersection(*map(set, SHARDS.values())))}),
-    "Q2": ("모든 조각을 합쳤을 때 서로 다른 단어는 몇 개인가?",
+    "Q2": ("How many distinct words are there across all shards combined?",
            OutputSchema(slots=[Slot(name="count", type="number")]),
            {"count": len(set().union(*SHARDS.values()))}),
 }
@@ -382,11 +383,11 @@ QUESTIONS = {
 
 def build_silo(out: Path):
     groups = [f"G{i}" for i in range(1, 5)]
-    skill = AgentSkill(id="shard", name="조각 보유", description="자기 조각의 원소를 읽고 답한다", tags=["silo"], examples=[])
+    skill = AgentSkill(id="shard", name="Shard holder", description="Reads the elements of its own shard and answers", tags=["silo"], examples=[])
     specs = [GroupSpec(id=g, members=[MemberSpec(agent_id=a, role="holder", card=AgentCard(
-                name=f"{g} 조각 보유자", description="조각 하나를 가진 에이전트", version=1, skills=[skill], group=g,
+                name=f"{g} shard holder", description="An agent that holds one shard", version=1, skills=[skill], group=g,
                 scope=None, occupant=a)) for a in SHARDS if a.startswith(g.lower() + ".")],
-                       card=GroupCard(name=g, description="조각 보유자 두 명의 그룹", version=1, skills=[skill], group=g,
+                       card=GroupCard(name=g, description="A group of two shard holders", version=1, skills=[skill], group=g,
                                       service_scope=None, endpoint=f"boundary:{g}"))
              for g in groups]
     group_of = {a: a.split(".")[0].upper() for a in SHARDS}
@@ -395,8 +396,8 @@ def build_silo(out: Path):
         H = Histories()
         for a in SHARDS:
             if group_of[a] == g:
-                H.add(a, 0, "user", "[안내] 당신은 조각 하나를 가지고 있다. shard.read로 확인할 수 있다.", [f"SH-{a}"],
-                      "0일차 조각 안내")
+                H.add(a, 0, "user", "[Notice] You hold one shard. You can read it with shard.read.", [f"SH-{a}"],
+                      "Day 0: shard notice")
         return GroupSnapshot(group=g, histories=H.h, activity=[], journal=[], egress_log=[],
                              env={"shards": {a: w for a, w in SHARDS.items() if group_of[a] == g}})
 

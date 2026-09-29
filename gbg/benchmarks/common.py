@@ -54,18 +54,22 @@ class PublicScenarioAdapter:
     def env_tools(self) -> list[ToolSpec]:
         return []
 
+    def role_tools(self, role: str) -> list[ToolSpec]:
+        """역할별 환경 도구 명세 (에이전트에게 보이는 스키마). 기본은 역할과 무관하게 env_tools()."""
+        return self.env_tools()
+
     def make_tools(self, stores) -> list:
         """env_tools()의 명세에 구현을 붙인 커널 도구."""
         return []
 
     def tag(self, group: str, text: str) -> list[str]:
-        """정확 일치 태깅: 그룹 별칭표의 엔티티 id와 별칭이 원문에 그대로 있으면 태그 (별칭 해소는 Stage 4)."""
-        return sorted({e for surface, e in self._aliases.get(group, []) if surface in text})
+        """에이전트 발화의 엔티티 태깅: 그룹 별칭표로, 정규화·경칭 제거 뒤 원문에 들어 있는 표면형 (retrieval/alias.py)."""
+        return self._aliases[group].tag(text) if group in self._aliases else []
 
     @staticmethod
-    def _alias_table(snap: GroupSnapshot) -> list[tuple[str, str]]:
-        pairs = {(e, e) for e in snap.aliases} | {(a, e) for e, al in snap.aliases.items() for a in al}
-        return sorted(pairs, key=lambda p: (-len(p[0]), p))
+    def _alias_table(snap: GroupSnapshot):
+        from gbg.retrieval.alias import AliasResolver
+        return AliasResolver(snap.aliases)
 
     # 오프라인 채점은 Stage 7
     def verify(self, task_id: str, answer: dict, private_dir: Path) -> Verdict:

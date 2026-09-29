@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# 로컬 비밀 값 (API 키)
+gbg/llm/secrets.py
+.idea/

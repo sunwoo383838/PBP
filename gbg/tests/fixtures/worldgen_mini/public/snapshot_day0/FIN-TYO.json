@@ -6,23 +6,23 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 営業1課 예산 라인 확인",
-    "tokens": 19,
+    "text": "[Task] Check the 営業1課 budget line",
+    "tokens": 36,
     "entities": [
      "営業1課"
     ],
-    "digest": "-5일차 営業1課 예산 잔액 확정 (예산 담당)"
+    "digest": "Day -5: confirmed budget balance (営業1課)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "営業1課 capex 잔액 4,051,700원 확정.",
-    "tokens": 30,
+    "text": "営業1課 capex balance confirmed at KRW 4,051,700.",
+    "tokens": 50,
     "entities": [
      "営業1課"
     ],
-    "digest": "-5일차 営業1課 예산 잔액 확정 (예산 담당)"
+    "digest": "Day -5: confirmed budget balance (営業1課)"
    }
   ],
   "fin-tyo.a2": [
@@ -30,23 +30,23 @@
     "seq": 1,
     "day": -5,
     "role": "user",
-    "text": "[작업] 開発1課 예산 라인 확인",
-    "tokens": 19,
+    "text": "[Task] Check the 開発1課 budget line",
+    "tokens": 36,
     "entities": [
      "開発1課"
     ],
-    "digest": "-5일차 開発1課 예산 잔액 확정 (예산 담당)"
+    "digest": "Day -5: confirmed budget balance (開発1課)"
    },
    {
     "seq": 2,
     "day": -5,
     "role": "assistant",
-    "text": "開発1課 capex 잔액 3,366,200원 확정.",
-    "tokens": 30,
+    "text": "開発1課 capex balance confirmed at KRW 3,366,200.",
+    "tokens": 50,
     "entities": [
      "開発1課"
     ],
-    "digest": "-5일차 開発1課 예산 잔액 확정 (예산 담당)"
+    "digest": "Day -5: confirmed budget balance (開発1課)"
    }
   ],
   "fin-tyo.a3": [
@@ -54,25 +54,25 @@
     "seq": 1,
     "day": -2,
     "role": "user",
-    "text": "[작업] 開発1課 장비 가승인 검토",
-    "tokens": 20,
+    "text": "[Task] Review a provisional approval for 開発1課 equipment",
+    "tokens": 60,
     "entities": [
      "CMT-00003",
      "開発1課"
     ],
-    "digest": "-2일차 CMT-00003 가승인 검토 시작 (지급 담당)"
+    "digest": "Day -2: started provisional approval review (CMT-00003)"
    },
    {
     "seq": 2,
     "day": -2,
     "role": "assistant",
-    "text": "CMT-00003 開発1課 장비 389,100원 가승인 검토 시작, 8일 정산 예정.",
-    "tokens": 51,
+    "text": "CMT-00003 開発1課 equipment KRW 389,100: provisional approval review started, settlement due day 8.",
+    "tokens": 105,
     "entities": [
      "CMT-00003",
      "開発1課"
     ],
-    "digest": "-2일차 CMT-00003 가승인 검토 시작 (지급 담당)"
+    "digest": "Day -2: started provisional approval review (CMT-00003)"
    }
   ]
  },

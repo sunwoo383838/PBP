@@ -25,5 +25,5 @@ class ScriptedAgent:
         return fixed_answer(task.output_schema)
 
     async def respond(self, ctx, request: Request) -> Response:
-        return Response(rid=request.rid, status="ok", answer="모름", values=[], missing=[], referral_to=None,
+        return Response(rid=request.rid, status="ok", answer="unknown", values=[], missing=[], referral_to=None,
                         need=[], as_of=ctx.day)
