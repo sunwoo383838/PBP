@@ -104,8 +104,8 @@ class AgentContext:
     async def ask(self, to_agent: str, question: str, purpose: str | None = None, hop: int | None = None) -> Response:
         return await self.kernel.bus.ask(self, to_agent, question, purpose, hop)
 
-    async def ask_group(self, group: str, question: str, purpose: str | None = None) -> Response:
-        return await self.kernel.bus.ask_group(self, group, question, purpose)
+    async def ask_group(self, group: str, question: str, purpose: str | None = None, hop: int | None = None) -> Response:
+        return await self.kernel.bus.ask_group(self, group, question, purpose, hop)
 
     async def ask_egress(self, question: str, purpose: str | None) -> Response:
         return await self.kernel.bus.ask_egress(self, question, purpose)

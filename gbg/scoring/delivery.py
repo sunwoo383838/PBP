@@ -99,7 +99,7 @@ class Msg:
         self.raw, self.norm, self.reply = raw, _norm(raw), reply             # reply: 응답(항목·답 문장), 아니면 도구 결과
         self.items = None if items is None else [
             {"entity": _norm(x.get("entity", "")), "value": _norm(str(x.get("value", ""))),
-             "status": _norm(str(x.get("status_or_as_of", "")))} for x in items]
+             "status": _norm(str(x.get("status", x.get("status_or_as_of", ""))))} for x in items]
 
 
 def _received(events: list[dict], task: str, requester: str) -> list[Msg]:

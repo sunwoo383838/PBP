@@ -163,3 +163,20 @@ def test_matcher_does_not_take_numbers_from_names_other_items_or_regions():
             {"type": "tool_result", "payload": {"task_id": "W-1", "agent": "a1", "serving": None, "tool": "db.query",
                                                 "result": {"entity": "CAD", "seats": 0}}}]
     assert need_delivery(tool, g, fr, computed=comp)["needs"][0]["computed"] is False, "계산값은 응답에서만"
+
+
+def test_redirect_metrics_target_follow_delivery_and_day_unknown():
+    from gbg.scoring.redirects import redirect_metrics, summarize
+    g = {"wid": "W-1", "needs": [{"sem": "HR-SEL/E-SEL-2004/profile", "group": "HR-SEL", "local": False,
+                                  "critical_components": ["P1"]}]}
+    ev = [{"type": "boundary_decision", "actor": "boundary:IT-SEL", "payload": {
+              "task_id": "W-1", "stage": "ingress", "redirects": [{"entity": "E-SEL-2004", "attribute": "grade",
+                                                                   "referral_to": "HR-SEL", "reason": "out_of_scope"}],
+              "redirects_rejected": [{"why": "evidence"}]}},
+          {"type": "message", "actor": "agent:a1", "payload": {"task_id": "W-1", "kind": "request", "to_group": "HR-SEL"}},
+          {"type": "message", "actor": "boundary:HR-SEL", "payload": {"task_id": "W-1", "kind": "response", "response": {
+              "items": [{"day": "3"}, {"day": "unknown"}]}}}]
+    m = redirect_metrics(ev, g, PROF, {}, [{"task_id": "W-1", "need": "HR-SEL/E-SEL-2004/profile", "delivered": True}])
+    assert (m["guided"], m["target_correct"], m["followed"], m["delivered_after"], m["rejected"]) == (1, 1, 1, 1, {"evidence": 1})
+    s = summarize([m])
+    assert s["target_accuracy"] == 1.0 and s["day_unknown_rate"] == 0.5

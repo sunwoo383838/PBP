@@ -78,6 +78,7 @@ class Runner:
         if cond.ingress is not None:                                       # 경계 조건: 그룹마다 경계 모듈 하나
             if embedder is None or retrieval is None:
                 raise ConfigError(f"조건 '{condition}'의 경계 모듈에는 임베더와 조회 설정(retrieval)이 필요하다")
+            from gbg.agents.prompts import record_kinds
             from gbg.boundary.module import BoundaryModule
             from gbg.retrieval.alias import AliasResolver
             from gbg.retrieval.hybrid import GroupRetriever
@@ -87,7 +88,8 @@ class Runner:
                                          embed_threshold=retrieval.alias.embed_threshold)
                 self.kernel.boundaries[g.id] = BoundaryModule(
                     g.id, cond, retriever=GroupRetriever(self.stores, g.id, embedder, retrieval, reranker), resolver=resolver,
-                    count=tokens or approx_tokens, format_retries=format_retries, oracle=oracle)
+                    count=tokens or approx_tokens, format_retries=format_retries, oracle=oracle,
+                    record_kinds=record_kinds(adapter.group_tools(g.id)) if hasattr(adapter, "group_tools") else ())
 
     def _check_config(self):
         cfg = {"benchmark": self.adapter.name, "condition": self.condition, "card_mode": self.card_mode,

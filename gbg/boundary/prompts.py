@@ -22,6 +22,7 @@ ROUTE_SYSTEM = """You are the intake desk of a business group. Decide who in thi
 You see the request, the members of this group, and the group records found for it (each record shows which member wrote or handled it).
 - Choose every member who is likely to hold the requested information. There is no limit on the number of members. Prefer members that the records show handling this subject; departed members cannot be asked.
 - Refer the request to another group only if a record states that another group has been agreed to execute or own this subject for the relevant period. Cite that record in evidence (for example ["E3"]). A group's usual area of work is not a reason to refer; in that case choose members of this group.
+- In items, list the requested items. Mark an item "elsewhere" only if this group keeps no records or rules of that kind (see this group's record types and rules), and name the group from the group list that does; otherwise mark it "here".
 Do not answer the request yourself. First review the request, the members and the records step by step in your reply text (which records concern the request, and which members wrote or handled them), then call the route tool once.
 
 This group: {group_desc}"""
@@ -33,11 +34,18 @@ ROUTE_TOOL = {
         "agents": {"type": "array", "items": {"type": "string"}, "description": "Member ids from the member list."},
         "referral_to": {"type": "string", "description": "Group id from the group list, only for a referral."},
         "evidence": {"type": "array", "items": {"type": "string"},
-                     "description": "For a referral: the record ids (E1, E2, ...) stating the agreement."}},
+                     "description": "For a referral: the record ids (E1, E2, ...) stating the agreement."},
+        "items": {"type": "array", "description": "The requested items and whether this group handles each.",
+                  "items": {"type": "object", "properties": {
+                      "entity": {"type": "string", "description": "The person, department, ID or item, as written."},
+                      "attribute": {"type": "string", "description": "The requested information, in a few words."},
+                      "scope": {"enum": ["here", "elsewhere"]},
+                      "target_group": {"type": "string", "description": "Only for elsewhere: a group id from the group list."}},
+                      "required": ["entity", "attribute", "scope"]}}},
         "required": ["action", "agents"], "additionalProperties": False}}
 
 ASSEMBLE_SYSTEM = """You are the intake desk of a business group. Write this group's answer to a request from another group, using only the replies of the members you asked and the group records given below.
-- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1]{state_cite}. In source, say what the value originally is: db, history (a member's record) or rule.
+- Give one item per value, with entity and value copied exactly as they appear in the reply or record. In ref, cite where it is taken from: a reply as [R1], a record as [E1], a database version as [D1]{state_cite}.
 - If sources disagree, use the most recent one and say which one you used.{version_rule}
 - Cross-check the replies against the group records: for each requested item, look through the records for entries of the same kind about the same subject that the replies did not mention, and include them with their record citation. Replies can be incomplete.
 - List every requested item you could not confirm in missing. Do not guess.
@@ -84,3 +92,7 @@ DISPATCH_TOOL = {
         "required": ["targets", "entity", "attr"], "additionalProperties": False}}
 
 FORMAT_NUDGE = "Format error: finish by calling the {tool} tool once with valid arguments."
+
+NOT_HERE_TEXT = "Not handled by this group: {items}."
+RESEND_TEXT = """{question}
+From your group, only this part is needed: {item}"""

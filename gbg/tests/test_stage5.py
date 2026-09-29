@@ -62,7 +62,7 @@ def oracle(req, *, route_referral: dict | None = None, assemble_missing: list | 
         records = user.split("Group records:\n", 1)[1].split("\n\n", 1)[0] if "Group records:\n" in user else ""
         body = "\n".join([*re.findall(r"^\[R\d+\] .*$", user, re.M), records])      # 증거는 에피소드 전체(여러 줄)
         missing = assemble_missing.pop(0) if assemble_missing else []
-        items = [{"entity": "record", "attribute": "text", "value": l, "status_or_as_of": "", "source": "history",
+        items = [{"entity": "record", "attribute": "text", "value": l, "status": "",
                   "ref": re.match(r"\[([RE]\d+)\]", l).group(0) if re.match(r"\[[RE]\d+\]", l) else "[E1]"}
                  for l in body.splitlines() if l.strip()]
         return _call("answer", {"answer": "", "items": items, "missing": missing or ([] if items else ["nothing"])})
@@ -73,10 +73,10 @@ def oracle(req, *, route_referral: dict | None = None, assemble_missing: list | 
         return _call("dispatch", {"targets": [{"group": group, "question": q}], "entity": "subject", "attr": "info"})
     if "reply" in tools:                                                   # 오라클 응답자: 자기가 가진 조각 원문
         own = "\n".join(l for l in user.splitlines()                     # 남에게 받은 답은 제외
-                         if re.match(r"\(day -?\d+ #\d+ \w+\) (?!\[(Answer|Question|Handled|Reply))", l))
+                         if re.match(r"\[H\d+\] \(day -?\d+ \w+\) (?!\[(Answer|Question|Handled|Reply))", l))
         held = [f["text"] for f in FRAGS.values() if f["text"] in own]
-        return _call("reply", {"items": [{"entity": "record", "attribute": "text", "value": h, "status_or_as_of": "",
-                                          "source": "history", "ref": "own records"} for h in held],
+        return _call("reply", {"items": [{"entity": "record", "attribute": "text", "value": h, "status": "",
+                                          "ref": "own records"} for h in held],
                                "missing": [] if held else ["unknown"]})
     if "submit" in tools:
         if len(msgs) == 2 and (g := _task(user)):
@@ -454,7 +454,8 @@ def test_answer_conventions_file_covers_every_worldgen_answer_format():
 
 def test_route_tool_has_no_free_text_reason_and_raw_output_stays_in_wal(tmp_path):
     from gbg.boundary.prompts import ROUTE_TOOL
-    assert set(ROUTE_TOOL["parameters"]["properties"]) == {"action", "agents", "referral_to", "evidence"}
+    assert set(ROUTE_TOOL["parameters"]["properties"]) == {"action", "agents", "referral_to", "evidence", "items"}
+    assert set(ROUTE_TOOL["parameters"]["properties"]["items"]["items"]["properties"]) == {"entity", "attribute", "scope", "target_group"}, "항목별 선택지만, 자유 문장 사유 없음"
     _, ev = run(tmp_path, "routing", max_day=1)
     dec = [e["payload"] for e in ev if e["type"] == "boundary_decision"]
     assert dec and all("reason" not in d for d in dec)
@@ -583,3 +584,98 @@ def test_requery_only_for_items_of_this_group_and_second_assembly_keeps_the_draf
               and e["payload"]["request"]["question"].startswith("Follow-up")]
     assert follow and all("For context, the original request was:" in q and "favourite colour" not in q for q in follow)
     assert any("Your first answer to this request (draft):" in p and "missing: ['settlement day" in p for p in prompts)
+
+
+# ─────────────────────────── 소관 밖 재라우팅 (out_of_scope) ───────────────────────────
+def _route_script(plan):
+    """plan: (그룹, 과제 표지 문자열) → route items. 나머지는 오라클."""
+    def script(req):
+        tools, system, user = _tools(req), req["messages"][0]["content"], req["messages"][1]["content"]
+        if "route" in tools:
+            group = re.search(r"This group: (\S+)", system).group(1)
+            for (g, mark), items in plan.items():
+                if g == group and mark in user:
+                    out = oracle(req)
+                    args = json.loads(out["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"]) \
+                        if "choices" in out else None
+                    members = re.findall(r"^- (\S+) \|", user.split("Members:\n", 1)[1].split("\n\n", 1)[0], re.M)
+                    return _call("route", {"action": "select", "agents": (args or {}).get("agents") or members[:1],
+                                           "items": items})
+        return oracle(req)
+    return script
+
+
+def test_out_of_scope_items_are_checked_by_code_and_returned_to_the_requester(tmp_path):
+    here = {"entity": "하린 과장", "attribute": "grade", "scope": "here"}
+    plan = {("HR-SEL", "하린 과장"): [
+        here,
+        {"entity": "하린 과장", "attribute": "laptop asset tag", "scope": "elsewhere", "target_group": "HR-TYO"},   # 받아들임
+        {"entity": "하린 과장", "attribute": "profile grade", "scope": "elsewhere", "target_group": "HR-TYO"},      # 기록 종류와 겹침
+        {"entity": "하린 과장", "attribute": "budget", "scope": "elsewhere", "target_group": "FIN-SEL"}]}          # 요청이 지나온 그룹
+    _, ev = run(tmp_path, "ingress", script=_route_script(plan), max_day=1)
+    d = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["task_id"] == "W-001"
+             and e["payload"]["stage"] == "ingress")
+    assert [x["attribute"] for x in d["redirects"]] == ["laptop asset tag"]
+    assert {x["attribute"]: x["why"] for x in d["redirects_rejected"]} == {"profile grade": "own_records_or_rules",
+                                                                        "budget": "invalid_target"}
+    resp = next(e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+                and e["payload"]["task_id"] == "W-001" and e["actor"] == "boundary:HR-SEL")
+    assert resp["redirects"] == [{"entity": "하린 과장", "attribute": "laptop asset tag", "referral_to": "HR-TYO",
+                                  "reason": "out_of_scope"}]
+    assert "하린 과장 laptop asset tag" in resp["missing"] and resp["status"] == "partial" and d["selected"], "나머지는 담당자가 답한다"
+
+
+def test_all_items_out_of_scope_returns_referral_without_asking_members(tmp_path):
+    plan = {("HR-SEL", "하린 과장"): [{"entity": "하린 과장", "attribute": "laptop asset tag", "scope": "elsewhere",
+                                    "target_group": "HR-TYO"}]}
+    _, ev = run(tmp_path, "routing", script=_route_script(plan), max_day=1)
+    d = next(e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["task_id"] == "W-001")
+    assert d["action"] == "out_of_scope" and "selected" not in d
+    resp = next(e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+                and e["payload"]["task_id"] == "W-001" and e["actor"] == "boundary:HR-SEL")
+    assert resp["status"] == "referral" and resp["referral_to"] == "HR-TYO" and resp["items"] == []
+    assert "HR-TYO" in resp["answer"] and "hr-" not in resp["answer"].lower().replace("hr-tyo", ""), "안내에는 그룹 이름만"
+    assert not any(e["type"] == "message" and e["payload"]["kind"] == "request" and e["actor"] == "boundary:HR-SEL"
+                   and e["payload"]["task_id"] == "W-001" for e in ev), "담당자를 부르지 않는다"
+
+
+def test_ie_egress_resends_out_of_scope_items_once_and_logs_them(tmp_path):
+    item = {"entity": "하린 과장", "attribute": "laptop asset tag", "scope": "elsewhere"}
+    plan = {("HR-SEL", "하린 과장"): [{**item, "target_group": "HR-TYO"}],
+            ("HR-TYO", "하린 과장"): [{**item, "target_group": "FIN-TYO"}]}                # 재발신 요청은 다시 돌려보낼 수 없다
+    r, ev = run(tmp_path, "i_e", script=_route_script(plan), max_day=1)
+    ing = [e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["task_id"] == "W-001"
+           and e["payload"]["stage"] == "ingress"]
+    tyo = next(d for d in ing if d["group"] == "HR-TYO")
+    assert tyo["redirects"] == [] and tyo["redirects_rejected"][0]["why"] == "rerouted_request"
+    asks = [e["payload"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"
+            and e["actor"] == "boundary:FIN-SEL" and e["payload"]["task_id"] == "W-001"]
+    assert [a["to_group"] for a in asks] == ["HR-SEL", "HR-TYO"] and asks[1]["request"]["hop"] == 2
+    assert "only this part is needed: 하린 과장 laptop asset tag" in asks[1]["request"]["question"]
+    log = r.kernel.stores.egress_log.lookup("FIN-SEL", "하린 과장", "laptop asset tag")
+    assert any(x.status == "referral" and x.referral_to == "HR-TYO" and x.reason == "out_of_scope" for x in log)
+
+
+# ─────────────────────────── 출처·시점 (코드가 ref를 따라가 채움) ───────────────────────────
+def test_reftable_resolves_lookup_history_and_rule_ids():
+    from gbg.contracts.schemas import HistoryEntry
+    from gbg.llm.agent_loop import RefTable
+    h = [HistoryEntry.model_construct(seq=120, day=7, role="assistant", text="x", digest="x", tokens=1)]
+    t = RefTable(h, ["hold_policy"])
+    t.add("D1", {"id": "D1", "ok": True, "result": {"status": "HIT", "entity": "CAD", "registered_day": 5, "record": {}}})
+    t.add("D2", {"id": "D2", "ok": True, "result": {"status": "HIT", "records": [
+        {"id": "CMT-1", "registered_day": 3, "record": {}}, {"id": "CMT-2", "registered_day": 4, "record": {}}]}})
+    t.add("D3", {"id": "D3", "ok": True, "result": {"status": "HIT", "entity": "INV-1", "record": {"cost": 1}}})
+    r = lambda ref, ent="x": t.resolve({"ref": ref, "entity": ent})
+    assert r("D1") == ("db", "5") and r("D2", "CMT-2") == ("db", "4") and r("D2") == ("db", "unknown")
+    assert r("D3") == ("db", "fixed"), "등록일 없는 고정 자료(catalog)"
+    assert r("H120") == ("history", "7") and r("hold_policy") == ("rule", "fixed")
+    assert r("my notes") == ("unknown", "unknown") and r("D9") == ("unknown", "unknown")
+
+
+def test_gateway_items_get_source_and_day_from_cited_evidence(tmp_path):
+    _, ev = run(tmp_path, "ingress", max_day=2)
+    items = [x for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+             and e["actor"].startswith("boundary:") for x in e["payload"]["response"]["items"]]
+    cited_e = [x for x in items if re.match(r"\[E\d+\]", x["ref"])]
+    assert cited_e and all(x["source"] == "history" and re.fullmatch(r"-?\d+", x["day"]) for x in cited_e)

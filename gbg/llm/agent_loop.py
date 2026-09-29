@@ -9,11 +9,12 @@ format_error로 기록한다. 도구 호출 id는 결정적(call_<단계>_<순�
 그때까지의 정보로 답한다. 받은 질문에 답하던 응답자는 그대로 실패하고, 요청자에게 budget_exhausted 오류가 간다.
 """
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from gbg.agents.prompts import COMM_TOOLS, render_directory, render_members, render_rules, render_system
+from gbg.agents.prompts import COMM_TOOLS, record_kinds, render_directory, render_members, render_rules, render_system
 from gbg.contracts.card import AgentCard, AgentSkill, public_id
 from gbg.contracts.answer_types import check_value, json_schema
 from gbg.contracts.conditions import Condition
@@ -101,8 +102,63 @@ def check_answer(schema: OutputSchema, args: dict) -> tuple[bool, Any]:
     return True, out
 
 
-def check_reply(args: dict) -> tuple[bool, Any]:
-    return check_items(args)
+def check_reply(args: dict, refs: "RefTable | None" = None) -> tuple[bool, Any]:
+    return check_items(args, resolve=refs.resolve if refs else None)
+
+
+_ID = re.compile(r"\b([DH])(\d+)\b")
+
+
+def _norm_id(x) -> str:
+    return re.sub(r"\s+", " ", str(x or "").strip().lower())
+
+
+def _days(obj, found: list):
+    """도구 결과 안의 (엔티티·id, 등록일) 쌍 (full_load의 그룹별 결과 포함)."""
+    if isinstance(obj, dict):
+        if "registered_day" in obj:
+            found.append((_norm_id(obj.get("id") or obj.get("entity")), obj["registered_day"]))
+        for v in obj.values():
+            _days(v, found)
+    elif isinstance(obj, list):
+        for v in obj:
+            _days(v, found)
+
+
+class RefTable:
+    """응답자 항목의 근거 ID → (source, day). D# = 이 세션의 도구 결과(등록일, 없으면 catalog 같은 고정 자료 "fixed"),
+    H# = 자기 이력 줄(그 줄의 날짜), 규정 id = ("rule", "fixed"). 첫 번째로 풀리는 ID를 쓴다."""
+    def __init__(self, history, rule_ids):
+        self.history = {e.seq: e for e in history}
+        self.rules = {_norm_id(r) for r in rule_ids}
+        self.results: dict[str, Any] = {}
+
+    def add(self, rid: str, result):
+        self.results[rid] = result
+
+    def resolve(self, item: dict) -> tuple[str, str]:
+        ref = item.get("ref", "")
+        for kind, n in _ID.findall(ref):
+            if kind == "H" and int(n) in self.history:
+                return "history", str(self.history[int(n)].day)
+            if kind == "D" and f"D{n}" in self.results:
+                res = self.results[f"D{n}"]
+                found: list = []
+                _days(res, found)
+                ent = _norm_id(item.get("entity"))
+                days = {d for _, d in found}
+                hit = [d for e, d in found if e and e == ent]
+                if hit:
+                    return "db", str(hit[0])
+                if len(days) == 1:
+                    return "db", str(days.pop())
+                if not found and isinstance(res, dict) and (res.get("result") or {}).get("status") == "HIT":
+                    return "db", "fixed"                                   # 등록일 없는 고정 자료 (catalog)
+                return "db", "unknown"
+        words = {_norm_id(w) for w in re.split(r"[\s,;()\[\]]+", ref) if w}
+        if words & self.rules or _norm_id(ref) in self.rules:
+            return "rule", "fixed"
+        return "unknown", "unknown"
 
 
 def _fn(name: str, description: str, parameters: dict) -> dict:
@@ -131,13 +187,7 @@ class LLMAgent:
 
     def records_scope(self, ctx) -> str:
         """응답자 system 전용: 자기 그룹 기록의 범위(종류만). 도구 명세의 기록 종류 설명에서 자동으로 만든다."""
-        kinds = []
-        for s in self.env(ctx):
-            rt = (s.parameters.get("properties") or {}).get("record_type") or {}
-            for line in (rt.get("description") or "").splitlines():
-                if line.startswith("- ") and ":" in line:
-                    name, _, meaning = line[2:].partition(":")
-                    kinds.append(f"{name.strip()} ({meaning.strip().rstrip('.')})")
+        kinds = [f"{n} ({m})" for n, m in record_kinds(self.env(ctx))]
         if not kinds:
             return ""
         return ("[Your area's records]\nYour area's records contain only: " + "; ".join(kinds)
@@ -227,15 +277,18 @@ class LLMAgent:
                  "anyone else. Check your records once; list any part you cannot find there in missing and do not keep "
                  "searching. Your area's rules are in the system section above; do not search for them. "
                  "Answer with the reply tool: one item per value, with IDs, names and amounts copied exactly as they "
-                 "appear in the record. For a database value, put its registered day in status_or_as_of (for example "
-                 "'registered day 12'). If a record in your history on the same item is newer than that registered day, "
-                 "give both values as separate items, each with its day. When you give a calculated value, also give "
-                 "each input value as its own item.")
-        answer, items, missing = await self._loop(ctx, text, REPLY_TOOL, check_reply)
+                 "appear in the record, and in ref the ID of the lookup result (D1, D2, ...), the line of your records "
+                 "(H...) or the rule id it comes from. If a record in your history on the same item is newer than the "
+                 "database's registered day, give both values as separate items. When you give a calculated value, also "
+                 "give each input value as its own item.")
+        rules = [r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
+                 for r in ctx.kernel.stores.rulebook.read_all(ctx.group)]
+        refs = RefTable(ctx.history, rules)
+        answer, items, missing = await self._loop(ctx, text, REPLY_TOOL, lambda a: check_reply(a, refs), refs)
         return Response(rid=request.rid, status="partial" if missing else "ok", answer=answer, items=items,
                         missing=missing, referral_to=None, need=[], as_of=ctx.day)
 
-    async def _loop(self, ctx: AgentContext, task_text: str, finish: dict, check) -> Any:
+    async def _loop(self, ctx: AgentContext, task_text: str, finish: dict, check, refs: RefTable | None = None) -> Any:
         system, dir_tokens = self.system(ctx)
         context = self.rt.builder.build(system, ctx.history, task_text, dir_tokens)
         messages = list(context.messages)
@@ -244,6 +297,7 @@ class LLMAgent:
         tool_def_tokens = self.rt.builder.count(_dumps(tools))                # 도구 정의 = 호출마다 드는 고정비
         comm = {COMM_TOOLS[t][0] for t in self.comm(ctx)}              # 도구 이름 (ask_member → ask_agent)
         errors = 0
+        n_results = {"D": 0, "R": 0}                                       # 도구 결과 ID (D# 조회, R# 받은 답)
         cached_in_context = False                                          # 캐시된 도구 결과가 입력에 들어갔는가
 
         def fail_format(call_id: str | None, why: str):
@@ -299,10 +353,18 @@ class LLMAgent:
                     continue
                 if c["name"] in env:
                     out = await ctx.call_tool(c["name"], **args)
+                    kind = "D"
                 elif c["name"] in comm:
                     out = await self._communicate(ctx, c["name"], args)
+                    kind = "R"
                 else:
                     out = {"ok": False, "error": "unknown_tool"}
+                    kind = None
+                if kind and isinstance(out, dict):                         # 모든 도구 결과에 ID (항목 ref에 쓴다)
+                    n_results[kind] += 1
+                    out = {"id": f"{kind}{n_results[kind]}", **out}
+                    if refs is not None:
+                        refs.add(out["id"], out)
                 cached_in_context = cached_in_context or bool(isinstance(out, dict) and out.get("cached"))
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": _dumps(out)})
         if finish["name"] == "submit":                                     # 단계 한도: 제출 전용 호출 1회로 끝낸다
@@ -376,6 +438,9 @@ class LLMAgent:
                "items": [x.model_dump(mode="json") for x in r.items], "missing": r.missing}
         if r.referral_to:
             out["referral_to"] = r.referral_to
+        if r.redirects:                                                    # 소관 밖 항목: 어느 그룹에 물을지 (그룹 이름만)
+            out["not_handled_here"] = [{"item": f"{x.entity} {x.attribute}".strip(), "ask": x.referral_to}
+                                       for x in r.redirects]
         if r.need:
             out["need"] = r.need
         return out

@@ -53,6 +53,7 @@ class EgressRecord(Contract):
     question: str
     status: Literal["ok", "partial", "referral", "need_more", "error"]
     referral_to: str | None
+    reason: str | None = None                   # referral 사유: out_of_scope | ownership_exception
 
 
 # ─────────────────────────── 세계 상태 (DB · 규정) ───────────────────────────

@@ -125,6 +125,18 @@ RECORDS_NOTE = ("- Records and the database: database registration can lag by a 
                 "database values from several of them are one source, not independent confirmations.")
 
 
+def record_kinds(specs) -> list[tuple[str, str]]:
+    """도구 명세의 record_type 설명에서 (기록 종류, 뜻). 응답자 기록 범위와 접수부 소관 판정에 쓴다."""
+    kinds = []
+    for s in specs:
+        rt = (s.parameters.get("properties") or {}).get("record_type") or {}
+        for line in (rt.get("description") or "").splitlines():
+            if line.startswith("- ") and ":" in line:
+                name, _, meaning = line[2:].partition(":")
+                kinds.append((name.strip(), meaning.strip().rstrip(".")))
+    return kinds
+
+
 def render_rules(rules, label: str | None = None, notes: bool = True) -> str:
     """규정 블록: 그룹 접두어 없는 id, 제목, 본문. label이 있으면(full_load) 그룹마다 제목을 단다."""
     lines = []

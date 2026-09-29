@@ -13,7 +13,9 @@ class EgressLog:
         return list(self._log.get(group, []))
 
     def lookup(self, group: str, entity: str, attr: str | None = None) -> list[EgressRecord]:
-        return [r for r in self._log.get(group, []) if r.entity == entity and (attr is None or r.attr == attr)]
+        """같은 (엔티티, 속성) 기록. 대소문자·공백만 다른 표기는 같게 본다 (dispatch와 접수부 route의 표기가 다를 수 있다)."""
+        n = lambda x: " ".join(str(x or "").lower().split())
+        return [r for r in self._log.get(group, []) if n(r.entity) == n(entity) and (attr is None or n(r.attr) == n(attr))]
 
     def referral(self, group: str, entity: str, attr: str, day: int) -> str | None:
         """같은 (엔티티, 속성)의 가장 최근 referral이 가리키는 그룹. 그 뒤 그 그룹에 보낸 요청도 referral로

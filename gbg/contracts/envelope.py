@@ -19,24 +19,35 @@ class Request(Contract):
     lineage: list[str]                          # 요청이 지나온 그룹, 출발 그룹부터
 
 
-ITEM_SOURCES = ("db", "history", "rule")
+ITEM_SOURCES = ("db", "history", "rule", "unknown")
 
 
 class Item(Contract):
-    """응답의 값 하나 (응답자 reply, 게이트웨이 answer, Egress 묶음 공통). entity·value는 원문 그대로."""
+    """응답의 값 하나 (응답자 reply, 게이트웨이 answer, Routing 전달, Egress 묶음 공통). entity·value는 원문 그대로.
+    LLM은 entity·attribute·value·status·ref를 쓰고, source·day는 코드가 ref(도구 결과 D#, 이력 줄 H#, 규정 id,
+    게이트웨이의 R#·E#·D#·S#)를 따라가 채운다: DB = 등록일, 이력 = 줄의 날짜, 규정 = "fixed", 풀리지 않으면 "unknown"."""
     entity: str                                 # ID·이름 원문
     attribute: str                              # 무엇의 값인가
     value: str                                  # 값 원문 (ID·금액 변형 없음)
-    status_or_as_of: str                        # 상태 또는 기준 시점 (예: "pending", "as of day 5", "v3 registered day 12")
-    source: Literal["db", "history", "rule"]
-    ref: str                                    # 근거 위치: 조회한 기록 종류·키, 이력 일차, 규정 id, 게이트웨이는 [R1]·[E3]·[D2]
+    status: str                                 # 기록에 적힌 상태 (없으면 빈 문자열)
+    ref: str                                    # 근거 ID
+    source: Literal["db", "history", "rule", "unknown"] = "unknown"
+    day: str = "unknown"                        # 등록일·기록일 (정수 문자열) | "fixed" | "unknown"
+
+
+class Redirect(Contract):
+    """소관 밖 항목의 안내 (out_of_scope) 또는 증거 기반 referral (ownership_exception)."""
+    entity: str
+    attribute: str
+    referral_to: str
+    reason: Literal["out_of_scope", "ownership_exception"]
 
 
 def render_items(items) -> str:
-    """사람·LLM이 읽는 한 줄씩의 표기. 항목은 dict 또는 Item."""
+    """사람·LLM이 읽는 한 줄씩의 표기. 항목은 dict 또는 Item (옛 기록의 status_or_as_of도 읽는다)."""
     rows = [x.model_dump() if isinstance(x, Item) else x for x in items]
-    return "\n".join(f"- {x['entity']} | {x['attribute']} | {x['value']} | {x['status_or_as_of']} | {x['source']}: {x['ref']}"
-                     for x in rows)
+    return "\n".join(f"- {x['entity']} | {x['attribute']} | {x['value']} | {x.get('status', x.get('status_or_as_of', ''))} | "
+                     f"{x.get('source', 'unknown')}, day {x.get('day', 'unknown')}: {x['ref']}" for x in rows)
 
 
 def render_response(r: dict) -> str:
@@ -46,6 +57,8 @@ def render_response(r: dict) -> str:
         parts.append(render_items(r["items"]))
     if r.get("missing"):
         parts.append("missing: " + "; ".join(r["missing"]))
+    for x in r.get("redirects") or []:
+        parts.append(f"not handled there: {x['entity']} {x['attribute']} → ask {x['referral_to']}")
     return "\n".join(p for p in parts if p)
 
 
@@ -58,6 +71,7 @@ class Response(Contract):
     referral_to: str | None
     need: list[str]                             # need_more일 때 보완이 필요한 항목
     as_of: int                                  # 응답 기준 일차
+    redirects: list[Redirect] = []              # 소관 밖 항목 안내 (missing에도 들어 있다)
 
     @model_validator(mode="after")
     def _status_fields(self):
@@ -69,20 +83,18 @@ class Response(Contract):
 
 
 # ─────────────────────────── 응답 도구 공통 스키마 ───────────────────────────
-ITEM_FIELDS = {
+ITEM_FIELDS = {                                                             # LLM이 쓰는 필드 (source·day는 코드가 채운다)
     "entity": "The ID or name the value is about, copied exactly as it appears in the record.",
     "attribute": "What the value is (for example 'remaining capex budget', 'holder', 'status').",
     "value": "The value copied exactly as it appears in the record (do not reformat IDs or amounts).",
-    "status_or_as_of": "The record's status and the day it is valid from: for a database value its registered day (for "
-                       "example 'registered day 5'), for a record the day of the record (for example 'pending, day 7').",
-    "source": "Where the value comes from: db (a database lookup), history (your records), rule (a rule).",
-    "ref": "The exact location: the record type and key looked up, the day of the record, or the rule id.",
+    "status": "The status the record states, if any (for example 'pending', 'held until day 9'); otherwise empty.",
+    "ref": "The ID of what the value is taken from, as shown in your input: a lookup result (for example D2), a line "
+           "of your records (for example H120), or a rule id.",
 }
 
 
 def items_schema(ref_description: str | None = None) -> dict:
     props = {k: {"type": "string", "description": d} for k, d in ITEM_FIELDS.items()}
-    props["source"] = {"enum": list(ITEM_SOURCES), "description": ITEM_FIELDS["source"]}
     if ref_description:
         props["ref"] = {"type": "string", "description": ref_description}
     return {"type": "array", "description": "One entry per value found. Give at least one item or one missing entry.",
@@ -97,8 +109,9 @@ def answer_parameters(ref_description: str | None = None) -> dict:
         "required": ["items", "missing"], "additionalProperties": False}
 
 
-def check_items(args: dict, ref_ok=None) -> tuple[bool, object]:
-    """reply·answer 도구 인자 검사. (True, (answer, items, missing)) 또는 (False, 오류 설명). ref_ok(ref) → 오류 문자열|None."""
+def check_items(args: dict, ref_ok=None, resolve=None) -> tuple[bool, object]:
+    """reply·answer 도구 인자 검사. (True, (answer, items, missing)) 또는 (False, 오류 설명). ref_ok(ref) → 오류 문자열|None.
+    resolve(item dict) → (source, day): ref를 따라가 코드가 채운다 (없으면 unknown)."""
     items, missing, answer = args.get("items"), args.get("missing", []), args.get("answer", "")
     if not isinstance(items, list) or not isinstance(missing, list) or not all(isinstance(m, str) for m in missing):
         return False, "items must be a list and missing a list of strings"
@@ -112,11 +125,10 @@ def check_items(args: dict, ref_ok=None) -> tuple[bool, object]:
             return False, f"items[{i}] must have exactly the fields {list(ITEM_FIELDS)}"
         if not all(isinstance(x[k], str) for k in ITEM_FIELDS):
             return False, f"items[{i}]: every field must be a string (copy numbers as text)"
-        if x["source"] not in ITEM_SOURCES:
-            return False, f"items[{i}].source must be one of {list(ITEM_SOURCES)}"
         if not x["entity"].strip() or not x["value"].strip():
             return False, f"items[{i}]: entity and value must not be empty"
         if ref_ok and (err := ref_ok(x["ref"])):
             return False, f"items[{i}].ref: {err}"
-        out.append(Item(**x))
+        source, day = resolve(x) if resolve else ("unknown", "unknown")
+        out.append(Item(**x, source=source, day=str(day)))
     return True, (answer, out, missing)

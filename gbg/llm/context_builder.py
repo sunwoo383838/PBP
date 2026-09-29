@@ -37,7 +37,7 @@ class ContextBuilder:
         # 요약: 창 바로 앞부터 거꾸로 digest, 예산을 넘는 첫 항목에서 멈춘다
         lines, sum_tokens, summarized = [], 0, []
         for e in reversed(history[:start]):
-            line = f"- {e.digest}"
+            line = f"- [H{e.seq}] day {e.day}: {e.digest}"                  # 줄 ID = 이력 seq (항목 ref에 쓴다)
             t = self.count(line)
             if sum_tokens + t > self.summary:
                 break
@@ -50,7 +50,7 @@ class ContextBuilder:
             parts.append("[Earlier records, summarized, newest first]\n" + "\n".join(lines))
         if window:
             parts.append("[Recent records, verbatim]\n" + "\n".join(
-                f"(day {e.day} #{e.seq} {ROLE_LABEL[e.role]}) {e.text}" for e in window))
+                f"[H{e.seq}] (day {e.day} {ROLE_LABEL[e.role]}) {e.text}" for e in window))
         parts.append("[Current task]\n" + task)
         user = "\n\n".join(parts)
 

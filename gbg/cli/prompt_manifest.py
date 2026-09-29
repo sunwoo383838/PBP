@@ -86,14 +86,17 @@ def messages() -> list[tuple[str, str, str]]:
              ("버스", "nested_asks_disabled / max_asks / requery_not_allowed / budget_exhausted / agent_unavailable",
               "응답 status=error, answer=<코드>"),
              ("경계", "dispatch_failed / assembly_failed", "응답 status=error, answer=<코드>"),
-             ("경계", "referral", "This is handled by <group>."),
+             ("경계", "referral (ownership_exception)", "This is handled by <group>."),
              ("경계", "no member", "No member of this group could be identified for this request."),
              ("reply·answer 형식 검사", "check_items", "items must be a list and missing a list of strings / answer must be a "
               "string / give at least one item or one missing entry / items[i] must have exactly the fields [...] / "
               "items[i]: every field must be a string (copy numbers as text) / items[i].source must be one of [...] / "
               "items[i]: entity and value must not be empty / items[i].ref: cite the reply or record, for example [R1] or [E3]")]
     rows += [("경계 템플릿", "REQUERY_TEXT", BP.REQUERY_TEXT), ("경계 템플릿", "EXCERPT_TEXT", BP.EXCERPT_TEXT),
-             ("경계 템플릿", "DRAFT_TEXT", BP.DRAFT_TEXT)]
+             ("경계 템플릿", "DRAFT_TEXT", BP.DRAFT_TEXT), ("경계 템플릿", "NOT_HERE_TEXT", BP.NOT_HERE_TEXT),
+             ("경계 템플릿 (I+E 재발신)", "RESEND_TEXT", BP.RESEND_TEXT),
+             ("요청자가 받는 응답", "not_handled_here", '"not_handled_here": [{"item": "<entity> <attribute>", "ask": "<group>"}]'),
+             ("응답 표기 (render_response)", "redirect", "not handled there: <entity> <attribute> → ask <group>")]
     return rows
 
 

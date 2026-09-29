@@ -8,6 +8,8 @@
 """
 from collections import Counter, defaultdict
 
+from .redirects import summarize as summarize_redirects
+
 GATE_ORDER = ["L_req", "L_route", "L_sel", "L_state", "L_use", "ok"]
 
 
@@ -78,4 +80,5 @@ def summarize(ledger: dict) -> dict:
                            "tokens": sum(t["components"].get(c, {}).get("tokens", 0) for t in tasks)}
                        for c in sorted({c for t in tasks for c in t["components"]})},
         "strata": strata,
+        "redirects": summarize_redirects([t["redirects"] for t in tasks if "redirects" in t]),
     }

@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass, field
 
 from gbg.contracts.conditions import Condition
-from gbg.contracts.envelope import Request, Response, check_items, render_items
+from gbg.contracts.envelope import Redirect, Request, Response, check_items, render_items
 from gbg.retrieval.evidence import Evidence, build_evidence
 from gbg.retrieval.hybrid import GroupRetriever, authorize
 from gbg.kernel.errors import FatalError
@@ -73,8 +73,9 @@ class _Trace:
 
 class BoundaryModule:
     def __init__(self, group: str, cond: Condition, *, retriever: GroupRetriever, resolver, count, format_retries: int,
-                 egress_cap: int = 1000, oracle: dict | None = None):
+                 egress_cap: int = 1000, oracle: dict | None = None, record_kinds: list[tuple[str, str]] = ()):
         self.group, self.cond = group, cond
+        self.record_kinds = list(record_kinds)                            # 이 그룹의 기록 종류 (소관 판정·route 입력)
         self.retriever, self.resolver, self.count = retriever, resolver, count
         self.format_retries, self.egress_cap = format_retries, egress_cap
         self.in_progress: list[dict] = []                                 # 이 창구가 지금 처리 중인 요청
@@ -133,6 +134,11 @@ class BoundaryModule:
             resp = await self._ingress(bctx, span, req, stores, step, trace)
         finally:
             self.in_progress.pop()
+        redirects = trace.pop("_redirects", [])
+        if redirects and resp.status != "referral":                       # 일부 항목만 소관 밖: missing + 안내를 붙인다
+            texts = [f"{x.entity} {x.attribute}".strip() for x in redirects]
+            resp = resp.model_copy(update={"redirects": redirects, "missing": list(dict.fromkeys([*resp.missing, *texts])),
+                                           "status": "partial" if resp.status == "ok" else resp.status})
         trace["status"] = resp.status
         span.emit("boundary_decision", bctx.actor, {"task_id": ctx.task_id, **trace})
         return resp
@@ -191,7 +197,10 @@ class BoundaryModule:
         route_user = (f"{today}Request from {req.from_group}:\n{text}\n\nUnderstood as: attribute={it.attribute!r}, "
                       f"entities={entities or it.entities}\n\nMembers:\n"
                       + "\n".join(f"- {a} | {role} | {desc}" for a, role, desc in members)
-                      + "\n\nOther groups:\n" + "\n".join(f"- {c.group} | {c.description}" for c in others)
+                      + "\n\nThis group's record types: " + ("; ".join(n for n, _ in self.record_kinds) or "(none)")
+                      + "\nThis group's rules: " + ("; ".join(r.title or r.id for r in stores.rulebook.read_all(self.group)) or "(none)")
+                      + "\n\nOther groups:\n" + "\n".join(f"- {c.group} | {c.description} | Skills: "
+                                                          + ", ".join(x.name for x in c.skills) for c in others)
                       + "\n\nGroup records found:\n" + (ev.text or "(none)"))
         active = {a for a, _, _ in members}
 
@@ -205,11 +214,18 @@ class BoundaryModule:
             agents = a.get("agents", [])
             if not (isinstance(agents, list) and all(isinstance(x, str) for x in agents)):
                 return False, "agents must be a list of member ids"
+            items = a.get("items", [])
+            if not (isinstance(items, list) and all(isinstance(x, dict) and x.get("scope") in ("here", "elsewhere")
+                                                     and isinstance(x.get("entity", ""), str)
+                                                     and isinstance(x.get("attribute", ""), str) for x in items)):
+                return False, "items must be a list of {entity, attribute, scope: here|elsewhere, target_group}"
             return True, a
         route = await self._tool(bctx, step, "route", P.ROUTE_SYSTEM.format(group_desc=self._group_desc(stores)),
                                  route_user, P.ROUTE_TOOL, check_route) or {"action": "select", "agents": []}
         if self.cond.ingress.deliver == "forward":                        # 라우터가 만든 출력의 카나리 검사
-            leaked = router_leaks([*route.get("agents", []), route.get("referral_to") or "", *(route.get("evidence") or [])],
+            leaked = router_leaks([*route.get("agents", []), route.get("referral_to") or "", *(route.get("evidence") or []),
+                                   *(f"{x.get('entity', '')} {x.get('attribute', '')} {x.get('target_group') or ''}"
+                                     for x in route.get("items") or [])],
                                   [x.text for x in ev.items], req.question)
             if leaked:
                 raise FatalError(f"라우터 출력에 검색 결과의 값이 들어감 ({self.group}, {req.rid}): {leaked}")
@@ -219,10 +235,23 @@ class BoundaryModule:
                 trace["referral_rejected"] = {"to": route.get("referral_to"), "evidence": route.get("evidence")}
                 route = {**route, "action": "select"}
         if route["action"] == "referral":
-            trace.update(action="referral", referral_to=route["referral_to"],
+            trace.update(action="referral", referral_to=route["referral_to"], referral_reason="ownership_exception",
                          referral_evidence=basis)
+            red = Redirect(entity=(entities or it.entities or [""])[0], attribute=it.attribute or "",
+                           referral_to=route["referral_to"], reason="ownership_exception")
             return Response(rid=req.rid, status="referral", answer=f"This is handled by {route['referral_to']}.",
-                            items=[], missing=[], referral_to=route["referral_to"], need=[], as_of=day)
+                            items=[], missing=[], referral_to=route["referral_to"], need=[], as_of=day, redirects=[red])
+
+        # 5b 소관 밖 항목 (out_of_scope): LLM 표시를 코드가 검증한다
+        here, redirects = self._scope(route.get("items") or [], ev, req, others, stores, trace)
+        if redirects and not here:                                         # 모든 항목이 소관 밖: 담당자를 부르지 않는다
+            texts = [f"{x.entity} {x.attribute}".strip() for x in redirects]
+            trace.update(action="out_of_scope")
+            return Response(rid=req.rid, status="referral", referral_to=redirects[0].referral_to,
+                            answer=P.NOT_HERE_TEXT.format(items="; ".join(f"{t} (ask {x.referral_to})"
+                                                                         for t, x in zip(texts, redirects))),
+                            items=[], missing=texts, need=[], as_of=day, redirects=redirects)
+        trace["_redirects"] = redirects
         chosen = [a for a in dict.fromkeys(route.get("agents", [])) if a in active]
         if not chosen:                                                     # LLM이 고르지 못함: 검색된 처리자 중 활동 중인 사람
             chosen = [a for a in ev.log.get("holders", []) if a in active]
@@ -243,6 +272,49 @@ class BoundaryModule:
         if cfg.deliver in ("forward", "read"):                            # read = 검색된 기록 원문 첨부 (ingress_read)
             return self._forward(bctx, req, replies, ev if cfg.deliver == "read" else None, trace)
         return await self._assemble(bctx, span, req, text, it, entities, ev, replies, stores, step, trace)
+
+    _STOP = {"record", "records", "current", "total", "number", "list", "details", "information", "data", "value",
+             "values", "status", "employee", "employees", "department", "item", "items", "with", "from", "that", "this",
+             "their", "which", "about", "each", "latest"}
+
+    def _words(self, text: str) -> set[str]:
+        ws = {w[:-1] if len(w) > 4 and w.endswith("s") else w for w in re.split(r"[\W_]+", normalize(text)) if len(w) > 3}
+        return ws - self._STOP
+
+    def _scope(self, items: list[dict], ev: Evidence, req, others, stores, trace) -> tuple[list[dict], list[Redirect]]:
+        """route의 항목별 소관 표시를 코드가 검증한다. elsewhere 표시를 거부하고 here로 처리하는 경우:
+        재발신된 요청(hop ≥ 2, 순환 방지), 대상이 그룹 목록 밖·자기 그룹·요청이 지나온 그룹, (a) 증거 검색에서 그 항목의
+        엔티티와 속성 낱말이 같은 에피소드에 걸림, (b) 속성 낱말이 이 그룹의 기록 종류·규정 제목과 일치. 엔티티만으로는
+        판정하지 않는다. 항목이 없으면 모두 here."""
+        valid = {c.group for c in others}
+        own = set()
+        for name, _ in self.record_kinds:
+            own |= self._words(name)
+        for r in stores.rulebook.read_all(self.group):
+            own |= self._words(r.title or "")
+        here, redirects, rejected = [], [], []
+        for x in items:
+            if x.get("scope") != "elsewhere":
+                here.append(x)
+                continue
+            ent, words, tgt = normalize(x.get("entity", "")), self._words(x.get("attribute", "")), x.get("target_group")
+            why = None
+            if req.hop >= 2:
+                why = "rerouted_request"
+            elif tgt not in valid or tgt == self.group or tgt in req.lineage:
+                why = "invalid_target"
+            elif ent and words and any(ent in (t := normalize(e.text)) and any(w in t for w in words) for e in ev.items):
+                why = "evidence"
+            elif words & own:
+                why = "own_records_or_rules"
+            if why:
+                rejected.append({**x, "why": why})
+                here.append(x)
+            else:
+                redirects.append(Redirect(entity=x.get("entity", ""), attribute=x.get("attribute", ""), referral_to=tgt,
+                                          reason="out_of_scope"))
+        trace.update(items=items, redirects=[r.model_dump() for r in redirects], redirects_rejected=rejected)
+        return here, redirects
 
     def _members(self, stores) -> list[tuple[str, str, str]]:
         cards = stores.cards
@@ -341,8 +413,31 @@ class BoundaryModule:
             cites = re.findall(r"\[?([REDS]\d+)\]?", ref)
             return None if cites else "cite the reply or record, for example [R1] or [E3]"
 
+        def resolve(x):                                                    # ref를 따라가 source·day (코드가 채움)
+            by_cite = {e.cite: e for e in ev.items}
+            for kind, n in re.findall(r"([REDS])(\d+)", x["ref"]):
+                i = int(n) - 1
+                if kind == "R" and 0 <= i < len(replies):
+                    its = replies[i][1].items
+                    same = [y for y in its if normalize(y.entity) == normalize(x["entity"])]
+                    exact = [y for y in same if normalize(y.value) == normalize(x["value"])]
+                    pick = exact or same
+                    if pick:
+                        return pick[0].source, pick[0].day
+                    if its and len({(y.source, y.day) for y in its}) == 1:
+                        return its[0].source, its[0].day
+                elif kind == "E" and f"E{n}" in by_cite:
+                    return "history", str(by_cite[f"E{n}"].day)
+                elif kind == "D" and 0 <= i < len(versions):
+                    if m := re.search(r"registered day (-?\d+)", versions[i]):
+                        return "db", m.group(1)
+                elif kind == "S" and 0 <= i < len(state):
+                    if m := re.match(r"day (-?\d+):", state[i]):
+                        return "history", m.group(1)
+            return "unknown", "unknown"
+
         def check_answer(a):
-            return check_items(a, ref_ok)
+            return check_items(a, ref_ok, resolve)
 
         out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer)
         requeried = []
@@ -491,34 +586,53 @@ class BoundaryModule:
         if ref:
             targets = [{"group": ref, "question": targets[0]["question"]}]
         trace.update(entity=d["entity"], attr=d["attr"], targets=targets, referral_override=ref)
-        results = []
+        results: list[tuple[str, Response]] = []
+        answered: set[str] = set()                                         # 재발신으로 답을 받은 소관 밖 항목
+        unsent: list[Redirect] = []
         for t in targets:
             r = await bctx.ask_group(t["group"], t["question"], req.purpose)
-            sent = [(t["group"], t["question"], r)]
-            if r.status == "referral" and r.referral_to in valid:          # referral → 그 그룹에 1회 재전송
-                r = await bctx.ask_group(r.referral_to, t["question"], req.purpose)
-                sent.append((sent[0][2].referral_to, t["question"], r))
-            elif r.status == "need_more":                                  # 기록으로 보완해 1회 재전송
+            sent = [(t["group"], t["question"], r, None)]
+            results.append((t["group"], r))
+            redirs = list(r.redirects) or ([Redirect(entity=d["entity"], attribute=d["attr"], referral_to=r.referral_to,
+                                                     reason="ownership_exception")]
+                                           if r.status == "referral" and r.referral_to else [])
+            for x in redirs:                                               # 소관 밖 항목마다 안내된 그룹에 1회 자동 재발신
+                if x.referral_to not in valid or x.referral_to == t["group"]:
+                    unsent.append(x)
+                    continue
+                item = f"{x.entity} {x.attribute}".strip()
+                q2 = P.RESEND_TEXT.format(question=t["question"], item=item)
+                r2 = await bctx.ask_group(x.referral_to, q2, req.purpose, hop=bctx.hop + 2)   # 재발신은 다시 돌려보낼 수 없다
+                sent.append((x.referral_to, q2, r2, x))
+                results.append((x.referral_to, r2))
+                if r2.status in ("ok", "partial"):
+                    answered.add(item)
+            if r.status == "need_more":                                    # 기록으로 보완해 1회 재전송
                 fill = await self._tool(bctx, step, "dispatch", P.DISPATCH_SYSTEM.format(directory=directory, group_desc=self._group_desc(stores)),
                                         user + f"\n\n{t['group']} needs more information: {'; '.join(r.need)}",
                                         P.DISPATCH_TOOL, check_dispatch)
                 q2 = next((x["question"] for x in (fill or {}).get("targets", []) if x["group"] == t["group"]), None)
                 if q2 and q2 != t["question"]:
-                    r = await bctx.ask_group(t["group"], q2, req.purpose)
-                    sent.append((t["group"], q2, r))
-            results.append(r)
-            for g, q, x in sent:
-                trace.setdefault("log", []).append({"day": ctx.day, "entity": d["entity"], "attr": d["attr"],
-                                                    "to_group": g, "question": q, "status": x.status,
-                                                    "referral_to": x.referral_to})
+                    r3 = await bctx.ask_group(t["group"], q2, req.purpose)
+                    sent.append((t["group"], q2, r3, None))
+                    results[results.index((t["group"], r))] = (t["group"], r3)
+            log = trace.setdefault("log", [])
+            for g, q, x, red in sent:
+                log.append({"day": ctx.day, "entity": red.entity if red else d["entity"],
+                            "attr": red.attribute if red else d["attr"], "to_group": g, "question": q,
+                            "status": x.status, "referral_to": x.referral_to})
+            for x in redirs:                                               # (엔티티, 속성) → 그룹: 다음 요청의 경로 확정에 쓴다
+                log.append({"day": ctx.day, "entity": x.entity, "attr": x.attribute, "to_group": t["group"],
+                            "question": t["question"], "status": "referral", "referral_to": x.referral_to,
+                            "reason": x.reason})
         span.emit("boundary_decision", bctx.actor, {"task_id": ctx.task_id, **trace})
         if len(results) == 1:
-            return results[0].model_copy(update={"rid": req.rid})
-        answer = "\n\n".join(f"[From {t['group']}] ({r.status}) {r.answer}" for t, r in zip(targets, results))
-        items = [x.model_copy(update={"ref": f"{t['group']}: {x.ref}"}) for t, r in zip(targets, results) for x in r.items]
-        missing = list(dict.fromkeys(m for r in results for m in r.missing))
-        need = list(dict.fromkeys(n for r in results if r.status == "need_more" for n in r.need))
-        ok = any(r.status in ("ok", "partial") for r in results)
-        status = ("ok" if all(r.status == "ok" for r in results) else "partial") if ok else ("need_more" if need else "error")
+            return results[0][1].model_copy(update={"rid": req.rid})
+        answer = "\n\n".join(f"[From {g}] ({r.status}) {r.answer}" for g, r in results)
+        items = [x.model_copy(update={"ref": f"{g}: {x.ref}"}) for g, r in results for x in r.items]
+        missing = [m for m in dict.fromkeys(m for _, r in results for m in r.missing) if m not in answered]
+        need = list(dict.fromkeys(n for _, r in results if r.status == "need_more" for n in r.need))
+        ok = any(r.status in ("ok", "partial") for _, r in results)
+        status = ("ok" if all(r.status == "ok" for _, r in results) else "partial") if ok else ("need_more" if need else "error")
         return Response(rid=req.rid, status=status, answer=answer, items=items, missing=missing, referral_to=None,
-                        need=need if status == "need_more" else [], as_of=ctx.day)
+                        need=need if status == "need_more" else [], as_of=ctx.day, redirects=unsent)

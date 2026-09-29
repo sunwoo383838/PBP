@@ -76,12 +76,14 @@ class Bus:
         except Exception as e:
             return error_response(req.rid, f"agent_exception:{type(e).__name__}", ctx.day)
 
-    async def ask_group(self, ctx: "AgentContext", group: str, question: str, purpose: str | None = None) -> Response:
-        """그룹 B의 경계 모듈(Ingress)에게. 요청자 또는 A의 Egress가 부른다."""
+    async def ask_group(self, ctx: "AgentContext", group: str, question: str, purpose: str | None = None,
+                        hop: int | None = None) -> Response:
+        """그룹 B의 경계 모듈(Ingress)에게. 요청자 또는 A의 Egress가 부른다. Egress의 소관 밖 재발신은 hop을 2로 넘겨
+        받는 쪽이 다시 돌려보내지 못하게 한다."""
         k = self.kernel
         span = ctx.span.child()
         rid = self._rid(ctx, span)
-        req = self._request(ctx, rid, group, None, question, purpose)
+        req = self._request(ctx, rid, group, None, question, purpose, hop)
         head = {"task_id": ctx.task_id, "rid": rid, "from_agent": ctx.agent_id, "to_agent": None, "to_group": group,
                 "serving": ctx.serving}
         refused = self._requester_policy(ctx, f"group:{group}", question)
