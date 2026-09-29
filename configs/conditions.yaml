@@ -3,7 +3,7 @@
 # budget: 과제 전체의 LLM 호출 수·토큰 상한. 요청자·응답자(중첩 포함)·경계 모듈 합산. 모든 조건 동일 (조건별로 바꿀 수 없다).
 # card_mode: static | dynamic, responder_session: persistent | ephemeral (기본 persistent)
 defaults:
-  budget: {calls: null, tokens: null}         # B_CALLS, B_TOKENS: 파일럿 뒤 확정. null이면 상한 없이 소비량만 기록
+  budget: {calls: 60, tokens: 400000}        # 파일럿 상한 (2026-09-29). 본 실행 B_CALLS·B_TOKENS는 파일럿 사용량 분포로 확정
   final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
   requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
 

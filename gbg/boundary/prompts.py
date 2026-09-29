@@ -5,7 +5,6 @@ Read the request and extract, without answering it:
 - entities: every person, department, ID, item or product the request is about, copied exactly as written
 - attribute: the information that is requested, in a few words
 - purpose: why it is requested, in a few words (empty if not stated)
-- missing: only if the request cannot be handled at all without more information (no identifiable subject, or no requested information), list what is missing; otherwise an empty list
 Answer only by calling the interpret tool.
 
 This group: {group_desc}"""
@@ -14,9 +13,8 @@ INTERPRET_TOOL = {
     "name": "interpret", "description": "Record how the request is understood.",
     "parameters": {"type": "object", "properties": {
         "entities": {"type": "array", "items": {"type": "string"}},
-        "attribute": {"type": "string"}, "purpose": {"type": "string"},
-        "missing": {"type": "array", "items": {"type": "string"}}},
-        "required": ["entities", "attribute", "missing"], "additionalProperties": False}}
+        "attribute": {"type": "string"}, "purpose": {"type": "string"}},
+        "required": ["entities", "attribute"], "additionalProperties": False}}
 
 ROUTE_SYSTEM = """You are the intake desk of a business group. Decide who in this group should answer a request from another group.
 You see the request, the members of this group, and the group records found for it (each record shows which member wrote or handled it).

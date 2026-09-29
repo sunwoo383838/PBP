@@ -40,14 +40,13 @@ def _call(name, args):
     return T.mk([(name, args)])
 
 
-def oracle(req, *, route_referral: dict | None = None, assemble_missing: list | None = None, interpret_missing=None):
+def oracle(req, *, route_referral: dict | None = None, assemble_missing: list | None = None):
     """스크립트 LLM: 도구 목록으로 역할을 알아본다."""
     tools, msgs = _tools(req), req["messages"]
     system, user = msgs[0]["content"], msgs[1]["content"]
     if "interpret" in tools:
         ents = [a for a in ALIASES if a in user]
-        return _call("interpret", {"entities": ents, "attribute": "requested information",
-                                   "missing": interpret_missing(user) if interpret_missing else []})
+        return _call("interpret", {"entities": ents, "attribute": "requested information"})
     if "route" in tools:
         if route_referral:
             for ent, group in route_referral.items():
@@ -143,7 +142,7 @@ def _chosen(events) -> dict[str, list[str]]:
 def test_routing_forwards_original_request_and_returns_replies_verbatim(tmp_path):
     r, ev = run(tmp_path, "routing")
     decisions = [e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"]["stage"] == "ingress"]
-    assert decisions and all(d["deliver"] == "forward" and d["router_guard"] == [] for d in decisions)
+    assert decisions and all(d["deliver"] == "forward" for d in decisions)
     inner = [e["payload"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"
              and e["actor"].startswith("boundary:")]
     for d in decisions:
@@ -152,7 +151,22 @@ def test_routing_forwards_original_request_and_returns_replies_verbatim(tmp_path
     got = [e["payload"]["response"]["answer"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
            and e["actor"].startswith("boundary:")]
     assert got and all(a.startswith("[Reply 1] ") for a in got if a)
-    assert not (tmp_path / "obs" / "run_invalid.jsonl").exists()
+
+
+def test_router_output_leak_stops_the_run_as_a_bug(tmp_path):
+    """라우터가 만든 출력(선택 결과·referral 사유)에 검색 결과의 값이 들어가면 버그: 실행을 멈춘다."""
+    from gbg.kernel.errors import FatalError
+
+    def script(req):
+        if "route" in _tools(req):
+            records = req["messages"][1]["content"].split("Group records found:\n", 1)[1]
+            amount = re.search(r"\d{1,3}(?:,\d{3})+", records)
+            if amount:
+                return _call("route", {"action": "referral", "agents": [], "referral_to": "FIN-TYO",
+                                       "reason": f"the {amount.group(0)} KRW item is executed there"})
+        return oracle(req)
+    with pytest.raises(FatalError, match="라우터 출력"):
+        run(tmp_path, "routing", script=script)
 
 
 def test_boundary_calls_are_charged_to_the_task_budget(tmp_path):
@@ -254,15 +268,19 @@ def test_ingress_sel_definition_has_no_state_versions_or_requery():
     assert sel.deliver == "assemble" and not (sel.requery or sel.boundary_state or sel.version_marks)
 
 
-def test_need_more_when_interpretation_is_missing_items(tmp_path):
+def test_need_more_only_when_no_entity_resolves(tmp_path):
+    """worldgen 규정에 접수 요건이 없으므로 need_more는 엔티티를 하나도 해소하지 못했을 때만 쓴다."""
     def script(req):
-        return oracle(req, interpret_missing=lambda u: ["which department"] if "Is CMT-00001" in u else [])
+        tools = _tools(req)
+        if "ask_group" in tools and len(req["messages"]) == 2 and "[Task W-005]" in req["messages"][1]["content"]:
+            return _call("ask_group", {"group": "FIN-SEL", "question": "Is that item still alive?"})   # 엔티티 없음
+        return oracle(req)
     _, ev = run(tmp_path, "routing", script=script)
     nm = [e["payload"] for e in ev if e["type"] == "boundary_decision" and e["payload"].get("action") == "need_more"]
-    assert nm
+    assert [d["task_id"] for d in nm] == ["W-005"], "엔티티가 있는 요청은 되묻지 않는다"
     resp = [e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
             and e["actor"].startswith("boundary:") and e["payload"]["response"]["status"] == "need_more"]
-    assert resp and resp[0]["need"] == ["which department"]
+    assert resp and resp[0]["need"]
 
 
 def test_boundary_budget_exhaustion_sends_requester_to_final_answer(tmp_path):
@@ -350,3 +368,19 @@ def test_full_load_orders_by_day_round_and_wal_seq(tmp_path):
     shown = [public_id(a) for *_, a in entries]
     got = [m for m in re.findall(r"^\(day \d+ · (agent-\w+)\)", out.result["records"], re.M)]
     assert got[-len(shown):] == shown
+
+
+def test_several_tool_calls_in_one_step_all_run(tmp_path):
+    """요청자는 한 단계에서 여러 도구를 부를 수 있다 (모든 조건 동일). 최대 단계는 10."""
+    assert T.P.agent.max_steps == 10
+
+    def script(req):
+        tools, msgs = _tools(req), req["messages"]
+        if "submit" in tools and len(msgs) == 2 and "[Task W-001]" in msgs[1]["content"]:
+            return T.mk([("ask_group", {"group": "HR-SEL", "question": "grade of 하린 과장?"}),
+                         ("ask_group", {"group": "HR-TYO", "question": "grade of 하린 과장?"})])
+        return oracle(req)
+    _, ev = run(tmp_path, "routing", script=script, max_day=1)
+    asked = [e["payload"]["to_group"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "request"
+             and e["payload"]["task_id"] == "W-001" and e["actor"] == "agent:fin-sel.a1"]
+    assert asked == ["HR-SEL", "HR-TYO"]

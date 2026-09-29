@@ -1,10 +1,12 @@
 """그룹 경계 모듈: 들어오는 요청은 Ingress, 나가는 요청은 Egress(I+E)로 처리한다.
 
 Ingress (모든 경계 조건에서 담당자 선택은 같다. 조건마다 다른 것은 전달 방식뿐):
-    1 해석(LLM ①) → 2 별칭 해소 → 3 need_more(해석에 빠진 항목) → 4 그룹 기록 검색(색인 entities + catalog 연결 +
+    1 해석(LLM ①) → 2 별칭 해소 → 3 need_more(엔티티를 하나도 해소하지 못했을 때만. worldgen 규정에 접수 요건이 없어
+    그 밖의 근거는 없다) → 4 그룹 기록 검색(색인 entities + catalog 연결 +
     하이브리드 이력 검색) → 5 LLM이 검색 결과로 담당자 선택 또는 referral(소유권 예외 기록) → 6 내부 질의(요청 원문,
     인원 상한 없음, 과제 예산이 상한) → 전달
-        forward   응답 원문을 그대로 돌려준다 (Routing). 검색 결과는 선택에만 쓰고, 출력은 router_guard로 검사
+        forward   응답 원문을 그대로 돌려준다 (Routing). 검색 결과는 선택에만 쓴다. 라우터가 만든 출력(선택 결과,
+                  referral 사유)에 검색 결과의 카나리 값이 있으면 버그로 보고 실행을 멈춘다 (router_guard)
         assemble  LLM ②가 증거 + 응답으로 조립 (ingress_sel · Ingress · I+E)
                   boundary_state: 이 창구의 과거 교차 문답·제공 버전·진행 중 요청을 조립에 쓴다
                   version_marks: DB 버전(같은 키·버전 번호)을 보여 주고 버전을 표시하게 한다
@@ -22,10 +24,11 @@ from gbg.contracts.conditions import Condition
 from gbg.contracts.envelope import Request, Response, SourcedValue
 from gbg.retrieval.evidence import Evidence, build_evidence
 from gbg.retrieval.hybrid import GroupRetriever, authorize
+from gbg.kernel.errors import FatalError
 from gbg.retrieval.normalize import normalize
 
 from . import prompts as P
-from .router_guard import check_router_output
+from .router_guard import router_leaks
 
 
 def _dumps(x) -> str:
@@ -41,7 +44,6 @@ class Interpretation:
     entities: list[str]
     attribute: str
     purpose: str
-    missing: list[str]
 
 
 @dataclass
@@ -119,16 +121,14 @@ class BoundaryModule:
 
         # 1 해석
         def check_interp(a):
-            ents, missing = a.get("entities", []), a.get("missing", [])
+            ents = a.get("entities", [])
             if not (isinstance(ents, list) and all(isinstance(x, str) for x in ents)):
                 return False, "entities must be a list of strings"
-            if not (isinstance(missing, list) and all(isinstance(x, str) for x in missing)):
-                return False, "missing must be a list of strings"
             if not isinstance(a.get("attribute", ""), str):
                 return False, "attribute must be a string"
-            return True, Interpretation(ents, a.get("attribute", ""), a.get("purpose", "") or "", missing)
+            return True, Interpretation(ents, a.get("attribute", ""), a.get("purpose", "") or "")
         it = await self._tool(bctx, step, "interpret", P.INTERPRET_SYSTEM.format(group_desc=self._group_desc(stores)),
-                              text, P.INTERPRET_TOOL, check_interp) or Interpretation([], "", "", [])
+                              text, P.INTERPRET_TOOL, check_interp) or Interpretation([], "", "")
         trace["interpretation"] = it.__dict__
 
         # 2 별칭 해소 (표면형마다 + 요청 전체 태깅)
@@ -141,11 +141,12 @@ class BoundaryModule:
         entities = list(resolved)
         trace["entities"] = entities
 
-        # 3 need_more: 해석에 빠진 항목이 있으면 되묻는다
-        if it.missing:
+        # 3 need_more: 엔티티를 하나도 해소하지 못했을 때만 되묻는다
+        if not entities:
+            need = ["the person, department, ID or item the request is about"]
             trace["action"] = "need_more"
-            return Response(rid=req.rid, status="need_more", answer="More information is needed: " + "; ".join(it.missing),
-                            values=[], missing=[], referral_to=None, need=list(it.missing), as_of=day)
+            return Response(rid=req.rid, status="need_more", answer="More information is needed: " + need[0],
+                            values=[], missing=[], referral_to=None, need=need, as_of=day)
 
         # 4 그룹 기록 검색
         rec = authorize(bctx.kernel.guard, bctx.actor, self.group, self.group)
@@ -177,6 +178,11 @@ class BoundaryModule:
             return True, a
         route = await self._tool(bctx, step, "route", P.ROUTE_SYSTEM.format(group_desc=self._group_desc(stores)),
                                  route_user, P.ROUTE_TOOL, check_route) or {"action": "select", "agents": []}
+        if self.cond.ingress.deliver == "forward":                        # 라우터가 만든 출력의 카나리 검사
+            leaked = router_leaks([*route.get("agents", []), route.get("referral_to") or "", route.get("reason") or ""],
+                                  [x.text for x in ev.items], req.question)
+            if leaked:
+                raise FatalError(f"라우터 출력에 검색 결과의 값이 들어감 ({self.group}, {req.rid}): {leaked}")
         if route["action"] == "referral":
             trace.update(action="referral", referral_to=route["referral_to"], reason=route.get("reason"))
             return Response(rid=req.rid, status="referral", answer=f"This is handled by {route['referral_to']}.",
@@ -215,15 +221,6 @@ class BoundaryModule:
         missing = list(dict.fromkeys(m for _, r in replies for m in r.missing))
         ok = [r for _, r in replies if r.status in ("ok", "partial")]
         status = "error" if not ok else ("ok" if all(r.status == "ok" for r in ok) and not missing else "partial")
-        guard = check_router_output(req.question, {a: req.question for a, _ in replies}, pieces, pieces,
-                                    [it.text for it in ev.items])
-        trace["router_guard"] = guard.violations
-        if not guard.ok:                                                   # 검색 결과가 라우터 출력으로 샘: 런 무효
-            bctx.span.emit("boundary_decision", bctx.actor, {"task_id": bctx.task_id, "stage": "router_guard",
-                                                               "group": self.group, "rid": req.rid,
-                                                               "violations": guard.violations},
-                           obs=[("run_invalid", {"reason": "router_output_leak", "rid": req.rid,
-                                                 "violations": guard.violations})])
         return Response(rid=req.rid, status=status, answer=answer, values=values, missing=missing, referral_to=None,
                         need=[], as_of=bctx.day)
 

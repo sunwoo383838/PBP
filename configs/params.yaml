@@ -29,7 +29,7 @@ context:
   summary: 2000                             # 창 이전 항목의 digest, 최신부터
 
 agent:
-  max_steps: 6
+  max_steps: 10                             # 모든 조건 동일. 한 단계의 여러 도구 호출도 모두 실행한다
   format_retries: 1
   full_load_tokens: 40000                   # full_load: 상대 그룹 이력을 이어 붙여 이 토큰에서 자름 (오래된 줄부터)
 

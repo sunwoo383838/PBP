@@ -220,7 +220,7 @@ def test_conditions_load_ladder_and_reference_rows():
     assert all(c.card_mode == "static" for n, c in conds.items() if n != "direct_dyncard")
     assert all(c.responder_session == "persistent" for c in conds.values())
     d = conds.defaults
-    assert d.budget.calls is None and d.budget.tokens is None, "B_CALLS/B_TOKENS는 파일럿 뒤 확정"
+    assert (d.budget.calls, d.budget.tokens) == (60, 400000), "파일럿 상한. 본 실행 값은 파일럿 사용량 분포로 확정"
     assert d.final_reserve.calls == 1 and d.requester.max_asks is None and d.requester.requery
 
 
