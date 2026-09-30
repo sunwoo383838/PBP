@@ -25,6 +25,7 @@ def error_response(rid: str, reason: str, day: int) -> Response:
 class Bus:
     def __init__(self, kernel: "Kernel", hop_limit: int):
         self.kernel, self.hop_limit = kernel, hop_limit
+        self.relayed: dict[str, int] = {}                                 # [direct_relay] 받은 요청 rid → 되물은 횟수
 
     def _rid(self, ctx: "AgentContext", span) -> str:
         return f"{ctx.task_id}/" + ".".join(str(x) for x in span.prefix[2:])
@@ -55,7 +56,7 @@ class Bus:
         req = self._request(ctx, rid, to.group if to else "", to_agent, question, purpose, hop)
         head = {"task_id": ctx.task_id, "rid": rid, "from_agent": ctx.agent_id, "to_agent": to_agent,
                 "to_group": req.to_group, "serving": ctx.serving}
-        refused = self._requester_policy(ctx, to_agent, question)
+        refused = self._requester_policy(ctx, to_agent, question, to.group if to else None)
         if refused is None and req.hop > self.hop_limit:
             refused = "hop_limit"
         if refused is None and not k.is_active(to_agent):
@@ -66,6 +67,11 @@ class Bus:
             resp, actor = error_response(rid, refused, ctx.day), "kernel"
         else:
             resp, actor = await self._respond(ctx, span, req, to_agent, to.group, to.role), f"agent:{to_agent}"
+            if to.group in k.sidecars and resp.status != "error":           # [sidecar] 받은 에이전트의 모듈이 그룹 기록으로 보탠다
+                try:
+                    resp = await k.sidecars[to.group].sidecar(ctx, span, req, to_agent, resp)
+                except BudgetExhausted:                                     # 모듈이 예산에 막힘: 에이전트의 답만
+                    pass
         span.emit("message", actor, {**head, "kind": "response", "question": question,
                                       "response": resp.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "response", resp.answer, "agent"))
         return resp
@@ -138,11 +144,19 @@ class Bus:
                                       "response": resp.model_dump(mode="json")}, obs=self._msg_obs(ctx, req, "response", resp.answer, "egress"))
         return resp
 
-    def _requester_policy(self, ctx: "AgentContext", to: str, question: str) -> str | None:
+    def _requester_policy(self, ctx: "AgentContext", to: str, question: str, to_group: str | None = None) -> str | None:
         """요청자 권한 (defaults.requester): 과제 담당자의 질문 수 상한과 같은 질문 반복 허용 여부.
-        응답자의 중첩 질의는 모든 조건에서 끈다 (경계 모듈의 내부 질의는 응답자가 아니라 경계 모듈이 한다)."""
+        응답자의 중첩 질의는 끈다 (경계 모듈의 내부 질의는 응답자가 아니라 경계 모듈이 한다). 예외는 부록 direct_relay:
+        요청자에게 직접 받은 질문(홉 1)에 답하는 응답자가 자기 그룹 동료에게, 받은 요청 하나당 relay_max번까지."""
         if ctx.component == "responder":
-            return "nested_asks_disabled"
+            k = self.kernel
+            if not (k.relay_max and ctx.hop == 1 and to_group == ctx.group and to != ctx.agent_id):
+                return "nested_asks_disabled"
+            n = self.relayed.get(ctx.serving, 0)
+            if n >= k.relay_max:
+                return "relay_limit"
+            self.relayed[ctx.serving] = n + 1
+            return None
         b = self.kernel.budget
         if b is None or ctx.component != "requester":
             return None

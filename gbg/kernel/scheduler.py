@@ -144,6 +144,8 @@ class Kernel:
         self._t0 = self._clock()
         self._task_cache: ContextVar = ContextVar(f"task_cache_{id(self)}", default=None)
         self.boundaries: dict = {}                 # 그룹 → 경계 모듈 (경계 조건에서만)
+        self.sidecars: dict = {}                   # [부록 sidecar] 그룹 → 받은 에이전트에 붙는 검색·조립 모듈 (상태 없음)
+        self.relay_max = 0                         # [부록 direct_relay] 응답자가 받은 요청 하나당 동료 되묻기 상한 (0 = 끔)
         self.budget_limit = True                   # False면 과제 예산 상한 미적용 (참조 행 full_load)
 
 

@@ -67,6 +67,20 @@ COMM_TOOLS = {
                                        "a piece you need.",
                           {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
                            "required": ["group", "question"], "additionalProperties": False}),
+    "ask_group_read": ("ask_group", "Ask a group in the directory (by its id) a question. The group's intake desk finds "
+                                    "the members who hold the information, has them answer from their records, database "
+                                    "and rules, and returns each member's reply as is, followed by the group's records found "
+                                    "for the question (each with its day and writer, as written). The desk does not combine "
+                                    "or check them: weigh the replies and records yourself. Ask each group whose area covers "
+                                    "a piece you need.",
+                       {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
+                        "required": ["group", "question"], "additionalProperties": False}),
+    "ask_colleague": ("ask_colleague", "Ask a colleague in your own group (listed under 'Members of your group', by id) a "
+                                       "question about a part you cannot find in your own records. The colleague answers "
+                                       "from their own records, database and rules only. You can ask at most {max_asks} "
+                                       "times for this question.",
+                      {"type": "object", "properties": {"agent_id": {"type": "string"}, "question": {"type": "string"}},
+                       "required": ["agent_id", "question"], "additionalProperties": False}),
     "ask": ("ask", "State the information you need and why. Your outgoing desk decides which group(s) in the directory "
                    "hold it and sends them the request. Each group's intake desk returns each member's reply as is, plus "
                    "supplementary items, conflict notes and proposed values with their sources from the group's records. "
@@ -116,10 +130,10 @@ def render_directory(cards: list[AgentCard] | list[GroupCard]) -> str:
     return "\n".join(lines) if lines else "(none)"
 
 
-def render_members(cards: list[AgentCard], group: str) -> str:
+def render_members(cards: list[AgentCard], group: str, tool: str = "ask_agent") -> str:
     """경계 조건의 자기 그룹 구성원 목록 (불투명 id · 지역 · skills). 그룹 메타데이터만 붙인다."""
     body = render_directory(cards) if cards else "(none)"
-    return f"Members of your group ({group}), reachable with ask_agent:\n{body}"
+    return f"Members of your group ({group}), reachable with {tool}:\n{body}"
 
 
 PERIOD_NOTE = "- Periods: anything recorded as lasting \"until day N\" (a hold, reservation, exclusion, delay or exception) is still in effect on day N."

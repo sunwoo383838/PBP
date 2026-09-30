@@ -188,11 +188,40 @@ class BoundaryModule:
                   obs=[("gateway", {"day": bctx.day, "round": bctx.round, "task_id": ctx.task_id, **gw})] if gw else None)
         return resp
 
-    async def _ingress(self, bctx, span, req, stores, step, trace) -> Response:
+    # ─────────────────────────── Sidecar (부록) ───────────────────────────
+    async def sidecar(self, ctx, span, req: Request, agent: str, reply: Response) -> Response:
+        """[부록 sidecar] Direct에서 요청을 받은 에이전트에 붙은 모듈. 그 에이전트가 혼자 답한 뒤, 모듈이 그룹 기록을
+        검색해 Ingress와 같은 조립(보탬·충돌·제안·빠짐)을 붙인다. 다른 구성원에게 묻지 않고, 재질의와 요청 간 상태가
+        없다. 에이전트의 설명 글은 그대로 앞에 둔다(담당자 답 원문을 버리지 않는다)."""
+        stores = ctx.kernel.stores
+        bctx = self._ctx(ctx, span, req)
+        step = [0]
+        trace = {"stage": "sidecar", "group": self.group, "agent": agent, "rid": req.rid, "from_group": req.from_group,
+                 "question": req.question, "deliver": "assemble"}
+        self._gw[req.rid] = {"rid": req.rid, "group": self.group, "from_group": req.from_group, "sidecar_of": agent}
+        text, it, entities, ev = await self._prepare(bctx, span, req, stores, step, trace)
+        trace.update(action="sidecar", selected=[agent])
+        out = await self._assemble(bctx, span, req, text, it, entities, ev, [(agent, reply)], stores, step, trace)
+        if out.status == "error":                                          # 조립 실패: 에이전트의 답만
+            resp = reply
+        else:
+            answer = f"[Reply 1] ({reply.status}) {reply.answer}".rstrip()
+            if out.answer:
+                answer += f"\n\n[Notes from the group's records] {out.answer}"
+            resp = out.model_copy(update={"answer": answer,
+                                          "missing": list(dict.fromkeys([*reply.missing, *out.missing])),
+                                          "status": "partial" if (reply.missing or out.missing) else out.status})
+        trace["status"] = resp.status
+        gw = self._gw.pop(req.rid, None)
+        span.emit("boundary_decision", bctx.actor, {"task_id": ctx.task_id, **trace},
+                  obs=[("gateway", {"day": bctx.day, "round": bctx.round, "task_id": ctx.task_id, **gw})] if gw else None)
+        return resp
+
+    async def _prepare(self, bctx, span, req, stores, step, trace):
+        """1 해석 → 2 별칭 해소 → 4 그룹 기록 검색. Ingress와 sidecar가 같이 쓴다. (text, 해석, 엔티티, 증거)."""
         cfg = self.cond.ingress
         day = bctx.day
         text = req.question + (f"\nPurpose: {req.purpose}" if req.purpose else "")
-        today = f"Today is day {day}.\n"
 
         # 1 해석
         def check_interp(a):
@@ -234,6 +263,14 @@ class BoundaryModule:
                                              "selected": ev.log["selected"], "cap_reached": ev.cap_reached},
                   obs=[("access", {"day": day, "round": bctx.round, **rec}),
                        ("retrievals", {"day": day, "round": bctx.round, "rid": req.rid, **ev.log})])
+
+        return text, it, entities, ev
+
+    async def _ingress(self, bctx, span, req, stores, step, trace) -> Response:
+        cfg = self.cond.ingress
+        day = bctx.day
+        today = f"Today is day {day}.\n"
+        text, it, entities, ev = await self._prepare(bctx, span, req, stores, step, trace)
 
         if not cfg.internal_query:                                         # [gateway_rag] 묻지 않고 그룹 기록만으로 답
             trace.update(action="coordinate")

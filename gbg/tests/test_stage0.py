@@ -201,7 +201,8 @@ def test_card_kinds_are_distinct():
 # ─────────────────────────── 2. 조건 설정 ───────────────────────────
 def test_conditions_load_ladder_and_reference_rows():
     conds = load_conditions(CONFIGS / "conditions.yaml")
-    assert list(conds) == ["direct", "routing", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load", "gateway_rag",
+    assert list(conds) == ["direct", "routing", "ingress_read", "ingress_sel", "ingress", "i_e", "full_load",
+                           "direct_relay", "retrieve", "sidecar", "gateway_rag",   # 부록 3종 (2026-09-30)
                            "ingress_no_requery", "egress_no_history", "retrieval_oracle"]
     assert not {"routing_reveal", "direct_dyncard", "direct_ephemeral", "ingress_raw", "coordinator"} & set(conds)
     fl = conds["full_load"]

@@ -21,6 +21,10 @@ ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliv
 ingress:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: null}
 i_e:             {agent_tool: ask,       directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: true}}
 full_load:       {agent_tool: search_memory, directory: group_cards, ingress: null, egress: null}   # 권한 분할 없는 단일 에이전트(참조): 조직 전체 DB 조회(group 인자 없음) + 전 그룹 규정 + 조직 전체 이력 검색(게이트웨이와 같은 검색기). 과제 예산 동일
+# 부록 (2026-09-30 사용자 결정: 기준 셀 D5·R2, 27B, 시드 12~14, 1~10일)
+direct_relay:    {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null, relay: {max_asks: 3}}   # Direct + 응답자가 자기 그룹 동료 최대 3명에게 되물음(한 단계). 요청자에게는 응답자의 답만
+retrieve:        {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null, budget_bonus_calls: 1}   # 게이트웨이가 검색·담당자 질의까지, 조립 없이 담당자 답 원문 + 근거 원문(증거 상한 안) 전달. 결정은 요청자, 요청자 호출 +1
+sidecar:         {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null, sidecar: {deliver: assemble, version_marks: true}}   # Direct + 받은 에이전트마다 ingress와 같은 검색·조립 모듈. 그 에이전트 혼자 답하고 모듈이 그룹 기록으로 보탬. 요청 간 상태 공유·재질의 없음
 gateway_rag:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, internal_query: false, boundary_state: true, version_marks: true}, egress: null}   # 담당자에게 묻지 않고 그룹 기록만으로 답하는 게이트웨이 (Ingress의 6·9단계 생략)
 ingress_no_requery: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: false, boundary_state: true, version_marks: true}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Ingress의 9단계(재질의) 끔
 egress_no_history: {agent_tool: ask, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: false}, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Egress 1단계에 기록 대신 요청자 자신의 이력과 card

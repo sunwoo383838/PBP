@@ -78,6 +78,11 @@ class EgressConfig(Contract):
                                                 # card만 제공 (참조 행 egress_no_history)
 
 
+class RelayConfig(Contract):
+    """[부록 direct_relay] 응답자가 자기 그룹 동료에게 되묻기 (한 단계). 요청자에게는 응답자의 답만 간다."""
+    max_asks: int = 3                           # 받은 요청 하나당 동료에게 되물을 수 있는 횟수
+
+
 class Condition(Contract):
     agent_tool: Literal["ask_agent", "ask_group", "ask", "search_memory"]
     directory: Literal["agent_cards", "group_cards"]
@@ -87,6 +92,9 @@ class Condition(Contract):
     egress: EgressConfig | None
     blocked: str | None = None                  # 설정에는 있지만 실행기가 거부하는 조건 (사유)
     budget_limit: bool = True                   # False = 과제 예산 상한 미적용, 소비량만 기록 (지금은 쓰는 조건 없음)
+    relay: RelayConfig | None = None            # [부록 direct_relay] Direct 응답자의 그룹 안 되묻기
+    sidecar: IngressConfig | None = None        # [부록 sidecar] Direct에서 받은 에이전트마다 붙는 검색·조립 모듈 (그 에이전트 혼자 답함)
+    budget_bonus_calls: int = 0                 # [부록 retrieve] 요청자 호출 추가분 (원문 근거를 직접 읽는 부담)
 
     @model_validator(mode="after")
     def _consistent(self):
@@ -100,6 +108,15 @@ class Condition(Contract):
             raise ValueError("그룹에 묻는 조건은 받는 쪽 Ingress가 있어야 한다")
         if (self.egress is not None) != (self.agent_tool == "ask"):
             raise ValueError("Egress는 ask(question, purpose) 도구와 짝이다")
+        if (self.relay or self.sidecar) and not direct:
+            raise ValueError("relay·sidecar는 Direct(ask_agent)에만 붙는다")
+        if self.relay and self.sidecar:
+            raise ValueError("relay와 sidecar는 함께 쓰지 않는다")
+        if self.sidecar and (self.sidecar.deliver != "assemble" or self.sidecar.requery or self.sidecar.boundary_state
+                             or not self.sidecar.internal_query or self.sidecar.evidence != "search"):
+            raise ValueError("sidecar는 검색·조립만 한다: deliver assemble, 재질의·경계 상태 없음 (요청 간 상태 공유 없음)")
+        if self.budget_bonus_calls < 0:
+            raise ValueError("budget_bonus_calls는 0 이상")
         return self
 
 

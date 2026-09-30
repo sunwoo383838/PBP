@@ -54,9 +54,13 @@ class Runner:
         groups = [g.id for g in adapter.groups()]
         for tool in env_tools(self.stores) if env_tools else []:
             tools.register(org_tool(tool, groups) if full_load else tool)  # full_load: 조직 전체에 한 번에
+        if cond.budget_bonus_calls and defaults.budget.calls is not None:   # [부록 retrieve] 요청자 호출 추가분
+            defaults = defaults.model_copy(update={"budget": defaults.budget.model_copy(
+                update={"calls": defaults.budget.calls + cond.budget_bonus_calls})})
         self.kernel = Kernel(seed=seed, condition=condition, guard=AccessGuard(access, condition), tools=tools,
                              stores=self.stores, agent_factory=agent_factory, hop_limit=params.hop_limit,
                              defaults=defaults, llm=llm)
+        self.kernel.relay_max = cond.relay.max_asks if cond.relay else 0     # [부록 direct_relay]
         self.card_mode = cond.card_mode
         self._manifest = self._manifest_info(cond, retrieval, freeze, llm, embedder, reranker)
         self.kernel.budget_limit = cond.budget_limit
@@ -77,7 +81,7 @@ class Runner:
             raise ConfigError("retrieval_oracle에는 oracle_evidence/ 마운트가 필요하다 (gbg.cli.export_oracle)")
         oracle = ({p.stem: json.loads(p.read_text(encoding="utf-8")) for p in sorted(Path(oracle_evidence).glob("*.json"))}
                   if oracle_evidence is not None else None)
-        if cond.ingress is not None:                                       # 경계 조건: 그룹마다 경계 모듈 하나
+        if cond.ingress is not None or cond.sidecar is not None:            # 경계 조건: 그룹마다 경계 모듈 하나 (sidecar: 받은 에이전트에 붙는 모듈)
             if embedder is None or retrieval is None:
                 raise ConfigError(f"조건 '{condition}'의 경계 모듈에는 임베더와 조회 설정(retrieval)이 필요하다")
             from gbg.agents.prompts import record_kinds
@@ -88,8 +92,9 @@ class Runner:
             for g in adapter.groups():
                 resolver = AliasResolver(adapter.initial_state(g.id).aliases, embedder=embedder,
                                          embed_threshold=retrieval.alias.embed_threshold)
-                self.kernel.boundaries[g.id] = BoundaryModule(
-                    g.id, cond, retriever=GroupRetriever(self.stores, g.id, embedder, retrieval, reranker), resolver=resolver,
+                target = self.kernel.sidecars if cond.sidecar is not None else self.kernel.boundaries
+                target[g.id] = BoundaryModule(
+                    g.id, cond if cond.sidecar is None else cond.model_copy(update={"ingress": cond.sidecar}), retriever=GroupRetriever(self.stores, g.id, embedder, retrieval, reranker), resolver=resolver,
                     count=tokens or approx_tokens, format_retries=format_retries, oracle=oracle,
                     record_kinds=record_kinds(adapter.group_tools(g.id)) if hasattr(adapter, "group_tools") else ())
 

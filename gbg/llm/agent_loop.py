@@ -270,9 +270,11 @@ class LLMAgent:
             listed = {c.occupant for c in entries}
             entries += [c for c in self.members(ctx) if c.occupant not in listed]
         directory = render_directory(entries) if self._can_ask(ctx) else "(none)"   # 응답 중·full_load는 아무에게도 묻지 않는다
+        if self._relays(ctx):                                               # [direct_relay] 응답자: 자기 그룹 동료만
+            directory = render_members(self.members(ctx), ctx.group, tool="ask_colleague")
         if self._member_only(ctx):                                          # 그룹 추상화 조건: 자기 그룹 구성원 (그룹 표시만)
             directory += "\n\n" + render_members(self.members(ctx), ctx.group)
-        tools = [(s.name, s.description) for s in self.env(ctx)] + [(COMM_TOOLS[t][0], COMM_TOOLS[t][1]) for t in self.comm(ctx)]
+        tools = [(s.name, s.description) for s in self.env(ctx)] + [self._comm_spec(t)[:2] for t in self.comm(ctx)]
         rb = ctx.kernel.stores.rulebook                                     # 자기 그룹 규정 고정 (full_load는 전 그룹)
         if self.rt.condition.agent_tool == "search_memory":
             gs = sorted(cards.group_cards)
@@ -290,15 +292,26 @@ class LLMAgent:
         Direct는 ask_agent가 이미 모든 에이전트를 받고, 그 밖의 조건은 자기 그룹 구성원 한정 ask_agent(ask_member)를
         더한다. reveal_holders(조건에서 뺌, 코드만 둠)는 제한 없는 ask_agent를 더한다."""
         if isinstance(ctx, AgentContext) and ctx.serving is not None:
-            return []
+            return ["ask_colleague"] if self._relays(ctx) else []
         c = self.rt.condition
         if c.agent_tool == "ask_agent":
             return ["ask_agent"]
         if c.agent_tool == "search_memory":                               # full_load: 묻지 않는다. 조직 전체 기억 검색만
             return ["search_memory"]
-        tool = ("ask_group_forward" if c.agent_tool == "ask_group" and c.ingress is not None
-                and c.ingress.deliver in ("forward", "read") else c.agent_tool)   # Routing: 응답 원문만 돌려준다
+        tool = ({"forward": "ask_group_forward", "read": "ask_group_read"}.get(c.ingress.deliver, c.agent_tool)
+                if c.agent_tool == "ask_group" and c.ingress is not None else c.agent_tool)   # Routing: 응답 원문만 / retrieve: + 근거 원문
         return [tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
+
+    def _relays(self, ctx) -> bool:
+        """[direct_relay] 요청자에게 직접 받은 질문에 답하는 응답자(홉 1)만 자기 그룹 동료에게 되물을 수 있다."""
+        return (self.rt.condition.relay is not None and isinstance(ctx, AgentContext) and ctx.serving is not None
+                and ctx.boundary is None and ctx.hop == 1)
+
+    def _comm_spec(self, t: str) -> tuple:
+        name, desc, params = COMM_TOOLS[t]
+        if t == "ask_colleague":
+            desc = desc.format(max_asks=self.rt.condition.relay.max_asks)
+        return name, desc, params
 
     def _member_only(self, ctx) -> bool:
         """ask_agent가 자기 그룹 구성원 한정인가 (Direct가 아닌 조건)."""
@@ -317,7 +330,7 @@ class LLMAgent:
 
     def tool_schemas(self, group, finish: dict) -> list[dict]:
         return ([_fn(s.name, s.description, s.parameters) for s in self.env(group)]
-                + [_fn(*COMM_TOOLS[t]) for t in self.comm(group)]
+                + [_fn(*self._comm_spec(t)) for t in self.comm(group)]
                 + [_fn(finish["name"], finish["description"], finish["parameters"])])
 
     async def work(self, ctx: AgentContext, task: TimelineEvent) -> dict:
@@ -338,8 +351,13 @@ class LLMAgent:
         text = f"Today is day {ctx.day}.\n[Question from {who}] {request.question}"
         if request.purpose:
             text += f"\nPurpose: {request.purpose}"
-        text += ("\nAnswer only from your own records and your area's database, catalog and rules; you cannot ask "
-                 "anyone else. Check your records once; list any part you cannot find there in missing and do not keep "
+        head = ("\nAnswer from your own records and your area's database, catalog and rules. If a part of the question "
+                "is not in your records and a colleague in your group (listed under 'Members of your group') is likely to "
+                "hold it, you may ask that colleague with ask_colleague; you remain responsible for the reply."
+                if self._relays(ctx) else                                  # [direct_relay] 동료 되묻기 허용
+                "\nAnswer only from your own records and your area's database, catalog and rules; you cannot ask "
+                "anyone else.")
+        text += (head + " Check your records once; list any part you cannot find there in missing and do not keep "
                  "searching. Your area's rules are in the system section above; do not search for them. "
                  "Answer with the reply tool: one item per value, with IDs, names and amounts copied exactly as they "
                  "appear in the record, and in ref the ID of the lookup result (D1, D2, ...), the line of your records "
@@ -516,6 +534,14 @@ class LLMAgent:
             m = ctx.kernel.members.get(to)
             if self._member_only(ctx) and (m is None or m.group != ctx.group):          # 경계 조건: 자기 그룹만
                 return {"ok": False, "error": "not_a_member_of_your_group: ask other groups with the other communication tool"}
+            r = await ctx.ask(to, args["question"])
+        elif tool == "ask_colleague":                                     # [direct_relay] 자기 그룹 동료에게 (한 단계)
+            if not isinstance(args.get("agent_id"), str) or not isinstance(args.get("question"), str):
+                return {"ok": False, "error": "bad_arguments"}
+            to = ctx.kernel.stores.cards.resolve(args["agent_id"]) or args["agent_id"]
+            m = ctx.kernel.members.get(to)
+            if m is None or m.group != ctx.group or to == self.agent_id:
+                return {"ok": False, "error": "not_a_colleague: ask only members listed under 'Members of your group'"}
             r = await ctx.ask(to, args["question"])
         elif tool == "ask_group":
             if not isinstance(args.get("group"), str) or not isinstance(args.get("question"), str):
