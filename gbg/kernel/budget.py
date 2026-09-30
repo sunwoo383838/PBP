@@ -48,6 +48,7 @@ class TaskBudget:
     asks: int = 0
     asked: set = field(default_factory=set)
     responder_step_caps: int = 0                # 응답자가 10단계에 닿아 reply 전용 호출로 답한 횟수 (responder_step_cap)
+    inflight: int = 0                           # 허용됐지만 아직 청구 전인 비최종 호출 (동시 호출이 예약분을 먹지 않게)
 
     @property
     def calls(self) -> int:
@@ -58,21 +59,28 @@ class TaskBudget:
         return sum(u.tokens for u in self.by.values())
 
     def admit(self, final: bool, estimate: int = 0):
-        """이 호출을 해도 되는가. 안 되면 BudgetExhausted.
+        """이 호출을 해도 되는가. 안 되면 BudgetExhausted. 허용한 비최종 호출은 끝날 때(release)까지 진행 중으로 센다.
 
         estimate는 호출 전에 센 프롬프트 토큰 추정치다. 비최종 호출은 (사용량 + 추정치 + 예약 토큰) ≤ 상한일 때만
         허용하므로, 토큰 상한은 출력 토큰만큼만 넘을 수 있다. 최종 호출은 예약분이라 토큰으로는 막지 않는다.
         """
         lim, res = self.defaults.budget, self.defaults.final_reserve
         if final:
-            by = None if lim.calls is None or self.calls < lim.calls else "calls"
+            by = None if lim.calls is None or not self.final_used else "calls"    # 예약분은 요청자 최종 호출 1회의 몫
         else:
-            by = ("calls" if lim.calls is not None and self.calls + 1 + res.calls > lim.calls else
+            by = ("calls" if lim.calls is not None and self.calls + self.inflight + 1 + res.calls > lim.calls else
                   "tokens" if lim.tokens is not None and self.tokens + estimate + res.tokens > lim.tokens else None)
         if by:
             self.exhausted = True
             self.exhausted_by = self.exhausted_by or by
             raise BudgetExhausted()
+        if not final:
+            self.inflight += 1
+
+    def release(self, final: bool):
+        """허용된 호출이 끝남(청구 또는 실패). 비최종 호출의 진행 중 몫을 돌려준다."""
+        if not final:
+            self.inflight -= 1
 
     def charge(self, component: str, usage: dict, composition: dict | None, final: bool):
         u = self.by[component]

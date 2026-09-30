@@ -198,3 +198,31 @@ def test_task_sees_world_as_of_its_arrival(tmp_path):
            params=P.kernel, max_day=1).run()
     ans = answers(wal(tmp_path))
     assert ans["W-001"]["answer"]["seen"] == 999_001, "같은 라운드라도 도착 seq보다 앞선 세계 이벤트는 보인다"
+
+
+def test_concurrent_calls_cannot_take_the_final_reserve():
+    """동시에 허용된 비최종 호출(병렬 응답자)은 청구 전에도 진행 중으로 세어, 요청자 최종 호출 몫을 먹지 못한다.
+    (2026-09-30 본 실행: 병렬 응답자가 청구 전에 모두 허용돼 300·303회로 예약분을 넘겨 최종 호출이 거부됨)"""
+    from gbg.kernel.budget import BudgetExhausted, TaskBudget
+    b = TaskBudget("T", "a", with_defaults(calls=5).defaults)
+    for _ in range(4):                                                          # 4 + 1(예약) = 5
+        b.admit(False)
+    with pytest.raises(BudgetExhausted):
+        b.admit(False)                                                          # 다섯 번째 동시 호출은 예약분 침범
+    for _ in range(4):
+        b.release(False)
+        b.charge("responder", {"prompt_tokens": 1, "completion_tokens": 1}, None, False)
+    b.admit(True)                                                               # 최종 호출은 예약분으로 허용
+    b.release(True)
+    b.charge("requester", {"prompt_tokens": 1, "completion_tokens": 1}, None, True)
+    with pytest.raises(BudgetExhausted):
+        b.admit(True)                                                           # 예약분은 한 번뿐
+
+
+def test_final_call_allowed_even_if_calls_overshot():
+    """이미 상한을 넘겨 청구된 경우(이전 버전의 경합 등)에도 최종 호출 1회는 허용한다."""
+    from gbg.kernel.budget import TaskBudget
+    b = TaskBudget("T", "a", with_defaults(calls=3).defaults)
+    for _ in range(3):
+        b.charge("responder", {"prompt_tokens": 1, "completion_tokens": 1}, None, False)
+    b.admit(True)

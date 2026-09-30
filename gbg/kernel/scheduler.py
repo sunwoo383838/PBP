@@ -308,7 +308,10 @@ class Kernel:
         if final and component != "requester":
             raise FatalError("최종 답변 호출은 과제 담당자만 할 수 있다")
         self.budget.admit(final, estimate)                                  # 넘으면 BudgetExhausted
-        res = await (self.llm.complete(messages, tools, force) if force else self.llm.complete(messages, tools))
+        try:
+            res = await (self.llm.complete(messages, tools, force) if force else self.llm.complete(messages, tools))
+        finally:
+            self.budget.release(final)
         self.budget.charge(component, res.usage, composition, final)
         head = {"task_id": ctx.task_id, "agent": ctx.agent_id, "step": step, "component": component,
                 "final": final, "serving": ctx.serving}
