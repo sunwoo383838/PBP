@@ -2,7 +2,8 @@
 import json, sys, time
 from collections import Counter
 from pathlib import Path
-sys.path.insert(0, "/root/project/g2g_main/code")
+import os
+sys.path.insert(0, os.environ.get("GBG_CODE", "/root/project/g2g_main/code"))   # 채점기는 master(GBG_CODE)로 돌릴 수 있음
 from gbg.benchmarks.worldgen.scoring import load_private, strata, verify
 from gbg.scoring.ledger import build, load_events, load_prompts
 run, sc, maxday, out = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]), Path(sys.argv[4])

@@ -13,7 +13,7 @@
 - 9B는 넣지 않음(아래 §4). 본문 §6.7에서 수치로만 다루고 `f7`·`f20`(3패널판)은 부록.
 
 ### Fig. 3 — Where needs are lost (`f18_need_flow`, alluvial, 27B) ★
-- Direct는 route에서 51/100, Routing은 select 29 + use 31, Ingress는 assembly 17 + use 24. delivered & used 2 → 10 → 27.
+- Direct는 route에서 51/100, Routing은 select 29 + use 31, Ingress는 select 37(assembly 13 + search 9 + window 8 + answer 6) + use 24. delivered & used 2 → 10 → 27. (2026-10-06 채점 규칙 수정: 조립 조건의 assembly는 게이트웨이 입력에 있던 조각만 — `HARNESS_CHANGES.md`)
 - **선명한 이유**: 조건마다 병목이 한 관문씩 뒤로 밀리는 것이 흐름의 꺾임 위치로 보임. DS도 같은 패턴(route 44 → 9 → 0; `f12` 히트맵, 부록).
 
 ### Fig. 4 — Rescue without loss (`f21_outcome_transition`, 27B·DeepSeek) ★
