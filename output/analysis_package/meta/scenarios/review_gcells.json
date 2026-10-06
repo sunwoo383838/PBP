@@ -1,0 +1,437 @@
+[
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 12,
+  "path": "/root/project/g2g_main/scenarios_g/D3/D3_s12_T45",
+  "world_hash": "7a80c8d033195c54e858",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "10428 270 6",
+  "tasks": 270,
+  "all_n": 270,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.237,
+   "D": 0.156
+  },
+  "all_c_ops": 0.23,
+  "all_ngroups": {
+   "2": 107,
+   "3": 119,
+   "4": 31,
+   "5": 13
+  },
+  "d1_15_n": 90,
+  "d1_15_class": {
+   "A": 0.411,
+   "B": 0.211,
+   "C": 0.233,
+   "D": 0.144
+  },
+  "d1_15_c_ops": 0.244,
+  "d1_15_ngroups": {
+   "2": 36,
+   "3": 39,
+   "4": 12,
+   "5": 3
+  },
+  "unreachable_local": 12,
+  "other_region_scope_tasks": 15
+ },
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 13,
+  "path": "/root/project/g2g_main/scenarios_g/D3/D3_s13_T45",
+  "world_hash": "017aa53e9385925ca5bf",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "9943 270 6",
+  "tasks": 270,
+  "all_n": 270,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.237,
+   "D": 0.156
+  },
+  "all_c_ops": 0.23,
+  "all_ngroups": {
+   "2": 107,
+   "3": 111,
+   "4": 35,
+   "5": 17
+  },
+  "d1_15_n": 90,
+  "d1_15_class": {
+   "A": 0.411,
+   "B": 0.211,
+   "C": 0.222,
+   "D": 0.156
+  },
+  "d1_15_c_ops": 0.244,
+  "d1_15_ngroups": {
+   "2": 35,
+   "3": 38,
+   "4": 13,
+   "5": 4
+  },
+  "unreachable_local": 17,
+  "other_region_scope_tasks": 13
+ },
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 14,
+  "path": "/root/project/g2g_main/scenarios_g/D3/D3_s14_T45",
+  "world_hash": "bc358bf032ede92b4483",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "10217 270 6",
+  "tasks": 270,
+  "all_n": 270,
+  "all_class": {
+   "A": 0.407,
+   "B": 0.204,
+   "C": 0.233,
+   "D": 0.156
+  },
+  "all_c_ops": 0.23,
+  "all_ngroups": {
+   "2": 108,
+   "3": 114,
+   "4": 36,
+   "5": 12
+  },
+  "d1_15_n": 90,
+  "d1_15_class": {
+   "A": 0.411,
+   "B": 0.211,
+   "C": 0.244,
+   "D": 0.133
+  },
+  "d1_15_c_ops": 0.244,
+  "d1_15_ngroups": {
+   "2": 35,
+   "3": 42,
+   "4": 8,
+   "5": 5
+  },
+  "unreachable_local": 19,
+  "other_region_scope_tasks": 14
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 12,
+  "path": "/root/project/g2g_main/scenarios_g/R1/D5_s12_T45",
+  "world_hash": "4f300fe587d5efa0dc65",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7372 225 5",
+  "tasks": 225,
+  "all_n": 225,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "all_c_ops": 0.231,
+  "all_ngroups": {
+   "2": 46,
+   "3": 69,
+   "4": 68,
+   "5": 42
+  },
+  "d1_15_n": 75,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.24,
+   "D": 0.133
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 16,
+   "3": 24,
+   "4": 23,
+   "5": 12
+  },
+  "unreachable_local": 8,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 13,
+  "path": "/root/project/g2g_main/scenarios_g/R1/D5_s13_T45",
+  "world_hash": "4d8c76d3b87666799405",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7348 225 5",
+  "tasks": 225,
+  "all_n": 225,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.24,
+   "D": 0.151
+  },
+  "all_c_ops": 0.231,
+  "all_ngroups": {
+   "2": 47,
+   "3": 68,
+   "4": 68,
+   "5": 42
+  },
+  "d1_15_n": 75,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.2,
+   "C": 0.24,
+   "D": 0.147
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 16,
+   "3": 23,
+   "4": 24,
+   "5": 12
+  },
+  "unreachable_local": 6,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 14,
+  "path": "/root/project/g2g_main/scenarios_g/R1/D5_s14_T45",
+  "world_hash": "d76f3856f8f094ee2e2d",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7266 225 5",
+  "tasks": 225,
+  "all_n": 225,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "all_c_ops": 0.231,
+  "all_ngroups": {
+   "2": 46,
+   "3": 69,
+   "4": 68,
+   "5": 42
+  },
+  "d1_15_n": 75,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.253,
+   "D": 0.12
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 16,
+   "3": 24,
+   "4": 23,
+   "5": 12
+  },
+  "unreachable_local": 8,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 12,
+  "path": "/root/project/g2g_main/scenarios_g/R3/D5_s12_T45",
+  "world_hash": "8049ebc5ea1688655ff9",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21707 675 15",
+  "tasks": 675,
+  "all_n": 675,
+  "all_class": {
+   "A": 0.401,
+   "B": 0.201,
+   "C": 0.246,
+   "D": 0.151
+  },
+  "all_c_ops": 0.227,
+  "all_ngroups": {
+   "2": 135,
+   "3": 203,
+   "4": 204,
+   "5": 91,
+   "6": 30,
+   "7": 12
+  },
+  "d1_15_n": 225,
+  "d1_15_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.24,
+   "D": 0.151
+  },
+  "d1_15_c_ops": 0.231,
+  "d1_15_ngroups": {
+   "2": 45,
+   "3": 68,
+   "4": 68,
+   "5": 31,
+   "6": 10,
+   "7": 3
+  },
+  "unreachable_local": 32,
+  "other_region_scope_tasks": 36
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 13,
+  "path": "/root/project/g2g_main/scenarios_g/R3/D5_s13_T45",
+  "world_hash": "f99b63306ba5e103fd4f",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21938 675 15",
+  "tasks": 675,
+  "all_n": 675,
+  "all_class": {
+   "A": 0.401,
+   "B": 0.201,
+   "C": 0.244,
+   "D": 0.153
+  },
+  "all_c_ops": 0.227,
+  "all_ngroups": {
+   "2": 136,
+   "3": 203,
+   "4": 203,
+   "5": 92,
+   "6": 32,
+   "7": 9
+  },
+  "d1_15_n": 225,
+  "d1_15_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.24,
+   "D": 0.151
+  },
+  "d1_15_c_ops": 0.231,
+  "d1_15_ngroups": {
+   "2": 45,
+   "3": 69,
+   "4": 67,
+   "5": 29,
+   "6": 10,
+   "7": 5
+  },
+  "unreachable_local": 33,
+  "other_region_scope_tasks": 41
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 14,
+  "path": "/root/project/g2g_main/scenarios_g/R3/D5_s14_T45",
+  "world_hash": "b1384b50ed409d79a634",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21496 675 15",
+  "tasks": 675,
+  "all_n": 675,
+  "all_class": {
+   "A": 0.401,
+   "B": 0.201,
+   "C": 0.246,
+   "D": 0.151
+  },
+  "all_c_ops": 0.227,
+  "all_ngroups": {
+   "2": 136,
+   "3": 204,
+   "4": 203,
+   "5": 106,
+   "6": 23,
+   "7": 3
+  },
+  "d1_15_n": 225,
+  "d1_15_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "d1_15_c_ops": 0.231,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 69,
+   "4": 68,
+   "5": 34,
+   "6": 7,
+   "7": 1
+  },
+  "unreachable_local": 24,
+  "other_region_scope_tasks": 42
+ }
+]

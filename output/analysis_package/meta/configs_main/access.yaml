@@ -1,0 +1,50 @@
+# 접근 표. 선언되지 않은 접근은 거부된다.
+# scope: own = 주체와 같은 그룹 (own_history는 주체 자신) / other = 다른 그룹 / any = 전역 자원
+# perm: r | w | rw | context (ContextBuilder를 통해서만)
+subjects: [agent, boundary, kernel]
+
+resources:
+  own_history: agent
+  group_history: group
+  db: group
+  rulebook: group
+  index: group
+  egress_log: group
+  obs: global
+  private: global
+
+rules:
+  # agent (그룹 g의 구성원)
+  - {subject: agent,    resource: own_history,   scope: own,   perm: context}
+  - {subject: agent,    resource: db,            scope: own,   perm: r}
+  - {subject: agent,    resource: rulebook,      scope: own,   perm: r}
+  # boundary:g (모든 경계 조건 공통: 담당자 선택용 검색 = 색인 + catalog(db 자원) + 그룹 이력 하이브리드 검색, 규정)
+  - {subject: boundary, resource: group_history, scope: own,   perm: r}
+  - {subject: boundary, resource: db,            scope: own,   perm: r}
+  - {subject: boundary, resource: rulebook,      scope: own,   perm: r}
+  - {subject: boundary, resource: index,         scope: own,   perm: r}
+  - {subject: boundary, resource: egress_log,    scope: own,   perm: r}
+  # kernel: 그룹이 없으므로 own/other 모두 같다. db·rulebook은 시나리오가 정한 대로만 바뀌므로 r
+  - {subject: kernel,   resource: own_history,   scope: own,   perm: rw}
+  - {subject: kernel,   resource: own_history,   scope: other, perm: rw}
+  - {subject: kernel,   resource: group_history, scope: own,   perm: rw}
+  - {subject: kernel,   resource: group_history, scope: other, perm: rw}
+  - {subject: kernel,   resource: db,            scope: own,   perm: r}
+  - {subject: kernel,   resource: db,            scope: other, perm: r}
+  - {subject: kernel,   resource: rulebook,      scope: own,   perm: r}
+  - {subject: kernel,   resource: rulebook,      scope: other, perm: r}
+  - {subject: kernel,   resource: index,         scope: own,   perm: rw}
+  - {subject: kernel,   resource: index,         scope: other, perm: rw}
+  - {subject: kernel,   resource: egress_log,    scope: own,   perm: rw}
+  - {subject: kernel,   resource: egress_log,    scope: other, perm: rw}
+  - {subject: kernel,   resource: obs,           scope: any,   perm: w}
+  # private: 규칙 없음 (누구도 불가)
+
+# 조건별 차이: 조건 이름 → 추가 허용 규칙
+# full_load: 권한 분할 없는 단일 에이전트. 조직 전체의 DB·catalog(db 자원)·규정을 조회하고, 조직 전체 이력(자기 그룹 포함)을 검색한다.
+overrides:
+  full_load:
+    - {subject: agent, resource: db,            scope: other, perm: r}
+    - {subject: agent, resource: rulebook,      scope: other, perm: r}
+    - {subject: agent, resource: group_history, scope: other, perm: r}
+    - {subject: agent, resource: group_history, scope: own,   perm: r}   # 자기 그룹 이력도 (정의: 모든 권한)

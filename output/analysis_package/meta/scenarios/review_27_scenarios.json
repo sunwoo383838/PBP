@@ -1,0 +1,1298 @@
+[
+ {
+  "R": 1,
+  "D": 3,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D3_s12_T45",
+  "world_hash": "4cb23e89aa4250ec1c0c",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 1,
+  "integrity": "PASS",
+  "distribution": "CHECK",
+  "validate_fails": [
+   "[FAIL] F3 R tiers 15/40/25/20 ±5                      {'R0': 0.133, 'R1': 0.442, 'R2': 0.293, 'R3': 0.131}",
+   "[FAIL] F8 top signature ≤ 3%, explicit follow-ups 8–12% top 0.029 follow 0.073"
+  ],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "5697 450 3",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "all_c_ops": 0.231,
+  "all_ngroups": {
+   "2": 179,
+   "3": 271
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.213,
+   "C": 0.22,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 61,
+   "3": 89
+  },
+  "unreachable_local": 5,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 3,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D3_s13_T45",
+  "world_hash": "57c0e8128fb46f3b5052",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 1,
+  "integrity": "PASS",
+  "distribution": "CHECK",
+  "validate_fails": [
+   "[FAIL] F3 R tiers 15/40/25/20 ±5                      {'R0': 0.144, 'R1': 0.44, 'R2': 0.291, 'R3': 0.124}",
+   "[FAIL] F8 top signature ≤ 3%, explicit follow-ups 8–12% top 0.029 follow 0.058"
+  ],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "5349 450 3",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.409,
+   "B": 0.209,
+   "C": 0.222,
+   "D": 0.16
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 180,
+   "3": 270
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.213,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 61,
+   "3": 89
+  },
+  "unreachable_local": 17,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 3,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D3_s14_T45",
+  "world_hash": "85a352d17130d7865574",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 1,
+  "integrity": "PASS",
+  "distribution": "CHECK",
+  "validate_fails": [
+   "[FAIL] F3 R tiers 15/40/25/20 ±5                      {'R0': 0.133, 'R1': 0.444, 'R2': 0.298, 'R3': 0.124}",
+   "[FAIL] F8 top signature ≤ 3%, explicit follow-ups 8–12% top 0.029 follow 0.078"
+  ],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "5375 450 3",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.229,
+   "D": 0.158
+  },
+  "all_c_ops": 0.224,
+  "all_ngroups": {
+   "2": 180,
+   "3": 270
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.4,
+   "B": 0.207,
+   "C": 0.247,
+   "D": 0.147
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 61,
+   "3": 89
+  },
+  "unreachable_local": 7,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 4,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D4_s12_T45",
+  "world_hash": "51884fb6513a7ed3bc63",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "6682 450 4",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.229,
+   "D": 0.158
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 136,
+   "3": 181,
+   "4": 133
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.4,
+   "B": 0.207,
+   "C": 0.24,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 61,
+   "4": 43
+  },
+  "unreachable_local": 11,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 4,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D4_s13_T45",
+  "world_hash": "b996315907d3bd982852",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "6735 450 4",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 136,
+   "3": 180,
+   "4": 134
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.207,
+   "D": 0.167
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 61,
+   "4": 43
+  },
+  "unreachable_local": 21,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 4,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D4_s14_T45",
+  "world_hash": "447491fc48de59604c4b",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "6802 450 4",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.407,
+   "B": 0.209,
+   "C": 0.227,
+   "D": 0.158
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 136,
+   "3": 181,
+   "4": 133
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.213,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 60,
+   "4": 44
+  },
+  "unreachable_local": 13,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D5_s12_T45",
+  "world_hash": "100e531aec91a9fa3a44",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7763 450 5",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 136,
+   "4": 136,
+   "5": 87
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 32,
+   "3": 45,
+   "4": 46,
+   "5": 27
+  },
+  "unreachable_local": 13,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D5_s13_T45",
+  "world_hash": "df7115a692570d1f45e7",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7736 450 5",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 135,
+   "4": 136,
+   "5": 88
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 46,
+   "4": 46,
+   "5": 27
+  },
+  "unreachable_local": 12,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 1,
+  "D": 5,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R1/D5_s14_T45",
+  "world_hash": "e083b9c1c4f802bec5c6",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "7877 450 5",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 136,
+   "4": 136,
+   "5": 87
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.413,
+   "B": 0.213,
+   "C": 0.213,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 46,
+   "4": 46,
+   "5": 27
+  },
+  "unreachable_local": 14,
+  "other_region_scope_tasks": 0
+ },
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D3_s12_T45",
+  "world_hash": "1190b95493a84288994a",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "10599 450 6",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 180,
+   "3": 190,
+   "4": 53,
+   "5": 27
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 59,
+   "3": 61,
+   "4": 22,
+   "5": 8
+  },
+  "unreachable_local": 29,
+  "other_region_scope_tasks": 16
+ },
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D3_s13_T45",
+  "world_hash": "43808e8586c8b1620bd2",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "10775 450 6",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 179,
+   "3": 202,
+   "4": 48,
+   "5": 21
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 59,
+   "3": 67,
+   "4": 17,
+   "5": 7
+  },
+  "unreachable_local": 27,
+  "other_region_scope_tasks": 18
+ },
+ {
+  "R": 2,
+  "D": 3,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D3_s14_T45",
+  "world_hash": "dc5ae98eb7c7add93641",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "10627 450 6",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.233,
+  "all_ngroups": {
+   "2": 179,
+   "3": 199,
+   "4": 51,
+   "5": 21
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.4,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 59,
+   "3": 73,
+   "4": 13,
+   "5": 5
+  },
+  "unreachable_local": 26,
+  "other_region_scope_tasks": 18
+ },
+ {
+  "R": 2,
+  "D": 4,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D4_s12_T45",
+  "world_hash": "89b5fa229e5c179d2d9d",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "12750 450 8",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 136,
+   "3": 181,
+   "4": 98,
+   "5": 28,
+   "6": 7
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 44,
+   "3": 61,
+   "4": 31,
+   "5": 12,
+   "6": 2
+  },
+  "unreachable_local": 28,
+  "other_region_scope_tasks": 22
+ },
+ {
+  "R": 2,
+  "D": 4,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D4_s13_T45",
+  "world_hash": "e2678a5c747448f3c6d4",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "12805 450 8",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 135,
+   "3": 180,
+   "4": 98,
+   "5": 23,
+   "6": 14
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 44,
+   "3": 60,
+   "4": 31,
+   "5": 10,
+   "6": 5
+  },
+  "unreachable_local": 18,
+  "other_region_scope_tasks": 24
+ },
+ {
+  "R": 2,
+  "D": 4,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D4_s14_T45",
+  "world_hash": "b1798074ffa8de94f649",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "12957 450 8",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 135,
+   "3": 181,
+   "4": 103,
+   "5": 22,
+   "6": 9
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 45,
+   "3": 61,
+   "4": 33,
+   "5": 9,
+   "6": 2
+  },
+  "unreachable_local": 25,
+  "other_region_scope_tasks": 24
+ },
+ {
+  "R": 2,
+  "D": 5,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D5_s12_T45",
+  "world_hash": "bf0e805b56a46562af99",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "14739 450 10",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 135,
+   "4": 136,
+   "5": 59,
+   "6": 24,
+   "7": 5
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 46,
+   "4": 46,
+   "5": 20,
+   "6": 5,
+   "7": 2
+  },
+  "unreachable_local": 22,
+  "other_region_scope_tasks": 27
+ },
+ {
+  "R": 2,
+  "D": 5,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D5_s13_T45",
+  "world_hash": "7bd35b20a5149f541603",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "14802 450 10",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 90,
+   "3": 135,
+   "4": 136,
+   "5": 64,
+   "6": 19,
+   "7": 6
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 46,
+   "4": 46,
+   "5": 19,
+   "6": 7,
+   "7": 1
+  },
+  "unreachable_local": 27,
+  "other_region_scope_tasks": 28
+ },
+ {
+  "R": 2,
+  "D": 5,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R2/D5_s14_T45",
+  "world_hash": "0c958b56b360c9886ed1",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "14738 450 10",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 135,
+   "4": 136,
+   "5": 63,
+   "6": 21,
+   "7": 4
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.24,
+   "D": 0.147
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 30,
+   "3": 46,
+   "4": 45,
+   "5": 23,
+   "6": 4,
+   "7": 2
+  },
+  "unreachable_local": 20,
+  "other_region_scope_tasks": 24
+ },
+ {
+  "R": 3,
+  "D": 3,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D3_s12_T45",
+  "world_hash": "41912e1613d93357b1d1",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "15590 450 9",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 181,
+   "3": 184,
+   "4": 62,
+   "5": 23
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.253,
+   "D": 0.133
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 60,
+   "3": 62,
+   "4": 22,
+   "5": 6
+  },
+  "unreachable_local": 13,
+  "other_region_scope_tasks": 19
+ },
+ {
+  "R": 3,
+  "D": 3,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D3_s13_T45",
+  "world_hash": "896859b14eff6919dcff",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "14593 450 9",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.2,
+   "C": 0.251,
+   "D": 0.147
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 179,
+   "3": 180,
+   "4": 68,
+   "5": 23
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 59,
+   "3": 64,
+   "4": 18,
+   "5": 9
+  },
+  "unreachable_local": 11,
+  "other_region_scope_tasks": 21
+ },
+ {
+  "R": 3,
+  "D": 3,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D3_s14_T45",
+  "world_hash": "8ac866b0cdcc9843217d",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "15476 450 9",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.242,
+   "D": 0.153
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 179,
+   "3": 183,
+   "4": 62,
+   "5": 26
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.193,
+   "C": 0.247,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 60,
+   "3": 58,
+   "4": 25,
+   "5": 7
+  },
+  "unreachable_local": 16,
+  "other_region_scope_tasks": 15
+ },
+ {
+  "R": 3,
+  "D": 4,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D4_s12_T45",
+  "world_hash": "a387ae740b16cf795fcb",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "18279 450 12",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.249,
+   "D": 0.147
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 134,
+   "3": 180,
+   "4": 101,
+   "5": 25,
+   "6": 10
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.233,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 43,
+   "3": 61,
+   "4": 33,
+   "5": 8,
+   "6": 5
+  },
+  "unreachable_local": 23,
+  "other_region_scope_tasks": 29
+ },
+ {
+  "R": 3,
+  "D": 4,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D4_s13_T45",
+  "world_hash": "d6bd976ee9c74f27accb",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "18424 450 12",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 135,
+   "3": 181,
+   "4": 98,
+   "5": 31,
+   "6": 5
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.2,
+   "C": 0.24,
+   "D": 0.153
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 59,
+   "4": 31,
+   "5": 12,
+   "6": 2
+  },
+  "unreachable_local": 19,
+  "other_region_scope_tasks": 33
+ },
+ {
+  "R": 3,
+  "D": 4,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D4_s14_T45",
+  "world_hash": "87bc959e98dbc2b78ff4",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "18454 450 12",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 136,
+   "3": 181,
+   "4": 91,
+   "5": 29,
+   "6": 13
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 46,
+   "3": 59,
+   "4": 31,
+   "5": 9,
+   "6": 5
+  },
+  "unreachable_local": 24,
+  "other_region_scope_tasks": 26
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 12,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D5_s12_T45",
+  "world_hash": "0dab05920e8ec1ca8b74",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21242 450 15",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.244,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 136,
+   "4": 136,
+   "5": 57,
+   "6": 21,
+   "7": 9
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.207,
+   "C": 0.227,
+   "D": 0.16
+  },
+  "d1_15_c_ops": 0.233,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 45,
+   "4": 44,
+   "5": 19,
+   "6": 6,
+   "7": 5
+  },
+  "unreachable_local": 20,
+  "other_region_scope_tasks": 22
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 13,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D5_s13_T45",
+  "world_hash": "97653d77618d60b469f6",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21156 450 15",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.202,
+   "C": 0.247,
+   "D": 0.149
+  },
+  "all_c_ops": 0.238,
+  "all_ngroups": {
+   "2": 91,
+   "3": 136,
+   "4": 136,
+   "5": 66,
+   "6": 16,
+   "7": 5
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.4,
+   "B": 0.207,
+   "C": 0.247,
+   "D": 0.147
+  },
+  "d1_15_c_ops": 0.247,
+  "d1_15_ngroups": {
+   "2": 30,
+   "3": 46,
+   "4": 46,
+   "5": 21,
+   "6": 6,
+   "7": 1
+  },
+  "unreachable_local": 22,
+  "other_region_scope_tasks": 27
+ },
+ {
+  "R": 3,
+  "D": 5,
+  "seed": 14,
+  "path": "/tmp/claude-0/-root-project-g2g/4923a592-f33d-4f4b-95b1-1afe85e71230/scratchpad/wg44_eval/R3/D5_s14_T45",
+  "world_hash": "a75f3a17b6492360d1d4",
+  "generator": "worldgen_v4.4",
+  "params_ok": true,
+  "validate_rc": 0,
+  "integrity": "PASS",
+  "distribution": "PASS",
+  "validate_fails": [],
+  "validate_checks": 26,
+  "adapter_ok": true,
+  "adapter_out": "21656 450 15",
+  "tasks": 450,
+  "all_n": 450,
+  "all_class": {
+   "A": 0.402,
+   "B": 0.2,
+   "C": 0.247,
+   "D": 0.151
+  },
+  "all_c_ops": 0.229,
+  "all_ngroups": {
+   "2": 91,
+   "3": 136,
+   "4": 136,
+   "5": 55,
+   "6": 24,
+   "7": 8
+  },
+  "d1_15_n": 150,
+  "d1_15_class": {
+   "A": 0.407,
+   "B": 0.2,
+   "C": 0.247,
+   "D": 0.147
+  },
+  "d1_15_c_ops": 0.24,
+  "d1_15_ngroups": {
+   "2": 31,
+   "3": 46,
+   "4": 46,
+   "5": 13,
+   "6": 11,
+   "7": 3
+  },
+  "unreachable_local": 12,
+  "other_region_scope_tasks": 32
+ }
+]

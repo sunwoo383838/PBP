@@ -1,0 +1,2 @@
+main(1차·G 셀): 4b813f56d470d5947ee1a5ffa32e4ad1cafc30c9
+appendix(부록): d5851f416d43d28d11dec11e5219584fdfb057b2

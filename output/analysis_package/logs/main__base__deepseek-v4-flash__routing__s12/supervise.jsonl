@@ -1,0 +1,27 @@
+{"at": "2026-09-30T00:08:58+00:00", "event": "start", "restarts": 0, "from": null}
+{"at": "2026-09-30T16:23:57+00:00", "event": "start", "restarts": 0, "from": [10, 1]}
+{"at": "2026-09-30T18:14:43+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [11, 0], "same_point_count": 1}
+{"at": "2026-09-30T18:15:13+00:00", "event": "start", "restarts": 1, "from": [11, 0]}
+{"at": "2026-09-30T18:37:41+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [11, 1], "same_point_count": 1}
+{"at": "2026-09-30T18:38:11+00:00", "event": "start", "restarts": 2, "from": [11, 1]}
+{"at": "2026-09-30T19:01:03+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [11, 2], "same_point_count": 1}
+{"at": "2026-09-30T19:01:33+00:00", "event": "start", "restarts": 3, "from": [11, 2]}
+{"at": "2026-09-30T19:25:50+00:00", "event": "restart", "exit": 1, "restarts": 4, "at_point": [12, 0], "same_point_count": 1}
+{"at": "2026-09-30T19:26:20+00:00", "event": "start", "restarts": 4, "from": [12, 0]}
+{"at": "2026-09-30T20:02:42+00:00", "event": "restart", "exit": 1, "restarts": 5, "at_point": [12, 2], "same_point_count": 1}
+{"at": "2026-09-30T20:03:12+00:00", "event": "start", "restarts": 5, "from": [12, 2]}
+{"at": "2026-09-30T21:21:47+00:00", "event": "restart", "exit": 1, "restarts": 6, "at_point": [13, 0], "same_point_count": 1}
+{"at": "2026-09-30T21:22:17+00:00", "event": "start", "restarts": 6, "from": [13, 0]}
+{"at": "2026-09-30T21:24:17+00:00", "event": "restart", "exit": 1, "restarts": 7, "at_point": [13, 0], "same_point_count": 2}
+{"at": "2026-09-30T21:26:17+00:00", "event": "start", "restarts": 7, "from": [13, 0]}
+{"at": "2026-09-30T21:28:14+00:00", "event": "restart", "exit": 1, "restarts": 8, "at_point": [13, 0], "same_point_count": 3}
+{"at": "2026-09-30T21:28:14+00:00", "event": "stop", "point": [13, 0]}
+{"at": "2026-10-01T02:21:40+00:00", "event": "start", "restarts": 0, "from": [13, 0]}
+{"at": "2026-10-01T03:40:29+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [14, 0], "same_point_count": 1}
+{"at": "2026-10-01T03:40:59+00:00", "event": "start", "restarts": 1, "from": [14, 0]}
+{"at": "2026-10-01T03:41:51+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [14, 0], "same_point_count": 2}
+{"at": "2026-10-01T03:43:51+00:00", "event": "start", "restarts": 2, "from": [14, 0]}
+{"at": "2026-10-01T03:44:42+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [14, 0], "same_point_count": 3}
+{"at": "2026-10-01T03:44:42+00:00", "event": "stop", "point": [14, 0]}
+{"at": "2026-10-01T03:53:15+00:00", "event": "start", "restarts": 0, "from": [14, 0]}
+{"at": "2026-10-01T06:45:48+00:00", "event": "done", "restarts": 0}

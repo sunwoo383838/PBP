@@ -1,0 +1,277 @@
+{
+ "domains": [
+  "HR",
+  "IT",
+  "FIN",
+  "PROC",
+  "LEGAL"
+ ],
+ "regions": [
+  "SEL",
+  "TYO"
+ ],
+ "groups": {
+  "HR-SEL": {
+   "domain": "HR",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "HR-TYO": {
+   "domain": "HR",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "IT-SEL": {
+   "domain": "IT",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "IT-TYO": {
+   "domain": "IT",
+   "region": "TYO",
+   "topology": "swarm"
+  },
+  "FIN-SEL": {
+   "domain": "FIN",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "FIN-TYO": {
+   "domain": "FIN",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "PROC-SEL": {
+   "domain": "PROC",
+   "region": "SEL",
+   "topology": "swarm"
+  },
+  "PROC-TYO": {
+   "domain": "PROC",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "LEGAL-SEL": {
+   "domain": "LEGAL",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "LEGAL-TYO": {
+   "domain": "LEGAL",
+   "region": "TYO",
+   "topology": "specialist"
+  }
+ },
+ "agent_cards": {
+  "hr-sel.a1": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.a2": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.a3": {
+   "group": "HR-SEL",
+   "name": "HR-SEL payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-sel.a4": {
+   "group": "HR-SEL",
+   "name": "HR-SEL recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "hr-sel.a5": {
+   "group": "HR-SEL",
+   "name": "HR-SEL mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "hr-tyo.a1": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a2": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a3": {
+   "group": "HR-TYO",
+   "name": "HR-TYO payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-tyo.a4": {
+   "group": "HR-TYO",
+   "name": "HR-TYO recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "it-sel.a2": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sel.a3": {
+   "group": "IT-SEL",
+   "name": "IT-SEL access",
+   "description": "Accounts and access rights, equipment tier decisions"
+  },
+  "it-sel.a4": {
+   "group": "IT-SEL",
+   "name": "IT-SEL licenses",
+   "description": "Software license seat management"
+  },
+  "it-sel.a5": {
+   "group": "IT-SEL",
+   "name": "IT-SEL provisioning",
+   "description": "Equipment and seat preparation for new hires"
+  },
+  "it-tyo.c0": {
+   "group": "IT-TYO",
+   "name": "IT-TYO coordinator",
+   "description": "Request intake and worker dispatch"
+  },
+  "fin-sel.a1": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-sel.a2": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.a3": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.a4": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-sel.a5": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "fin-tyo.a1": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-tyo.a2": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-tyo.a3": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-tyo.a4": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-tyo.a5": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "proc-sel.c0": {
+   "group": "PROC-SEL",
+   "name": "PROC-SEL coordinator",
+   "description": "Request intake and worker dispatch"
+  },
+  "proc-tyo.a1": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-tyo.a2": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-tyo.a3": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO vendors",
+   "description": "Supplier ratings and lead times"
+  },
+  "proc-tyo.a4": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO receiving",
+   "description": "Goods receipt and delivery confirmation"
+  },
+  "legal-sel.a1": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-sel.a2": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-sel.a3": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL compliance",
+   "description": "Approval policies and exception decisions"
+  },
+  "legal-sel.a4": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL privacy",
+   "description": "Data residency rules"
+  },
+  "legal-tyo.a1": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-tyo.a3": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO compliance",
+   "description": "Approval policies and exception decisions"
+  },
+  "legal-tyo.a4": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO privacy",
+   "description": "Data residency rules"
+  },
+  "legal-tyo.a5": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO review",
+   "description": "Contract change review and NDA checks"
+  },
+  "proc-tyo.n0002": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO quality",
+   "description": "Supplier quality management"
+  },
+  "it-sel.n0003": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "legal-tyo.n0004": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO contracts",
+   "description": "Contract terms and durations"
+  },
+  "hr-tyo.n0005": {
+   "group": "HR-TYO",
+   "name": "HR-TYO mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "legal-sel.n0006": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL review",
+   "description": "Contract change review and NDA checks"
+  }
+ }
+}

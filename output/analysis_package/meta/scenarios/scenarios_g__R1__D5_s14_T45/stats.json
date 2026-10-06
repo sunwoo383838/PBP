@@ -1,0 +1,749 @@
+{
+ "D": 5,
+ "R_regions": 1,
+ "G": 5,
+ "seed": 14,
+ "T": 45,
+ "K": 8000,
+ "S": 2000,
+ "all": {
+  "tasks": 225,
+  "state_class": {
+   "A": 0.404,
+   "B": 0.204,
+   "C": 0.236,
+   "D": 0.156
+  },
+  "group_bin": {
+   "2": 0.204,
+   "3": 0.307,
+   "4": 0.302,
+   "5+": 0.187
+  },
+  "n_groups": {
+   "2": 46,
+   "3": 69,
+   "4": 68,
+   "5": 42
+  },
+  "R": {
+   "R0": 0.129,
+   "R1": 0.409,
+   "R2": 0.258,
+   "R3": 0.204
+  },
+  "C_ops": 0.231,
+  "oracle": {
+   "db_only": 0.138,
+   "card_db": 0.404,
+   "single_holder": 0.6,
+   "stale_one_version": 0.244,
+   "all_history": null,
+   "status": "structural_estimates; all_history_not_measured"
+  },
+  "targeted_sensitivity": {
+   "C_ops→partial": 1.0,
+   "B→neardup|wrong_owner": 0.891,
+   "repeat_changed→stale": 0.851,
+   "n": {
+    "C_ops": 52,
+    "B": 46,
+    "repeat_changed": 94
+   }
+  },
+  "sensitivity_when_applicable": {
+   "stale": 0.727,
+   "partial": 0.815,
+   "neardup": 0.797,
+   "wrong_owner": 0.0
+  },
+  "cf_applicable_share": {
+   "stale": 0.88,
+   "partial": 0.791,
+   "neardup": 0.942,
+   "wrong_owner": 0.0
+  },
+  "critical_component_disc": {
+   "H0": 0.398,
+   "H1": 0.398,
+   "H2": 0.205
+  },
+  "critical_component_origin": {
+   "db_pending": 0.255,
+   "operational": 0.745
+  },
+  "critical_component_kind": {
+   "pending_intent": 255,
+   "observation": 114,
+   "exception": 27,
+   "rationale": 16,
+   "handover": 8
+  },
+  "critical_components_per_task": 1.87,
+  "follow_up_rate": 0.107,
+  "top_signature_share": 0.027,
+  "unique_signatures": 133,
+  "templates": {
+   "lookup": 29,
+   "plan": 29,
+   "diag": 26,
+   "alloc": 21,
+   "contract_gate": 18,
+   "purchase": 18,
+   "capacity": 15,
+   "whatif": 12,
+   "temporal": 11,
+   "precedence": 10,
+   "budget": 10,
+   "conflict": 9,
+   "sourcing": 8,
+   "vendor": 6,
+   "renewal": 3
+  },
+  "root_domain": {
+   "IT": 102,
+   "FIN": 50,
+   "PROC": 32,
+   "HR": 31,
+   "LEGAL": 10
+  },
+  "ext_count": {
+   "0": 109,
+   "1": 64,
+   "2": 48,
+   "3": 4
+  },
+  "fallback_accepts": 108,
+  "dispersion": {
+   "unit": "remote need with ≥1 critical component (holders, min_cover); remote need (C, C_ops)",
+   "need_holders": {
+    "0": 11,
+    "1": 130,
+    "2": 54,
+    "3+": 17
+   },
+   "need_holders_by_domain": {
+    "FIN": {
+     "0": 0,
+     "1": 35,
+     "2": 22,
+     "3+": 6
+    },
+    "HR": {
+     "0": 1,
+     "1": 61,
+     "2": 11,
+     "3+": 7
+    },
+    "IT": {
+     "0": 0,
+     "1": 18,
+     "2": 8,
+     "3+": 3
+    },
+    "LEGAL": {
+     "0": 2,
+     "1": 12,
+     "2": 9,
+     "3+": 1
+    },
+    "PROC": {
+     "0": 8,
+     "1": 4,
+     "2": 4,
+     "3+": 0
+    }
+   },
+   "need_min_cover": {
+    "1": 116,
+    "2": 45,
+    "3+": 16,
+    "none": 35
+   },
+   "c_needs": 61,
+   "c_need_domain_share": {
+    "FIN": 0.344,
+    "HR": 0.295,
+    "IT": 0.18,
+    "LEGAL": 0.164,
+    "PROC": 0.016
+   },
+   "c_ops_needs": 54,
+   "c_ops_need_domain_share": {
+    "FIN": 0.389,
+    "HR": 0.296,
+    "IT": 0.185,
+    "LEGAL": 0.111,
+    "PROC": 0.019
+   },
+   "task_max_holders": {
+    "0": 0.373,
+    "1": 0.329,
+    "2": 0.222,
+    "3+": 0.076
+   }
+  },
+  "index_key_coverage": {
+   "index_only": {
+    "H0": 0.928,
+    "H1": 0.946
+   },
+   "index_plus_catalog_join": {
+    "H0": 1.0,
+    "H1": 0.988
+   }
+  }
+ },
+ "prefix": {
+  "T=10": {
+   "tasks": 50,
+   "state_class": {
+    "A": 0.42,
+    "B": 0.22,
+    "C": 0.28,
+    "D": 0.08
+   },
+   "group_bin": {
+    "2": 0.22,
+    "3": 0.32,
+    "4": 0.32,
+    "5+": 0.14
+   },
+   "n_groups": {
+    "2": 11,
+    "3": 16,
+    "4": 16,
+    "5": 7
+   },
+   "R": {
+    "R0": 0.1,
+    "R1": 0.4,
+    "R2": 0.28,
+    "R3": 0.22
+   },
+   "C_ops": 0.26,
+   "oracle": {
+    "db_only": 0.16,
+    "card_db": 0.42,
+    "single_holder": 0.64,
+    "stale_one_version": 0.2,
+    "all_history": null,
+    "status": "structural_estimates; all_history_not_measured"
+   },
+   "targeted_sensitivity": {
+    "C_ops→partial": 1.0,
+    "B→neardup|wrong_owner": 0.909,
+    "repeat_changed→stale": 1.0,
+    "n": {
+     "C_ops": 13,
+     "B": 11,
+     "repeat_changed": 8
+    }
+   },
+   "sensitivity_when_applicable": {
+    "stale": 0.722,
+    "partial": 0.784,
+    "neardup": 0.783,
+    "wrong_owner": 0.0
+   },
+   "cf_applicable_share": {
+    "stale": 0.72,
+    "partial": 0.74,
+    "neardup": 0.92,
+    "wrong_owner": 0.0
+   },
+   "critical_component_disc": {
+    "H0": 0.414,
+    "H1": 0.371,
+    "H2": 0.214
+   },
+   "critical_component_origin": {
+    "db_pending": 0.243,
+    "operational": 0.757
+   },
+   "critical_component_kind": {
+    "pending_intent": 40,
+    "observation": 21,
+    "exception": 5,
+    "handover": 3,
+    "rationale": 1
+   },
+   "critical_components_per_task": 1.4,
+   "follow_up_rate": 0.12,
+   "top_signature_share": 0.04,
+   "unique_signatures": 45,
+   "templates": {
+    "diag": 6,
+    "contract_gate": 6,
+    "conflict": 5,
+    "lookup": 5,
+    "purchase": 5,
+    "alloc": 4,
+    "plan": 4,
+    "whatif": 3,
+    "precedence": 3,
+    "vendor": 2,
+    "sourcing": 2,
+    "capacity": 2,
+    "renewal": 1,
+    "temporal": 1,
+    "budget": 1
+   },
+   "root_domain": {
+    "IT": 24,
+    "PROC": 9,
+    "FIN": 9,
+    "HR": 5,
+    "LEGAL": 3
+   },
+   "ext_count": {
+    "0": 27,
+    "1": 14,
+    "2": 8,
+    "3": 1
+   },
+   "fallback_accepts": 8,
+   "dispersion": {
+    "unit": "remote need with ≥1 critical component (holders, min_cover); remote need (C, C_ops)",
+    "need_holders": {
+     "0": 3,
+     "1": 19,
+     "2": 14,
+     "3+": 3
+    },
+    "need_holders_by_domain": {
+     "FIN": {
+      "0": 0,
+      "1": 7,
+      "2": 7,
+      "3+": 0
+     },
+     "HR": {
+      "0": 0,
+      "1": 9,
+      "2": 2,
+      "3+": 2
+     },
+     "IT": {
+      "0": 0,
+      "1": 1,
+      "2": 2,
+      "3+": 0
+     },
+     "LEGAL": {
+      "0": 1,
+      "1": 2,
+      "2": 2,
+      "3+": 1
+     },
+     "PROC": {
+      "0": 2,
+      "1": 0,
+      "2": 1,
+      "3+": 0
+     }
+    },
+    "need_min_cover": {
+     "1": 19,
+     "2": 13,
+     "3+": 3,
+     "none": 4
+    },
+    "c_needs": 16,
+    "c_need_domain_share": {
+     "FIN": 0.438,
+     "HR": 0.25,
+     "IT": 0.125,
+     "LEGAL": 0.188
+    },
+    "c_ops_needs": 15,
+    "c_ops_need_domain_share": {
+     "FIN": 0.467,
+     "HR": 0.267,
+     "IT": 0.133,
+     "LEGAL": 0.133
+    },
+    "task_max_holders": {
+     "0": 0.44,
+     "1": 0.26,
+     "2": 0.24,
+     "3+": 0.06
+    }
+   },
+   "index_key_coverage": {
+    "index_only": {
+     "H0": 0.931,
+     "H1": 0.846
+    },
+    "index_plus_catalog_join": {
+     "H0": 1.0,
+     "H1": 1.0
+    }
+   }
+  },
+  "T=30": {
+   "tasks": 150,
+   "state_class": {
+    "A": 0.407,
+    "B": 0.207,
+    "C": 0.247,
+    "D": 0.14
+   },
+   "group_bin": {
+    "2": 0.207,
+    "3": 0.307,
+    "4": 0.307,
+    "5+": 0.18
+   },
+   "n_groups": {
+    "2": 31,
+    "3": 46,
+    "4": 46,
+    "5": 27
+   },
+   "R": {
+    "R0": 0.127,
+    "R1": 0.407,
+    "R2": 0.26,
+    "R3": 0.207
+   },
+   "C_ops": 0.233,
+   "oracle": {
+    "db_only": 0.153,
+    "card_db": 0.407,
+    "single_holder": 0.607,
+    "stale_one_version": 0.233,
+    "all_history": null,
+    "status": "structural_estimates; all_history_not_measured"
+   },
+   "targeted_sensitivity": {
+    "C_ops→partial": 1.0,
+    "B→neardup|wrong_owner": 0.871,
+    "repeat_changed→stale": 0.865,
+    "n": {
+     "C_ops": 35,
+     "B": 31,
+     "repeat_changed": 52
+    }
+   },
+   "sensitivity_when_applicable": {
+    "stale": 0.722,
+    "partial": 0.828,
+    "neardup": 0.777,
+    "wrong_owner": 0.0
+   },
+   "cf_applicable_share": {
+    "stale": 0.84,
+    "partial": 0.773,
+    "neardup": 0.927,
+    "wrong_owner": 0.0
+   },
+   "critical_component_disc": {
+    "H0": 0.392,
+    "H1": 0.408,
+    "H2": 0.2
+   },
+   "critical_component_origin": {
+    "db_pending": 0.288,
+    "operational": 0.712
+   },
+   "critical_component_kind": {
+    "pending_intent": 136,
+    "observation": 86,
+    "exception": 21,
+    "rationale": 11,
+    "handover": 6
+   },
+   "critical_components_per_task": 1.73,
+   "follow_up_rate": 0.107,
+   "top_signature_share": 0.027,
+   "unique_signatures": 101,
+   "templates": {
+    "diag": 19,
+    "lookup": 19,
+    "plan": 18,
+    "contract_gate": 15,
+    "alloc": 13,
+    "conflict": 9,
+    "purchase": 9,
+    "capacity": 9,
+    "precedence": 8,
+    "sourcing": 7,
+    "budget": 7,
+    "whatif": 6,
+    "vendor": 5,
+    "temporal": 5,
+    "renewal": 1
+   },
+   "root_domain": {
+    "IT": 68,
+    "FIN": 37,
+    "PROC": 23,
+    "HR": 17,
+    "LEGAL": 5
+   },
+   "ext_count": {
+    "0": 73,
+    "1": 43,
+    "2": 31,
+    "3": 3
+   },
+   "fallback_accepts": 68,
+   "dispersion": {
+    "unit": "remote need with ≥1 critical component (holders, min_cover); remote need (C, C_ops)",
+    "need_holders": {
+     "0": 8,
+     "1": 81,
+     "2": 37,
+     "3+": 12
+    },
+    "need_holders_by_domain": {
+     "FIN": {
+      "0": 0,
+      "1": 22,
+      "2": 13,
+      "3+": 3
+     },
+     "HR": {
+      "0": 0,
+      "1": 38,
+      "2": 7,
+      "3+": 6
+     },
+     "IT": {
+      "0": 0,
+      "1": 9,
+      "2": 5,
+      "3+": 2
+     },
+     "LEGAL": {
+      "0": 2,
+      "1": 8,
+      "2": 9,
+      "3+": 1
+     },
+     "PROC": {
+      "0": 6,
+      "1": 4,
+      "2": 3,
+      "3+": 0
+     }
+    },
+    "need_min_cover": {
+     "1": 73,
+     "2": 33,
+     "3+": 11,
+     "none": 21
+    },
+    "c_needs": 44,
+    "c_need_domain_share": {
+     "FIN": 0.295,
+     "HR": 0.295,
+     "IT": 0.159,
+     "LEGAL": 0.227,
+     "PROC": 0.023
+    },
+    "c_ops_needs": 37,
+    "c_ops_need_domain_share": {
+     "FIN": 0.351,
+     "HR": 0.297,
+     "IT": 0.162,
+     "LEGAL": 0.162,
+     "PROC": 0.027
+    },
+    "task_max_holders": {
+     "0": 0.373,
+     "1": 0.327,
+     "2": 0.22,
+     "3+": 0.08
+    }
+   },
+   "index_key_coverage": {
+    "index_only": {
+     "H0": 0.902,
+     "H1": 0.925
+    },
+    "index_plus_catalog_join": {
+     "H0": 1.0,
+     "H1": 0.991
+    }
+   }
+  }
+ },
+ "by_window": {
+  "d01-10": {
+   "state_class": {
+    "A": 0.42,
+    "B": 0.22,
+    "C": 0.28,
+    "D": 0.08
+   },
+   "card_db": 0.42
+  },
+  "d11-20": {
+   "state_class": {
+    "A": 0.4,
+    "B": 0.2,
+    "C": 0.24,
+    "D": 0.16
+   },
+   "card_db": 0.4
+  },
+  "d21-30": {
+   "state_class": {
+    "A": 0.4,
+    "B": 0.2,
+    "C": 0.22,
+    "D": 0.18
+   },
+   "card_db": 0.4
+  },
+  "d31-40": {
+   "state_class": {
+    "A": 0.4,
+    "B": 0.2,
+    "C": 0.2,
+    "D": 0.2
+   },
+   "card_db": 0.4
+  },
+  "d41-45": {
+   "state_class": {
+    "A": 0.4,
+    "B": 0.2,
+    "C": 0.24,
+    "D": 0.16
+   },
+   "card_db": 0.4
+  }
+ },
+ "candidates_natural": {
+  "n": 47319,
+  "state_class": {
+   "A": 0.488,
+   "B": 0.205,
+   "C": 0.2,
+   "D": 0.107
+  },
+  "n_groups": {
+   "2": 16861,
+   "3": 14245,
+   "4": 12726,
+   "5": 3487
+  },
+  "C_ops": 0.163,
+  "R": {
+   "R0": 0.069,
+   "R1": 0.417,
+   "R2": 0.261,
+   "R3": 0.253
+  }
+ },
+ "fragments_all": {
+  "n": 1304,
+  "disc": {
+   "H0": 0.413,
+   "H1": 0.391,
+   "H2": 0.196
+  },
+  "origin": {
+   "db_pending": 0.646,
+   "operational": 0.354
+  },
+  "eval_only_origin": {
+   "db_pending": 0.628,
+   "operational": 0.372
+  }
+ },
+ "world_counts": {
+  "agent_join": 16,
+  "agent_leave": 16,
+  "cand_invalid": 1179,
+  "commit_birth": 112,
+  "commit_death": 100,
+  "despawn": 261,
+  "effect:assign": 5,
+  "effect:order": 2,
+  "effect:order_dept": 4,
+  "effect:recover": 2,
+  "effect:renew": 1,
+  "effect:seats": 17,
+  "employee_birth": 22,
+  "employee_death": 24,
+  "fallback_accept": 108,
+  "follow_invalid": 1,
+  "follow_rejected": 3,
+  "local:FIN:budget_reset": 6,
+  "local:FIN:commit_cancel": 10,
+  "local:FIN:commit_confirm": 69,
+  "local:FIN:commit_review": 79,
+  "local:FIN:commit_settle": 74,
+  "local:FIN:earmark": 28,
+  "local:FIN:line_adjust": 37,
+  "local:FIN:q_exc": 8,
+  "local:FIN:routine": 123,
+  "local:FIN:talk": 14,
+  "local:HR:exit": 20,
+  "local:HR:grade": 18,
+  "local:HR:hire": 17,
+  "local:HR:offer": 17,
+  "local:HR:routine": 194,
+  "local:HR:transfer": 54,
+  "local:HR:transfer_effect": 53,
+  "local:IT:assign": 34,
+  "local:IT:hold": 29,
+  "local:IT:license": 23,
+  "local:IT:recover": 25,
+  "local:IT:reserve": 27,
+  "local:IT:restock": 27,
+  "local:IT:routine": 94,
+  "local:IT:seat_allocation": 11,
+  "local:IT:tier_exc": 12,
+  "local:LEGAL:amend": 17,
+  "local:LEGAL:contract_create": 6,
+  "local:LEGAL:extend": 18,
+  "local:LEGAL:nda_check": 14,
+  "local:LEGAL:override": 24,
+  "local:LEGAL:routine": 179,
+  "local:PROC:exclude": 5,
+  "local:PROC:lead": 5,
+  "local:PROC:lead_delay": 9,
+  "local:PROC:price_notice": 7,
+  "local:PROC:quote_update": 23,
+  "local:PROC:receipt": 26,
+  "local:PROC:routine": 84,
+  "rej_cooldown": 5395,
+  "rej_quota": 40585,
+  "rej_sensitivity": 17,
+  "rej_signature": 1229,
+  "spawn": 261
+ },
+ "population": {
+  "day": 45,
+  "employees": {
+   "SEL": 18
+  },
+  "agents": {
+   "HR-SEL": 5,
+   "IT-SEL": 5,
+   "FIN-SEL": 5,
+   "PROC-SEL": 1,
+   "LEGAL-SEL": 5
+  },
+  "workers_active": 0,
+  "open_commits": 12
+ },
+ "timeline_types": {
+  "db_register": 549,
+  "agent_join": 14,
+  "tx": 4375,
+  "local": 1520,
+  "spawn": 191,
+  "cross": 225,
+  "despawn": 191,
+  "index_batch": 45,
+  "catalog_upsert": 136,
+  "agent_leave": 13,
+  "world": 7
+ }
+}

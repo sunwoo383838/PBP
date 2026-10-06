@@ -13,3 +13,6 @@ wheels/
 gbg/llm/secrets.py
 .idea/
 review/
+
+# 산출물 tarball (output/ 과 중복, GitHub 100MB 제한 초과)
+output.tar.gz

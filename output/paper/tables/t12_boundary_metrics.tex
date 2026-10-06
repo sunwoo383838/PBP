@@ -1,0 +1,20 @@
+\begin{tabular}{ll r rr r r r r r}
+\toprule
+Backbone & Condition & Acc & $\mathrm{Acc}_A$ & $\mathrm{Acc}_{\bar A}$ & $\Pi$ (pp) & $\rho$ & $\delta$ (\%) & $\lambda$ (\%) & $\upsilon$ (\%) \\
+\midrule
+Qwen3.5-27B & Direct & 33.0 & 71.7 & 4.9 & 66.8 & +0\% & 16 & 84 & 50 \\
+ & Routing & 38.4 & 68.3 & 16.6 & 51.7 & +23\% & 41 & 59 & 67 \\
+ & Ingress & 53.4 & 69.4 & 41.7 & 27.7 & +58\% & 51 & 49 & 83 \\
+ & Full-load & 52.5 & 78.3 & 33.6 & 44.7 & +33\% & 47 & 53 & 62 \\
+\midrule
+DeepSeek-V4-Flash & Direct & 34.7 & 72.8 & 6.9 & 65.9 & +0\% & 23 & 77 & 45 \\
+ & Routing & 45.0 & 75.6 & 22.7 & 52.9 & +20\% & 44 & 56 & 68 \\
+ & Ingress & 52.7 & 72.8 & 38.1 & 34.7 & +47\% & 56 & 44 & 78 \\
+ & Full-load & 62.5 & 73.3 & 54.7 & 18.7 & +72\% & 62 & 38 & 67 \\
+\midrule
+Qwen3.5-9B & Direct & 18.7 & 40.0 & 3.2 & 36.8 & +0\% & 7 & 93 & -- \\
+ & Routing & 22.7 & 46.7 & 5.3 & 41.4 & -13\% & 11 & 89 & -- \\
+ & Ingress & 25.1 & 46.7 & 9.3 & 37.4 & -2\% & 25 & 75 & -- \\
+ & Full-load & 38.4 & 71.1 & 14.6 & 56.5 & -54\% & 42 & 58 & -- \\
+\bottomrule
+\end{tabular}

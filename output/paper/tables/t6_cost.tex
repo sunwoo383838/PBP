@@ -1,0 +1,18 @@
+\begin{tabular}{ll r r r r r}
+\toprule
+Backbone & Condition & Acc. & Calls/task & Tokens/task (k) & USD/task & USD/success \\
+\midrule
+Qwen3.5-27B & Direct & 33.0 & 20.9 & 250 & 0.082 & 0.250 \\
+ & Routing & 38.4 & 35.9 & 410 & 0.147 & 0.383 \\
+ & Ingress & 53.4 & 50.4 & 605 & 0.224 & 0.419 \\
+ & Full-load & 52.5 & 6.6 & 192 & 0.061 & 0.115 \\
+DeepSeek-V4-Flash & Direct & 34.7 & 42.4 & 594 & 0.055 & 0.159 \\
+ & Routing & 45.0 & 67.2 & 839 & 0.068 & 0.152 \\
+ & Ingress & 52.7 & 82.7 & 1022 & 0.088 & 0.167 \\
+ & Full-load & 62.5 & 7.6 & 313 & 0.029 & 0.046 \\
+Qwen3.5-9B & Direct & 18.7 & 41.3 & 729 & 0.066 & 0.354 \\
+ & Routing & 22.7 & 45.7 & 518 & 0.044 & 0.195 \\
+ & Ingress & 25.1 & 55.6 & 619 & 0.055 & 0.221 \\
+ & Full-load & 38.4 & 7.6 & 221 & 0.022 & 0.058 \\
+\bottomrule
+\end{tabular}

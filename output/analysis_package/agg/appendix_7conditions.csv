@@ -1,0 +1,8 @@
+condition,n_tasks,accuracy,llm_calls_per_task,tokens_per_task,cost_usd_per_task,cost_usd_per_success,budget_exhausted_rate
+direct,285,0.3368,20.8,228700,0.0772,0.2292,0.0
+routing,285,0.4035,35.4,379959,0.1457,0.361,0.0
+ingress,285,0.5614,49.4,575576,0.2273,0.4048,0.0
+full_load,285,0.5368,6.8,199651,0.0626,0.1166,0.0
+direct_relay,285,0.3368,37.8,419730,0.1207,0.3584,0.0
+retrieve,285,0.4702,28.3,327890,0.1145,0.2436,0.0
+sidecar,285,0.5579,26.4,283887,0.1079,0.1935,0.0

@@ -1,0 +1,24 @@
+{"at": "2026-09-30T13:30:21+00:00", "event": "start", "restarts": 0, "from": null}
+{"at": "2026-09-30T18:14:32+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [4, 2], "same_point_count": 1}
+{"at": "2026-09-30T18:15:02+00:00", "event": "start", "restarts": 1, "from": [4, 2]}
+{"at": "2026-09-30T19:01:05+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [5, 2], "same_point_count": 1}
+{"at": "2026-09-30T19:01:35+00:00", "event": "start", "restarts": 2, "from": [5, 2]}
+{"at": "2026-09-30T20:02:41+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [6, 0], "same_point_count": 1}
+{"at": "2026-09-30T20:03:11+00:00", "event": "start", "restarts": 3, "from": [6, 0]}
+{"at": "2026-09-30T20:44:50+00:00", "event": "restart", "exit": 1, "restarts": 4, "at_point": [6, 2], "same_point_count": 1}
+{"at": "2026-09-30T20:45:20+00:00", "event": "start", "restarts": 4, "from": [6, 2]}
+{"at": "2026-09-30T21:22:48+00:00", "event": "restart", "exit": 1, "restarts": 5, "at_point": [7, 0], "same_point_count": 1}
+{"at": "2026-09-30T21:23:18+00:00", "event": "start", "restarts": 5, "from": [7, 0]}
+{"at": "2026-09-30T21:23:34+00:00", "event": "restart", "exit": 1, "restarts": 6, "at_point": [7, 0], "same_point_count": 2}
+{"at": "2026-09-30T21:25:34+00:00", "event": "start", "restarts": 6, "from": [7, 0]}
+{"at": "2026-09-30T21:25:49+00:00", "event": "restart", "exit": 1, "restarts": 7, "at_point": [7, 0], "same_point_count": 3}
+{"at": "2026-09-30T21:25:49+00:00", "event": "stop", "point": [7, 0]}
+{"at": "2026-10-01T02:22:22+00:00", "event": "start", "restarts": 0, "from": [7, 0]}
+{"at": "2026-10-01T03:40:54+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [8, 1], "same_point_count": 1}
+{"at": "2026-10-01T03:41:24+00:00", "event": "start", "restarts": 1, "from": [8, 1]}
+{"at": "2026-10-01T03:41:36+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [8, 1], "same_point_count": 2}
+{"at": "2026-10-01T03:43:36+00:00", "event": "start", "restarts": 2, "from": [8, 1]}
+{"at": "2026-10-01T03:43:48+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [8, 1], "same_point_count": 3}
+{"at": "2026-10-01T03:43:48+00:00", "event": "stop", "point": [8, 1]}
+{"at": "2026-10-01T03:53:52+00:00", "event": "start", "restarts": 0, "from": [8, 1]}
+{"at": "2026-10-01T06:30:15+00:00", "event": "done", "restarts": 0}

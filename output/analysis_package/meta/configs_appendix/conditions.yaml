@@ -1,0 +1,31 @@
+# 모든 조건에서 요청자는 과제 예산 안에서 여러 번, 여러 대상에게 물을 수 있다 (requester.max_asks).
+# 조건 간 차이는 담당자 선택과 답 조립이 어느 그룹 안에서 일어나는가뿐이다.
+# budget: 과제 전체의 LLM 호출 수·토큰 상한. 요청자·응답자(중첩 포함)·경계 모듈 합산. 모든 조건 동일 (조건별로 바꿀 수 없다).
+# card_mode: static | dynamic, responder_session: persistent | ephemeral (기본 persistent)
+defaults:
+  budget: {calls: 300, tokens: 4000000}      # 본 실행 (2026-09-30 사용자 결정 300회. 파일럿 관측 최대 ingress 198, 150이면 ingress만 잘림). 토큰은 파일럿과 같은 비율(120회:1.6M)
+  final_reserve: {calls: 1, tokens: 2048}     # 최종 답변용으로 남겨 두는 호출 1회와 토큰
+  requester: {max_asks: null, requery: true}  # max_asks null = 예산 안에서 무제한
+
+# 본 실행 조건: direct, routing, ingress, full_load. i_e(Egress)는 실험축에서 뺌 (2026-09-30 사용자 결정: 증명 범위가 좁고
+# 논문 범위를 벗어남). i_e 코드·테스트는 남겨 두지만 본 실행·파일럿 집계에 넣지 않는다.
+# 기준 셀(D5, T30)에서만: ingress_read, ingress_sel, gateway_rag (사다리 중간 단계와 담당자 없는 게이트웨이).
+# 후속(코드만 두고 실행하지 않음): ingress_no_requery, egress_no_history, retrieval_oracle. sidecar도 후속.
+# 뺀 조건: routing_reveal(새 Routing과 사실상 같음), direct_dyncard(이탈·합류 갱신은 이미 모든 조건에 적용, 그 이상은
+# card 공개 원칙 위반), direct_ephemeral(로컬 업무 재생이라 C6를 잴 수 없음).
+# 경계 조건(routing 이후)은 담당자 선택이 모두 같고(검색 → LLM 선택, 인원 상한 없음, 과제 예산이 상한) 전달 방식만 다르다.
+direct:          {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null}
+routing:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: forward}, egress: null}   # 검색 결과는 담당자 선택에만. 요청 원문 전달, 응답 원문 반환
+ingress_read:    {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null}   # routing + 검색된 기록 원문 첨부
+ingress_sel:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble}, egress: null}   # 게이트웨이 LLM이 증거·응답으로 조립. 경계 상태·버전 표시·재질의 없음
+ingress:         {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: null}
+i_e:             {agent_tool: ask,       directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: true}}
+full_load:       {agent_tool: search_memory, directory: group_cards, ingress: null, egress: null}   # 권한 분할 없는 단일 에이전트(참조): 조직 전체 DB 조회(group 인자 없음) + 전 그룹 규정 + 조직 전체 이력 검색(게이트웨이와 같은 검색기). 과제 예산 동일
+# 부록 (2026-09-30 사용자 결정: 기준 셀 D5·R2, 27B, 시드 12~14, 1~10일)
+direct_relay:    {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null, relay: {max_asks: 3}}   # Direct + 응답자가 자기 그룹 동료 최대 3명에게 되물음(한 단계). 요청자에게는 응답자의 답만
+retrieve:        {agent_tool: ask_group, directory: group_cards, ingress: {deliver: read}, egress: null, budget_bonus_calls: 1}   # 게이트웨이가 검색·담당자 질의까지, 조립 없이 담당자 답 원문 + 근거 원문(증거 상한 안) 전달. 결정은 요청자, 요청자 호출 +1
+sidecar:         {agent_tool: ask_agent, directory: agent_cards, card_mode: static,  ingress: null, egress: null, sidecar: {deliver: assemble, version_marks: true}}   # Direct + 받은 에이전트마다 ingress와 같은 검색·조립 모듈. 그 에이전트 혼자 답하고 모듈이 그룹 기록으로 보탬. 요청 간 상태 공유·재질의 없음
+gateway_rag:     {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, internal_query: false, boundary_state: true, version_marks: true}, egress: null}   # 담당자에게 묻지 않고 그룹 기록만으로 답하는 게이트웨이 (Ingress의 6·9단계 생략)
+ingress_no_requery: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: false, boundary_state: true, version_marks: true}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Ingress의 9단계(재질의) 끔
+egress_no_history: {agent_tool: ask, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true}, egress: {history: false}, blocked: "후속: 코드만 두고 실행하지 않는다"}   # Egress 1단계에 기록 대신 요청자 자신의 이력과 card
+retrieval_oracle: {agent_tool: ask_group, directory: group_cards, ingress: {deliver: assemble, requery: true, boundary_state: true, version_marks: true, evidence: oracle}, egress: null, blocked: "후속: 코드만 두고 실행하지 않는다"}   # 증거 블록을 정답 조각으로 대체 (oracle_evidence/ 마운트)

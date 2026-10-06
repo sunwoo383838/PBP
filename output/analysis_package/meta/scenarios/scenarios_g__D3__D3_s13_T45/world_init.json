@@ -1,0 +1,175 @@
+{
+ "domains": [
+  "HR",
+  "IT",
+  "FIN"
+ ],
+ "regions": [
+  "SEL",
+  "TYO"
+ ],
+ "groups": {
+  "HR-SEL": {
+   "domain": "HR",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "HR-TYO": {
+   "domain": "HR",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "IT-SEL": {
+   "domain": "IT",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "IT-TYO": {
+   "domain": "IT",
+   "region": "TYO",
+   "topology": "swarm"
+  },
+  "FIN-SEL": {
+   "domain": "FIN",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "FIN-TYO": {
+   "domain": "FIN",
+   "region": "TYO",
+   "topology": "specialist"
+  }
+ },
+ "agent_cards": {
+  "hr-sel.a1": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.a3": {
+   "group": "HR-SEL",
+   "name": "HR-SEL payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-sel.a4": {
+   "group": "HR-SEL",
+   "name": "HR-SEL recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "hr-tyo.a1": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a2": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a3": {
+   "group": "HR-TYO",
+   "name": "HR-TYO payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-tyo.a4": {
+   "group": "HR-TYO",
+   "name": "HR-TYO recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "it-sel.a1": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sel.a2": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sel.a3": {
+   "group": "IT-SEL",
+   "name": "IT-SEL access",
+   "description": "Accounts and access rights, equipment tier decisions"
+  },
+  "it-sel.a4": {
+   "group": "IT-SEL",
+   "name": "IT-SEL licenses",
+   "description": "Software license seat management"
+  },
+  "it-tyo.c0": {
+   "group": "IT-TYO",
+   "name": "IT-TYO coordinator",
+   "description": "Request intake and worker dispatch"
+  },
+  "fin-sel.a1": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-sel.a5": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "fin-tyo.a1": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-tyo.a4": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-tyo.n0001": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-tyo.n0002": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.n0003": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "hr-sel.n0004": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.n0005": {
+   "group": "HR-SEL",
+   "name": "HR-SEL mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "fin-tyo.n0006": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "hr-tyo.n0007": {
+   "group": "HR-TYO",
+   "name": "HR-TYO mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "fin-sel.n0008": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.n0009": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "it-sel.n0010": {
+   "group": "IT-SEL",
+   "name": "IT-SEL provisioning",
+   "description": "Equipment and seat preparation for new hires"
+  }
+ }
+}

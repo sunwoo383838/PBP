@@ -1,0 +1,20 @@
+{"at": "2026-09-30T13:30:21+00:00", "event": "start", "restarts": 0, "from": null}
+{"at": "2026-09-30T18:37:33+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [4, 0], "same_point_count": 1}
+{"at": "2026-09-30T18:38:03+00:00", "event": "start", "restarts": 1, "from": [4, 0]}
+{"at": "2026-09-30T19:25:58+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [5, 0], "same_point_count": 1}
+{"at": "2026-09-30T19:26:28+00:00", "event": "start", "restarts": 2, "from": [5, 0]}
+{"at": "2026-09-30T21:21:54+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [6, 1], "same_point_count": 1}
+{"at": "2026-09-30T21:22:24+00:00", "event": "start", "restarts": 3, "from": [6, 1]}
+{"at": "2026-09-30T21:22:44+00:00", "event": "restart", "exit": 1, "restarts": 4, "at_point": [6, 1], "same_point_count": 2}
+{"at": "2026-09-30T21:24:44+00:00", "event": "start", "restarts": 4, "from": [6, 1]}
+{"at": "2026-09-30T21:25:03+00:00", "event": "restart", "exit": 1, "restarts": 5, "at_point": [6, 1], "same_point_count": 3}
+{"at": "2026-09-30T21:25:03+00:00", "event": "stop", "point": [6, 1]}
+{"at": "2026-10-01T02:22:26+00:00", "event": "start", "restarts": 0, "from": [6, 1]}
+{"at": "2026-10-01T03:42:12+00:00", "event": "restart", "exit": 1, "restarts": 1, "at_point": [7, 1], "same_point_count": 1}
+{"at": "2026-10-01T03:42:42+00:00", "event": "start", "restarts": 1, "from": [7, 1]}
+{"at": "2026-10-01T03:42:57+00:00", "event": "restart", "exit": 1, "restarts": 2, "at_point": [7, 1], "same_point_count": 2}
+{"at": "2026-10-01T03:44:57+00:00", "event": "start", "restarts": 2, "from": [7, 1]}
+{"at": "2026-10-01T03:45:12+00:00", "event": "restart", "exit": 1, "restarts": 3, "at_point": [7, 1], "same_point_count": 3}
+{"at": "2026-10-01T03:45:12+00:00", "event": "stop", "point": [7, 1]}
+{"at": "2026-10-01T03:53:56+00:00", "event": "start", "restarts": 0, "from": [7, 1]}
+{"at": "2026-10-01T07:06:44+00:00", "event": "done", "restarts": 0}

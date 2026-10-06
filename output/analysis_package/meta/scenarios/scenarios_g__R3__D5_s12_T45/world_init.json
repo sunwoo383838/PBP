@@ -1,0 +1,423 @@
+{
+ "domains": [
+  "HR",
+  "IT",
+  "FIN",
+  "PROC",
+  "LEGAL"
+ ],
+ "regions": [
+  "SEL",
+  "TYO",
+  "SGP"
+ ],
+ "groups": {
+  "HR-SEL": {
+   "domain": "HR",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "HR-TYO": {
+   "domain": "HR",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "HR-SGP": {
+   "domain": "HR",
+   "region": "SGP",
+   "topology": "specialist"
+  },
+  "IT-SEL": {
+   "domain": "IT",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "IT-TYO": {
+   "domain": "IT",
+   "region": "TYO",
+   "topology": "swarm"
+  },
+  "IT-SGP": {
+   "domain": "IT",
+   "region": "SGP",
+   "topology": "specialist"
+  },
+  "FIN-SEL": {
+   "domain": "FIN",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "FIN-TYO": {
+   "domain": "FIN",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "FIN-SGP": {
+   "domain": "FIN",
+   "region": "SGP",
+   "topology": "specialist"
+  },
+  "PROC-SEL": {
+   "domain": "PROC",
+   "region": "SEL",
+   "topology": "swarm"
+  },
+  "PROC-TYO": {
+   "domain": "PROC",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "PROC-SGP": {
+   "domain": "PROC",
+   "region": "SGP",
+   "topology": "specialist"
+  },
+  "LEGAL-SEL": {
+   "domain": "LEGAL",
+   "region": "SEL",
+   "topology": "specialist"
+  },
+  "LEGAL-TYO": {
+   "domain": "LEGAL",
+   "region": "TYO",
+   "topology": "specialist"
+  },
+  "LEGAL-SGP": {
+   "domain": "LEGAL",
+   "region": "SGP",
+   "topology": "specialist"
+  }
+ },
+ "agent_cards": {
+  "hr-sel.a1": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.a2": {
+   "group": "HR-SEL",
+   "name": "HR-SEL records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sel.a4": {
+   "group": "HR-SEL",
+   "name": "HR-SEL recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "hr-sel.a5": {
+   "group": "HR-SEL",
+   "name": "HR-SEL mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "hr-tyo.a1": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a2": {
+   "group": "HR-TYO",
+   "name": "HR-TYO records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-tyo.a3": {
+   "group": "HR-TYO",
+   "name": "HR-TYO payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-tyo.a4": {
+   "group": "HR-TYO",
+   "name": "HR-TYO recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "hr-tyo.a5": {
+   "group": "HR-TYO",
+   "name": "HR-TYO mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "hr-sgp.a1": {
+   "group": "HR-SGP",
+   "name": "HR-SGP records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sgp.a2": {
+   "group": "HR-SGP",
+   "name": "HR-SGP records",
+   "description": "Look up and update employee department, grade and contract type records"
+  },
+  "hr-sgp.a3": {
+   "group": "HR-SGP",
+   "name": "HR-SGP payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "hr-sgp.a4": {
+   "group": "HR-SGP",
+   "name": "HR-SGP recruiting",
+   "description": "Hiring, onboarding and offboarding"
+  },
+  "hr-sgp.a5": {
+   "group": "HR-SGP",
+   "name": "HR-SGP mobility",
+   "description": "Personnel moves and department transfers"
+  },
+  "it-sel.a1": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sel.a2": {
+   "group": "IT-SEL",
+   "name": "IT-SEL assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sel.a3": {
+   "group": "IT-SEL",
+   "name": "IT-SEL access",
+   "description": "Accounts and access rights, equipment tier decisions"
+  },
+  "it-sel.a4": {
+   "group": "IT-SEL",
+   "name": "IT-SEL licenses",
+   "description": "Software license seat management"
+  },
+  "it-sel.a5": {
+   "group": "IT-SEL",
+   "name": "IT-SEL provisioning",
+   "description": "Equipment and seat preparation for new hires"
+  },
+  "it-tyo.c0": {
+   "group": "IT-TYO",
+   "name": "IT-TYO coordinator",
+   "description": "Request intake and worker dispatch"
+  },
+  "it-sgp.a1": {
+   "group": "IT-SGP",
+   "name": "IT-SGP assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sgp.a2": {
+   "group": "IT-SGP",
+   "name": "IT-SGP assets",
+   "description": "Equipment assignment and recovery, in-house stock"
+  },
+  "it-sgp.a4": {
+   "group": "IT-SGP",
+   "name": "IT-SGP licenses",
+   "description": "Software license seat management"
+  },
+  "fin-sel.a1": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-sel.a3": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.a4": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-tyo.a1": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "fin-tyo.a3": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-tyo.a4": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-sgp.a2": {
+   "group": "FIN-SGP",
+   "name": "FIN-SGP payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sgp.a4": {
+   "group": "FIN-SGP",
+   "name": "FIN-SGP closing",
+   "description": "Month-end close and cancellation confirmation"
+  },
+  "fin-sgp.a5": {
+   "group": "FIN-SGP",
+   "name": "FIN-SGP control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "proc-sel.c0": {
+   "group": "PROC-SEL",
+   "name": "PROC-SEL coordinator",
+   "description": "Request intake and worker dispatch"
+  },
+  "proc-tyo.a1": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-tyo.a2": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-tyo.a3": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO vendors",
+   "description": "Supplier ratings and lead times"
+  },
+  "proc-tyo.a4": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO receiving",
+   "description": "Goods receipt and delivery confirmation"
+  },
+  "proc-tyo.a5": {
+   "group": "PROC-TYO",
+   "name": "PROC-TYO quality",
+   "description": "Supplier quality management"
+  },
+  "proc-sgp.a1": {
+   "group": "PROC-SGP",
+   "name": "PROC-SGP buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-sgp.a2": {
+   "group": "PROC-SGP",
+   "name": "PROC-SGP buying",
+   "description": "Quote requests and purchase orders"
+  },
+  "proc-sgp.a3": {
+   "group": "PROC-SGP",
+   "name": "PROC-SGP vendors",
+   "description": "Supplier ratings and lead times"
+  },
+  "proc-sgp.a4": {
+   "group": "PROC-SGP",
+   "name": "PROC-SGP receiving",
+   "description": "Goods receipt and delivery confirmation"
+  },
+  "proc-sgp.a5": {
+   "group": "PROC-SGP",
+   "name": "PROC-SGP quality",
+   "description": "Supplier quality management"
+  },
+  "legal-sel.a1": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-sel.a2": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-sel.a3": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL compliance",
+   "description": "Approval policies and exception decisions"
+  },
+  "legal-sel.a4": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL privacy",
+   "description": "Data residency rules"
+  },
+  "legal-sel.a5": {
+   "group": "LEGAL-SEL",
+   "name": "LEGAL-SEL review",
+   "description": "Contract change review and NDA checks"
+  },
+  "legal-tyo.a1": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-tyo.a2": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-tyo.a3": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO compliance",
+   "description": "Approval policies and exception decisions"
+  },
+  "legal-tyo.a4": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO privacy",
+   "description": "Data residency rules"
+  },
+  "legal-sgp.a1": {
+   "group": "LEGAL-SGP",
+   "name": "LEGAL-SGP contracts",
+   "description": "Contract terms and durations"
+  },
+  "legal-sgp.a3": {
+   "group": "LEGAL-SGP",
+   "name": "LEGAL-SGP compliance",
+   "description": "Approval policies and exception decisions"
+  },
+  "legal-sgp.a4": {
+   "group": "LEGAL-SGP",
+   "name": "LEGAL-SGP privacy",
+   "description": "Data residency rules"
+  },
+  "legal-sgp.a5": {
+   "group": "LEGAL-SGP",
+   "name": "LEGAL-SGP review",
+   "description": "Contract change review and NDA checks"
+  },
+  "legal-tyo.n0002": {
+   "group": "LEGAL-TYO",
+   "name": "LEGAL-TYO review",
+   "description": "Contract change review and NDA checks"
+  },
+  "fin-sgp.n0003": {
+   "group": "FIN-SGP",
+   "name": "FIN-SGP budgeting",
+   "description": "Budget line planning, adjustment and balance lookup"
+  },
+  "it-sgp.n0005": {
+   "group": "IT-SGP",
+   "name": "IT-SGP provisioning",
+   "description": "Equipment and seat preparation for new hires"
+  },
+  "fin-sel.n0007": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-sel.n0008": {
+   "group": "FIN-SEL",
+   "name": "FIN-SEL control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "fin-tyo.n0009": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "fin-tyo.n0010": {
+   "group": "FIN-TYO",
+   "name": "FIN-TYO control",
+   "description": "Spending controls and budget owner arrangements"
+  },
+  "fin-sgp.n0012": {
+   "group": "FIN-SGP",
+   "name": "FIN-SGP payables",
+   "description": "Provisional approval review, registration and settlement"
+  },
+  "hr-sel.n0013": {
+   "group": "HR-SEL",
+   "name": "HR-SEL payroll",
+   "description": "Pay grades and grade changes"
+  },
+  "legal-sgp.n0014": {
+   "group": "LEGAL-SGP",
+   "name": "LEGAL-SGP contracts",
+   "description": "Contract terms and durations"
+  }
+ }
+}

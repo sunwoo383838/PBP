@@ -1,0 +1,83 @@
+{
+  "_about": "Answer conventions shown to the requester with each task, looked up by the task's answer_slots (joined with '|'). They describe what each slot means and how to fill it (types, null rules, ordering). They do NOT contain any group's business rules or formulas: those must still be obtained from the responsible group. Identical for every condition.",
+  "_general": [
+    "Return exactly the listed slots as JSON.",
+    "Amounts, quantities and days are plain integers (no currency, no thousands separators). A day is the simulation day number (e.g. 14).",
+    "IDs (INV-..., Q-..., V-..., A-..., CMT-...) must be copied exactly. Department names must be copied exactly.",
+    "Enum slots must use one of the listed values exactly.",
+    "Use null only where the slot description says so; use false (not null) for a boolean that is simply not triggered."
+  ],
+  "decision|option|approver|nda|budget_after|blocked_by": {
+    "decision": "'assign' (in-house stock) or 'order' (supplier quote) for the cheapest candidate that satisfies every applicable condition; 'none' if no candidate qualifies. Use 'order' only when procurement review is included, otherwise 'assign'.",
+    "option": "ID of the chosen candidate; null when decision is 'none'.",
+    "approver": "Finance approver required for the chosen candidate's cost; null when decision is 'none'.",
+    "nda": "true if the chosen item needs an NDA check under contract review, otherwise false; null when decision is 'none'.",
+    "budget_after": "Available budget of the employee's department minus the chosen cost; null when decision is 'none'.",
+    "blocked_by": "null when a candidate is chosen. When decision is 'none': the first failing condition of the cheapest candidate, checked in this order: budget, eligibility, vendor_excluded, lead_time, residency, contract; 'no_candidate' if there is no candidate at all."
+  },
+  "approver|governing_rule|it_exception": {
+    "approver": "Who must approve the request (finance approver, or 'legal_and_division_head' when a legal exception governs, or 'not_allowed' when the contract forbids it).",
+    "governing_rule": "Which rule determined the approver: 'tiers', 'newcomer_waiver', 'q_exception', 'legal_override' or 'contract_deny'.",
+    "it_exception": "true if the requested tier is above the tier IT currently allows for this employee, else false."
+  },
+  "budget_dept|earliest_day": {
+    "budget_dept": "Department whose budget pays on the earliest feasible day (the department the employee belongs to on that day); null if no day in the search window works.",
+    "earliest_day": "First day in the stated search window on which the expense can be made; null if none."
+  },
+  "alloc|transfer|buy|unmet": {
+    "alloc": "List of integers: seats given to each team, in the team order of the request.",
+    "transfer": "Seats pulled from the other region.",
+    "buy": "Seats purchased.",
+    "unmet": "Total seats still missing after allocation."
+  },
+  "cause": {
+    "cause": "Single reported cause code (per the finance reporting precedence), or 'OK' if nothing is wrong."
+  },
+  "status|amount": {
+    "status": "Effective status of the provisional approval: 'reviewing', 'pending', 'settled', 'cancelled', or 'none' if no authoritative record exists.",
+    "amount": "Amount to count for it: the approval amount while it is 'reviewing' or 'pending', otherwise 0."
+  },
+  "now|later|available_then": {
+    "now": "true if the amount can be spent today.",
+    "later": "true if it can be spent on the next budget reset day (taking any notified price change into account when procurement review is included).",
+    "available_then": "Available budget of the department on the next reset day."
+  },
+  "steps": {
+    "steps": "Ordered list of required approval steps, from: IT_EXCEPTION, LEGAL_NDA, LEGAL_OVERRIDE, BLOCKED_CONTRACT, FIN_TEAM_LEAD, FIN_DIVISION_HEAD, FIN_CFO, PROC_VENDOR_ONBOARD. Order: IT step, then legal step, then finance step, then procurement step. If the contract forbids the item, the list is exactly [\"BLOCKED_CONTRACT\"]."
+  },
+  "vendor|option|amount|approver|budget_after|blocked_by": {
+    "vendor": "Supplier ID of the cheapest compliant quote; null if none.",
+    "option": "Quote ID of that quote; null if none.",
+    "amount": "Quote amount; null if none.",
+    "approver": "Finance approver for that amount; null if none.",
+    "budget_after": "Available budget of the department minus the amount; null if none.",
+    "blocked_by": "null when a quote is chosen. Otherwise the first failing condition of the cheapest quote, checked in this order: budget, vendor_excluded, lead_time, residency; 'no_candidate' if there are no quotes."
+  },
+  "renew|recover_assets": {
+    "renew": "true if the contract can be renewed.",
+    "recover_assets": "If renew is false: asset IDs the employee currently holds (any order). If renew is true: empty list."
+  },
+  "available|n_deducted": {
+    "available": "Amount the department can actually spend today.",
+    "n_deducted": "Number of items (earmarks and provisional approvals) deducted in that figure."
+  },
+  "dept|grade|assets": {
+    "dept": "Employee's current department.",
+    "grade": "Employee's current grade.",
+    "assets": "Asset IDs the employee currently holds (any order; empty list if none)."
+  },
+  "stock|seats|seats_other_region": {
+    "stock": "Units of the named in-house stock item actually available now (never below 0).",
+    "seats": "Seats of the named software actually available now in the requesting region (never below 0).",
+    "seats_other_region": "Same for the other region when requested; null when not requested."
+  },
+  "options": {
+    "options": "List of [quote_id, amount, lead_days] for every quote usable right now for a department order, cheapest first (ties by quote ID); lead_days is the lead time actually in effect today. Empty list if none."
+  },
+  "it_tier|contract_tier|nda_step|expiry": {
+    "it_tier": "Highest tier IT allows this employee right now.",
+    "contract_tier": "Highest tier the contract allows right now (including any legal exception).",
+    "nda_step": "true if standard equipment would currently require an NDA check step, else false.",
+    "expiry": "Contract expiry day."
+  }
+}

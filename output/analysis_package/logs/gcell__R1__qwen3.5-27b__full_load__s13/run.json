@@ -1,0 +1,1 @@
+{"benchmark": "worldgen", "card_mode": "static", "condition": "full_load", "defaults": {"budget": {"calls": 300, "tokens": 4000000}, "final_reserve": {"calls": 1, "tokens": 2048}, "requester": {"max_asks": null, "requery": true}}, "params": {"hop_limit": 4, "parallel_tasks": true, "rounds_per_day": 3}, "seed": 1}
