@@ -80,6 +80,8 @@ $$\Delta(x)\subseteq\mathcal D_G(x) \tag{5}$$
 
 $\mathcal D_G(x)$ = 경계를 넘어도 되는 내용(허용 정책) — 모든 경계 조건에서 동일. $\Delta(x)$ = 메커니즘이 실제로 넘긴 것. 조건 차이는 $\Delta$에서만 난다. Full-load는 $\pi\equiv 1$이라 이 틀 밖의 참조이며 "분할 없는 단일 에이전트"로만 부른다(상한 아님: 27B에서 Ingress ≥ Full-load).
 
+**불변식 (2)의 실측** (`analysis_package/tables/access_audit.csv`, 81런의 `obs/access.jsonl`): 분할 조건 6개(Direct·Routing·Ingress·relay·retrieve·sidecar, 63런)의 기록 읽기 349,072건은 전부 읽는 주체의 자기 그룹 안이고, 교차 그룹 읽기는 시도 0·허용 0·거부 0. Full-load(18런)는 조직 전체 읽기 34,141건(DB 27,010·이력 7,131) 전부 허용 — 설계대로. §5 공정성 문단에 이 수치를 쓴다.
+
 ## 4. §3.4 Loss model and metrics
 
 요구 $n$마다 다섯 관문을 순서 있는 사건으로 둔다.

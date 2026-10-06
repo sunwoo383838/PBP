@@ -178,8 +178,10 @@ def need_gates(events: list[dict], g: dict, fragments: dict, delivery_rows: list
                     verdict = "L_sel.search"
             elif searched and not reached:                                  # full_load: 검색했는데 조각이 오지 않음
                 verdict = "L_sel.search"
-            elif ingress and in_evidence and not reached:                   # Routing·retrieve: 선택 증거에는 있었는데 보유자를 안 고름
-                verdict = "L_sel.assembly"
+            elif ingress and in_evidence and not reached:                   # 선택 증거에는 있었는데 보유자를 안 고름
+                # Routing(forward): 조립이 없으므로 σ가 본 것을 σ가 잃은 중개 손실 = route. retrieve(read): 증거 원문이 요청자에게
+                # 가므로 중개가 아니라 전달 형식(상한 탈락·매처)의 문제 = 선택 관문에 둠(보고는 route/select/use 3갈래)
+                verdict = "L_route" if any(d.get("deliver") == "forward" for d in ingress) else "L_sel.assembly"
             elif not reached:
                 verdict = "L_route"
             elif win != "verbatim":

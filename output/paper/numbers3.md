@@ -1,29 +1,29 @@
 # numbers3 (gate ledger, heuristic)
 Qwen3.5-27B direct n=453: L_req=10.8 L_route=51.4 L_sel.window=6.0 L_sel.answer=6.4 L_sel.search=0.0 L_sel.assembly=0.0 L_state=9.3 L_use=13.5 error=0.4 ok=2.2 | survival 100 89 38 25 16 2
    by class: A n=16 ok=44 route=0 sel=19 state=6 use=25; B n=124 ok=2 route=51 sel=11 state=16 use=5; C n=191 ok=0 route=54 sel=11 state=9 use=16; D n=122 ok=0 route=55 sel=15 state=2 use=17
-Qwen3.5-27B routing n=453: L_req=11.3 L_route=10.8 L_sel.window=9.3 L_sel.answer=12.4 L_sel.search=0.0 L_sel.assembly=7.1 L_state=7.9 L_use=30.7 error=0.2 ok=10.4 | survival 100 89 78 49 41 10
-   by class: A n=16 ok=62 route=0 sel=12 state=6 use=6; B n=124 ok=19 route=6 sel=32 state=11 use=19; C n=191 ok=6 route=9 sel=25 state=6 use=41; D n=122 ok=2 route=20 sel=33 state=7 use=30
+Qwen3.5-27B routing n=453: L_req=11.3 L_route=17.9 L_sel.window=9.3 L_sel.answer=12.4 L_sel.search=0.0 L_sel.assembly=0.0 L_state=7.9 L_use=30.7 error=0.2 ok=10.4 | survival 100 89 71 49 41 10
+   by class: A n=16 ok=62 route=0 sel=12 state=6 use=6; B n=124 ok=19 route=11 sel=27 state=11 use=19; C n=191 ok=6 route=12 sel=23 state=6 use=41; D n=122 ok=2 route=36 sel=16 state=7 use=30
 Qwen3.5-27B ingress n=453: L_req=9.1 L_route=0.0 L_sel.window=7.7 L_sel.answer=6.2 L_sel.search=9.5 L_sel.assembly=13.5 L_state=3.1 L_use=23.6 error=0.0 ok=27.4 | survival 100 91 91 54 51 27
    by class: A n=16 ok=69 route=0 sel=19 state=0 use=6; B n=124 ok=31 route=0 sel=39 state=5 use=16; C n=191 ok=19 route=0 sel=40 state=4 use=28; D n=122 ok=30 route=0 sel=33 state=1 use=27
 Qwen3.5-27B full_load n=453: L_req=9.3 L_route=0.0 L_sel.window=0.0 L_sel.answer=0.0 L_sel.search=26.0 L_sel.assembly=0.0 L_state=17.9 L_use=29.1 error=0.0 ok=17.7 | survival 100 91 91 65 47 18
    by class: A n=16 ok=81 route=0 sel=6 state=6 use=6; B n=124 ok=19 route=0 sel=29 state=22 use=20; C n=191 ok=8 route=0 sel=25 state=21 use=37; D n=122 ok=23 route=0 sel=27 state=11 use=30
 DeepSeek-V4-Flash direct n=453: L_req=7.9 L_route=43.9 L_sel.window=12.4 L_sel.answer=4.2 L_sel.search=0.0 L_sel.assembly=0.0 L_state=8.2 L_use=20.1 error=0.0 ok=3.3 | survival 100 92 48 32 23 3
    by class: A n=16 ok=50 route=0 sel=31 state=0 use=19; B n=124 ok=5 route=35 sel=15 state=13 use=20; C n=191 ok=1 route=50 sel=15 state=9 use=18; D n=122 ok=0 route=49 sel=18 state=3 use=24
-DeepSeek-V4-Flash routing n=453: L_req=6.8 L_route=8.8 L_sel.window=24.9 L_sel.answer=4.6 L_sel.search=0.0 L_sel.assembly=6.0 L_state=4.9 L_use=30.7 error=0.2 ok=13.0 | survival 100 93 84 49 44 13
-   by class: A n=16 ok=56 route=0 sel=31 state=0 use=12; B n=124 ok=27 route=3 sel=34 state=6 use=20; C n=191 ok=9 route=7 sel=33 state=4 use=40; D n=122 ok=0 route=19 sel=42 state=6 use=29
+DeepSeek-V4-Flash routing n=453: L_req=6.8 L_route=14.8 L_sel.window=24.9 L_sel.answer=4.6 L_sel.search=0.0 L_sel.assembly=0.0 L_state=4.9 L_use=30.7 error=0.2 ok=13.0 | survival 100 93 78 49 44 13
+   by class: A n=16 ok=56 route=0 sel=31 state=0 use=12; B n=124 ok=27 route=8 sel=29 state=6 use=20; C n=191 ok=9 route=9 sel=30 state=4 use=40; D n=122 ok=0 route=32 sel=29 state=6 use=29
 DeepSeek-V4-Flash ingress n=453: L_req=6.2 L_route=0.0 L_sel.window=14.1 L_sel.answer=1.1 L_sel.search=6.4 L_sel.assembly=11.9 L_state=4.4 L_use=31.1 error=0.2 ok=24.5 | survival 100 94 94 60 56 25
    by class: A n=16 ok=75 route=0 sel=12 state=0 use=12; B n=124 ok=33 route=0 sel=30 state=3 use=23; C n=191 ok=20 route=0 sel=37 state=4 use=34; D n=122 ok=16 route=0 sel=34 state=7 use=37
 DeepSeek-V4-Flash full_load n=453: L_req=0.9 L_route=0.0 L_sel.window=0.0 L_sel.answer=0.0 L_sel.search=20.3 L_sel.assembly=0.0 L_state=16.8 L_use=31.8 error=0.0 ok=30.2 | survival 100 99 99 79 62 30
    by class: A n=16 ok=88 route=0 sel=0 state=6 use=6; B n=124 ok=37 route=0 sel=20 state=18 use=23; C n=191 ok=21 route=0 sel=22 state=21 use=36; D n=122 ok=30 route=0 sel=20 state=11 use=38
 Qwen3.5-9B direct n=453: L_req=33.3 L_route=36.0 L_sel.window=4.9 L_sel.answer=11.3 L_sel.search=0.0 L_sel.assembly=0.0 L_state=7.7 L_use=6.6 error=0.0 ok=0.2 | survival 100 67 31 15 7 0
    by class: A n=16 ok=0 route=12 sel=31 state=12 use=6; B n=124 ok=1 route=39 sel=15 state=15 use=2; C n=191 ok=0 route=39 sel=15 state=5 use=6; D n=122 ok=0 route=32 sel=17 state=4 use=11
-Qwen3.5-9B routing n=453: L_req=17.9 L_route=12.4 L_sel.window=11.9 L_sel.answer=28.0 L_sel.search=0.0 L_sel.assembly=10.4 L_state=8.8 L_use=9.9 error=0.2 ok=0.4 | survival 100 82 70 19 11 0
-   by class: A n=16 ok=0 route=0 sel=44 state=6 use=19; B n=124 ok=1 route=10 sel=50 state=15 use=2; C n=191 ok=1 route=13 sel=52 state=7 use=13; D n=122 ok=0 route=16 sel=49 state=6 use=13
+Qwen3.5-9B routing n=453: L_req=17.9 L_route=22.7 L_sel.window=11.9 L_sel.answer=28.0 L_sel.search=0.0 L_sel.assembly=0.0 L_state=8.8 L_use=9.9 error=0.2 ok=0.4 | survival 100 82 59 19 11 0
+   by class: A n=16 ok=0 route=0 sel=44 state=6 use=19; B n=124 ok=1 route=22 sel=38 state=15 use=2; C n=191 ok=1 route=20 sel=45 state=7 use=13; D n=122 ok=0 route=31 sel=34 state=6 use=13
 Qwen3.5-9B ingress n=453: L_req=17.9 L_route=0.0 L_sel.window=13.0 L_sel.answer=7.9 L_sel.search=6.8 L_sel.assembly=22.7 L_state=6.6 L_use=19.6 error=2.0 ok=3.3 | survival 100 82 82 32 25 3
    by class: A n=16 ok=19 route=0 sel=25 state=0 use=38; B n=124 ok=8 route=0 sel=48 state=8 use=10; C n=191 ok=1 route=0 sel=52 state=7 use=24; D n=122 ok=0 route=0 sel=54 state=6 use=20
 Qwen3.5-9B full_load n=453: L_req=9.3 L_route=0.0 L_sel.window=0.0 L_sel.answer=0.0 L_sel.search=29.6 L_sel.assembly=0.0 L_state=19.6 L_use=35.1 error=0.7 ok=5.7 | survival 100 91 91 61 42 6
    by class: A n=16 ok=44 route=0 sel=19 state=6 use=19; B n=124 ok=8 route=0 sel=31 state=22 use=29; C n=191 ok=2 route=0 sel=29 state=23 use=36; D n=122 ok=4 route=0 sel=30 state=14 use=42
-variants (1-10d): direct_relay n=310 ok=4 route=44 sel=13 use=19; retrieve n=310 ok=20 route=6 sel=12 use=47; sidecar n=310 ok=26 route=0 sel=34 use=27; direct n=310 ok=3 route=50 sel=12 use=15; routing n=310 ok=13 route=7 sel=29 use=34; ingress n=310 ok=32 route=0 sel=32 use=25; full_load n=310 ok=20 route=0 sel=25 use=32
+variants (1-10d): direct_relay n=310 ok=4 route=44 sel=13 use=19; retrieve n=310 ok=20 route=6 sel=12 use=47; sidecar n=310 ok=26 route=0 sel=34 use=27; direct n=310 ok=3 route=50 sel=12 use=15; routing n=310 ok=13 route=16 sel=20 use=34; ingress n=310 ok=32 route=0 sel=32 use=25; full_load n=310 ok=20 route=0 sel=25 use=32
 breadth: direct 2 n=227 ok=6 route=62 sel=7; direct 3 n=323 ok=3 route=44 sel=12; direct 4 n=317 ok=3 route=51 sel=18; direct 5+ n=376 ok=1 route=55 sel=8; ingress 2 n=227 ok=44 route=0 sel=30; ingress 3 n=323 ok=40 route=0 sel=34; ingress 4 n=317 ok=25 route=0 sel=37; ingress 5+ n=376 ok=6 route=0 sel=34
 coverage Qwen3.5-27B: direct 0=5(207) partial=0(57) 1=50(18); routing partial=4(71) 0=5(150) 1=67(61); ingress 1=83(103) partial=23(70) 0=14(109); full_load 1=62(104) partial=20(95) 0=18(83)
 coverage DeepSeek-V4-Flash: direct 0=6(171) partial=1(78) 1=45(33); routing 1=68(72) partial=6(104) 0=10(106); ingress partial=12(108) 1=78(113) 0=11(61); full_load 1=67(150) partial=41(100) 0=38(32)

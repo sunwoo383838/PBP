@@ -13,8 +13,8 @@
 - 9B는 넣지 않음(아래 §4). 본문 §6.7에서 수치로만 다루고 `f7`·`f20`(3패널판)은 부록.
 
 ### Fig. 3 — Where needs are lost (`f18_need_flow`, alluvial, 27B) ★
-- Direct는 route에서 51/100, Routing은 select 29 + use 31, Ingress는 select 37(assembly 13 + search 9 + window 8 + answer 6) + use 24. delivered & used 2 → 10 → 27. (2026-10-06 채점 규칙 수정: 조립 조건의 assembly는 게이트웨이 입력에 있던 조각만 — `HARNESS_CHANGES.md`)
-- **선명한 이유**: 조건마다 병목이 한 관문씩 뒤로 밀리는 것이 흐름의 꺾임 위치로 보임. DS도 같은 패턴(route 44 → 9 → 0; `f12` 히트맵, 부록).
+- Direct는 route에서 51/100, Routing은 route 18 + select 22(window 9 + answer 12) + use 31, Ingress는 select 37(assembly 13 + search 9 + window 8 + answer 6) + use 24. delivered & used 2 → 10 → 27. (2026-10-06 채점 규칙 수정 두 건: 조립 조건의 assembly는 게이트웨이 입력에 있던 조각만; Routing에서 "증거에 있었는데 보유자를 안 고름"은 조립이 없으므로 route — `HARNESS_CHANGES.md`)
+- **선명한 이유**: 조건마다 병목이 한 관문씩 뒤로 밀리는 것이 흐름의 꺾임 위치로 보임. DS도 같은 패턴(route 44 → 15 → 0; `f12` 히트맵, 부록). 27B는 51 → 18 → 0.
 
 ### Fig. 4 — Rescue without loss (`f21_outcome_transition`, 27B·DeepSeek) ★
 - (시나리오, 과제) 쌍 전이. A: 구조 8 vs 손실 11 (대칭 = 선택 소음). B 49 vs 6, C 32 vs 1, D 36 vs 0 (DS: B 41 vs 5, C 34 vs 3, D 24 vs 0).

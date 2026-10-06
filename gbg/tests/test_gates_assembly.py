@@ -78,3 +78,7 @@ def test_sidecar_stage_uses_the_same_rule_and_routing_is_unchanged():
     g = _gate(deliver="forward", assemble_prompt="")                       # Routing: 닿음·원문·미전달 → answer (규칙 불변)
     assert g["gate"] == "L_sel.answer" and "in_reply_items" not in g
     assert _gate(deliver="forward", selected=("hr-sel.a1",))["gate"] == "L_route"
+    # 선택 증거에는 있었는데 보유자를 안 고름: Routing은 중개 손실(route), retrieve는 증거 원문이 요청자에게 가므로 선택 관문
+    seen = "Candidates\n\nGroup records found:\n[E1] day 3, hr-sel.a3: " + frag
+    assert _gate(deliver="forward", selected=("hr-sel.a1",), assemble_prompt=seen)["gate"] == "L_route"
+    assert _gate(deliver="read", selected=("hr-sel.a1",), assemble_prompt=seen)["gate"] == "L_sel.assembly"
