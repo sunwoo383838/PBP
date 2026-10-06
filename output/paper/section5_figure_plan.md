@@ -1,6 +1,6 @@
 # §5 Experiments 구성안 — "결과가 선명한 것만" 기준
 
-선정 기준은 두 가지를 **동시에** 만족하는 것: (1) 효과가 크고 CI가 0을 확실히 벗어나며 두 주력 백본에서 같은 방향, (2) 그림을 보면 가설(경계가 문제이고, 중개+선택이 그걸 푼다)이 바로 읽힘. 보기 좋지만 결과가 흐린 것은 본문에서 뺐고, 왜 뺐는지 §4에 수치로 적었다.
+증거의 급을 나눈다: 주장은 정확 일치 수치(Acc·Δ·Π·ρ)로만 세우고, 관문 원장(휴리스틱)은 진단용 그림 하나(Fig. 3)로만 쓴다. 그 위에서 선정 기준은 두 가지를 **동시에** 만족하는 것: (1) 효과가 크고 CI가 0을 확실히 벗어나며 두 주력 백본에서 같은 방향, (2) 그림을 보면 가설(경계가 문제이고, 중개+선택이 그걸 푼다)이 바로 읽힘. 보기 좋지만 결과가 흐린 것은 본문에서 뺐고, 왜 뺐는지 §4에 수치로 적었다.
 
 8페이지 AAMAS 기준 §5+§6 ≈ 3.3p. 본문 figure 5개(+선택 1) + 표 2개. 파일은 `output/paper/figures/`.
 
@@ -12,9 +12,10 @@
 - **선명한 이유**: A와 ¬A의 분리가 10pp가 아니라 60pp 단위이고, 두 백본이 같은 모양. 가설이 그림의 "형태"로 보임 — A 수평선, B/C/D 상승선.
 - 9B는 넣지 않음(아래 §4). 본문 §6.7에서 수치로만 다루고 `f7`·`f20`(3패널판)은 부록.
 
-### Fig. 3 — Where needs are lost (`f18_need_flow`, alluvial, 27B) ★
+### Fig. 3 — Where needs are lost (`f18_need_flow`, alluvial, 27B) ★ — **진단용(diagnostic)으로 표기**
 - Direct는 route에서 51/100, Routing은 route 18 + select 22(window 9 + answer 12) + use 31, Ingress는 select 37(assembly 13 + search 9 + window 8 + answer 6) + use 24. delivered & used 2 → 10 → 27. (2026-10-06 채점 규칙 수정 두 건: 조립 조건의 assembly는 게이트웨이 입력에 있던 조각만; Routing에서 "증거에 있었는데 보유자를 안 고름"은 조립이 없으므로 route — `HARNESS_CHANGES.md`)
 - **선명한 이유**: 조건마다 병목이 한 관문씩 뒤로 밀리는 것이 흐름의 꺾임 위치로 보임. DS도 같은 패턴(route 44 → 15 → 0; `f12` 히트맵, 부록). 27B는 51 → 18 → 0.
+- **증거의 급**: 관문 원장은 휴리스틱 채점기(귀속 규칙이 분석 중 두 번 바뀜, 매처 오차 ±2/100)라 **주장의 근거가 아니라 "잃는 모습"을 보여 주는 관측**. 캡션 첫 줄에 "Diagnostic view from a heuristic offline scorer"를 쓰고, 본문 주장은 전부 정확 일치 수치(Acc·Δ·Π·ρ)로만 세운다. 원장 수치로만 서 있는 항목은 주장 지도에서 observation(O1·O2)으로 격하.
 
 ### Fig. 4 — Rescue without loss (`f21_outcome_transition`, 27B·DeepSeek) ★
 - (시나리오, 과제) 쌍 전이. A: 구조 8 vs 손실 11 (대칭 = 선택 소음). B 49 vs 6, C 32 vs 1, D 36 vs 0 (DS: B 41 vs 5, C 34 vs 3, D 24 vs 0).
@@ -37,7 +38,7 @@
 
 ## 2. 본문 표
 
-- **Table 1** = `t1_main` + `t12_boundary_metrics` 합본: 백본 3 × 조건 4, Acc, Δ_route/Δ_sel/Δ_total [CI], Π, ρ, δ. 9B는 여기서만 등장(ρ ≤ 0).
+- **Table 1** = `t1_main` + Π·ρ (정확 일치 기반): 백본 3 × 조건 4, Acc, Δ_route/Δ_sel/Δ_total [CI], Π, ρ. 9B는 여기서만 등장(ρ ≤ 0). **δ·λ·υ는 원장(휴리스틱) 지표라 Table 1에 넣지 않고** Table 12(부록)에 "diagnostic" 표기로 둔다.
 - **Table 2** = `t2_variants` + `t6_cost` 합본: 7조건, Acc, vs Ingress [CI], McNemar p, 호출·토큰·USD per task.
 - G 셀은 표 없이 §6.6에 한 문장 + 부록 Table 5: "격차 +13/+27/+17/+17 (G=5/6/10/15), 크기 추세 없음".
 
