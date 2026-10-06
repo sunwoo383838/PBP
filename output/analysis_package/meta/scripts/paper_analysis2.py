@@ -78,14 +78,14 @@ ax.set_title("(a) Each rung of the ladder, by backbone and organization size"); 
 ax = axes[1]
 y = 0; ypos = []; ylab = []
 for m in MODELS[:2]:
-    for k, lab in (("A", "class A"), ("c_ops", "$C_{ops}$")):
+    for k, lab in (("A", "class A"), ("notA", "classes B–D")):
         for rk, _, col in rungs:
             b = main[m]["by_class"][k][rk]
             ax.errorbar(b["mean"] * 100, y, xerr=[[(b["mean"] - b["lo"]) * 100], [(b["hi"] - b["mean"]) * 100]], fmt="o" if m == MODELS[0] else "s", color=col, ms=4, capsize=2, lw=0.8)
             ypos.append(y); ylab.append(f"{'27B' if m == MODELS[0] else 'DS'} · {lab} · {'med.' if rk == 'd_route' else 'sel.'}"); y += 1
         y += 0.4
 ax.axvline(0, color="k", lw=0.6); ax.set_yticks(ypos); ax.set_yticklabels(ylab); ax.invert_yaxis(); ax.set_xlabel("pp, 95% CI")
-ax.set_title("(b) Class A (control) vs. $C_{ops}$"); ax.grid(axis="x", lw=0.3, alpha=0.5)
+ax.set_title("(b) Class A (control) vs. classes B–D"); ax.grid(axis="x", lw=0.3, alpha=0.5)
 save(fig, "f8_rung_forest")
 
 # ─────────────────────────── F9 반사실 실패 귀속 ───────────────────────────

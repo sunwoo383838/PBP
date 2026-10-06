@@ -1,0 +1,2028 @@
+[
+ {
+  "case": 1,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00097",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 2,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00119",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 3,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00024",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 4,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00029",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01015",
+    "need": "HR-TYO/E-TYO-2004/profile",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01122",
+    "need": "IT-TYO/E-TYO-2004/assets",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 5,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00053",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01260",
+    "need": "HR-TYO/Dev Section 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01026",
+    "need": "HR-TYO/Dev Section 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01051",
+    "need": "HR-TYO/Dev Section 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01090",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01173",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00895",
+    "need": "HR-TYO/Support Section/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01260",
+    "need": "HR-TYO/Support Section/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00920",
+    "need": "HR-TYO/Support Section/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01194",
+    "need": "HR-TYO/Support Section/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01091",
+    "need": "IT-SEL/license/Design Suite",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 6,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00039",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00582",
+    "need": "FIN-SEL/Marketing Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01199",
+    "need": "FIN-TYO/Marketing Team/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 7,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00094",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00500",
+    "need": "LEGAL-TYO/E-TYO-1012/contract",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01092",
+    "need": "LEGAL-TYO/E-TYO-1012/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 8,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00036",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00807",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00967",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00987",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01064",
+    "need": "HR-TYO/Sales Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00807",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01133",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00679",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00940",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01137",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01063",
+    "need": "HR-TYO/Dev Section 1/planning_headcount",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 9,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00150",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01791",
+    "need": "LEGAL-TYO/E-TYO-2008/contract",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01033",
+    "need": "LEGAL-TYO/E-TYO-2008/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 10,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00014",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01029",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00925",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01035",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00700",
+    "need": "PROC-TYO/quotes/monitor",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00985",
+    "need": "PROC-TYO/quotes/monitor",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 11,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00040",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00884",
+    "need": "IT-TYO/stock/INV-TYO-LTP",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00770",
+    "need": "IT-TYO/license/CAD",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00993",
+    "need": "IT-TYO/license/CAD",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 12,
+  "model": "qwen3.5-27b",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00141",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01275",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01420",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01082",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01702",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 13,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00087",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 14,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00030",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 15,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00059",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 16,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00123",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00956",
+    "need": "LEGAL-SEL/E-SEL-1007/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 17,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00026",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01029",
+    "need": "FIN-TYO/Sales Section 2/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 18,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00070",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-00338",
+    "need": "LEGAL-TYO/E-TYO-1017/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 19,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00125",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01641",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01621",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01643",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01248",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01641",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01248",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01642",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01405",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01645",
+    "need": "HR-SEL/Sales Team 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01626",
+    "need": "HR-SEL/Sales Team 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01471",
+    "need": "FIN-SEL/Customer Support Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01493",
+    "need": "FIN-TYO/Customer Support Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01612",
+    "need": "FIN-TYO/Customer Support Team/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 20,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00077",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01318",
+    "need": "HR-TYO/Dev Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01266",
+    "need": "HR-TYO/Dev Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01133",
+    "need": "HR-TYO/Dev Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01347",
+    "need": "HR-TYO/Dev Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01266",
+    "need": "HR-TYO/Planning Section/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01133",
+    "need": "HR-TYO/Planning Section/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01051",
+    "need": "HR-TYO/Planning Section/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01379",
+    "need": "HR-TYO/Sales Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01320",
+    "need": "HR-TYO/Sales Section 1/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00995",
+    "need": "IT-SEL/license/Analytics",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 21,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00094",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01382",
+    "need": "IT-SEL/license/Analytics",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01233",
+    "need": "IT-SEL/license/Analytics",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01234",
+    "need": "IT-SEL/license/Analytics",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 22,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00121",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01347",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01470",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01483",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01598",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01055",
+    "need": "PROC-SEL/quotes/monitor",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 23,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00080",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01021",
+    "need": "FIN-TYO/Sales Section 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01169",
+    "need": "FIN-TYO/Sales Section 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01276",
+    "need": "FIN-TYO/Sales Section 1/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 24,
+  "model": "qwen3.5-27b",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00065",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01183",
+    "need": "IT-TYO/E-TYO-1019/assets",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 25,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00140",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 26,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00059",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 27,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00003",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 28,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00086",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01445",
+    "need": "IT-TYO/E-TYO-1017/assets",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 29,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00063",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00891",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01266",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01266",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01266",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 30,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00108",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01452",
+    "need": "FIN-SEL/CMT-00094/effective_status",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 31,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00116",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01347",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01470",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01483",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01598",
+    "need": "FIN-TYO/Sales Team 2/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 32,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00045",
+  "class": "C",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-00500",
+    "need": "LEGAL-TYO/E-TYO-1012/contract",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01092",
+    "need": "LEGAL-TYO/E-TYO-1012/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 33,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00082",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01152",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01329",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01448",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01448",
+    "need": "PROC-TYO/quotes/laptop",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 34,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00038",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00525",
+    "need": "IT-SEL/eligibility/E-SEL-1007",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00499",
+    "need": "LEGAL-SEL/E-SEL-1007/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 35,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00126",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01631",
+    "need": "FIN-TYO/Planning Section/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01274",
+    "need": "FIN-TYO/Planning Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01475",
+    "need": "FIN-TYO/Planning Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01659",
+    "need": "FIN-TYO/Planning Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01648",
+    "need": "FIN-TYO/Planning Section/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 36,
+  "model": "qwen3.5-27b",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00079",
+  "class": "D",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01366",
+    "need": "IT-SEL/stock/INV-SEL-WSP",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01359",
+    "need": "IT-SEL/license/Design Suite",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01091",
+    "need": "IT-SEL/license/Design Suite",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01360",
+    "need": "IT-TYO/license/Design Suite",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 37,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00031",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 38,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s13",
+  "task_id": "W-00016",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 39,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00037",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 40,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00081",
+  "class": "B",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 41,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00009",
+  "class": "B",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 42,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00058",
+  "class": "B",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 43,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00134",
+  "class": "C",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 44,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s13",
+  "task_id": "W-00094",
+  "class": "C",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 45,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00125",
+  "class": "C",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 46,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00005",
+  "class": "D",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 47,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00137",
+  "class": "D",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 48,
+  "model": "qwen3.5-27b",
+  "condition": "full_load",
+  "seed": "s13",
+  "task_id": "W-00137",
+  "class": "D",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 49,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00008",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 50,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00057",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 51,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00039",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 52,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00121",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01391",
+    "need": "FIN-TYO/CMT-00093/effective_status",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 53,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00088",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01439",
+    "need": "HR-TYO/E-TYO-1014/profile",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 54,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s13",
+  "task_id": "W-00014",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00582",
+    "need": "FIN-SEL/Marketing Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01003",
+    "need": "FIN-TYO/Marketing Team/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 55,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00142",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01530",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01364",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "stale"
+   }
+  ]
+ },
+ {
+  "case": 56,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00094",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01382",
+    "need": "IT-SEL/license/Analytics",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01233",
+    "need": "IT-SEL/license/Analytics",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01234",
+    "need": "IT-SEL/license/Analytics",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 57,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00036",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01164",
+    "need": "IT-TYO/stock/INV-TYO-MNB",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01053",
+    "need": "IT-TYO/stock/INV-TYO-MNB",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00870",
+    "need": "IT-SEL/license/CAD",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00879",
+    "need": "IT-SEL/license/CAD",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-00994",
+    "need": "IT-SEL/license/CAD",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 58,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00092",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01275",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01420",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01082",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01417",
+    "need": "PROC-SEL/quotes/laptop",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 59,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00072",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01033",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01057",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01297",
+    "need": "FIN-TYO/Support Section/budget_schedule",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 60,
+  "model": "deepseek-v4-flash",
+  "condition": "direct",
+  "seed": "s12",
+  "task_id": "W-00070",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00884",
+    "need": "IT-SEL/eligibility/E-SEL-1006",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00547",
+    "need": "LEGAL-SEL/E-SEL-1006/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 61,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00052",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 62,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00024",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 63,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00013",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 64,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00068",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01235",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 65,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00053",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01259",
+    "need": "HR-SEL/E-SEL-1012/profile",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 66,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00081",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01389",
+    "need": "LEGAL-SEL/E-SEL-2007/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 67,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00021",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00683",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00904",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01046",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00957",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01018",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 68,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s14",
+  "task_id": "W-00125",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01641",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01621",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01643",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01248",
+    "need": "HR-SEL/Customer Support Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01641",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01248",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01642",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01405",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01645",
+    "need": "HR-SEL/Sales Team 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01626",
+    "need": "HR-SEL/Sales Team 1/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01471",
+    "need": "FIN-SEL/Customer Support Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01493",
+    "need": "FIN-TYO/Customer Support Team/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01612",
+    "need": "FIN-TYO/Customer Support Team/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 69,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s12",
+  "task_id": "W-00085",
+  "class": "C",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-00826",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01364",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 70,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00137",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01737",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01224",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01260",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01615",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01573",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01616",
+    "need": "FIN-SEL/Sales Team 1/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 71,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00038",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00525",
+    "need": "IT-SEL/eligibility/E-SEL-1007",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00499",
+    "need": "LEGAL-SEL/E-SEL-1007/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 72,
+  "model": "deepseek-v4-flash",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00113",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01345",
+    "need": "IT-TYO/stock/INV-TYO-LTS",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00993",
+    "need": "IT-TYO/license/CAD",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01517",
+    "need": "IT-TYO/license/CAD",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 73,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00135",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 74,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00057",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 75,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00080",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 76,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00128",
+  "class": "B",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01665",
+    "need": "IT-SEL/E-SEL-1004/assets",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 77,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00070",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01339",
+    "need": "LEGAL-TYO/E-TYO-2014/contract",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 78,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s14",
+  "task_id": "W-00096",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00520",
+    "need": "LEGAL-SEL/E-SEL-1002/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 79,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00142",
+  "class": "C",
+  "exact": "1",
+  "matcher": [
+   {
+    "fid": "FR-01530",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01364",
+    "need": "LEGAL-TYO/E-TYO-1019/contract",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 80,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00021",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00683",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00904",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01046",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00957",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01018",
+    "need": "FIN-SEL/Sales Team 2/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 81,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00112",
+  "class": "C",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01278",
+    "need": "HR-SEL/Dev Team 2/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01200",
+    "need": "HR-SEL/Dev Team 2/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01011",
+    "need": "HR-SEL/Dev Team 2/planning_headcount-regular",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01472",
+    "need": "HR-SEL/Sales Team 2/planning_headcount-regular",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 82,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00027",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00810",
+    "need": "IT-TYO/stock/INV-TYO-LTB",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-01051",
+    "need": "IT-TYO/stock/INV-TYO-LTB",
+    "state": "stale"
+   },
+   {
+    "fid": "FR-01052",
+    "need": "IT-TYO/license/Analytics",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00554",
+    "need": "IT-TYO/license/Analytics",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 83,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s13",
+  "task_id": "W-00009",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-00924",
+    "need": "HR-SEL/Dev Team 1/planning_headcount",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00757",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00766",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00677",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00978",
+    "need": "HR-SEL/Marketing Team/planning_headcount",
+    "state": "delivered"
+   },
+   {
+    "fid": "FR-00757",
+    "need": "HR-SEL/Dev Team 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00605",
+    "need": "HR-SEL/Dev Team 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00778",
+    "need": "HR-SEL/Dev Team 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00881",
+    "need": "HR-SEL/Dev Team 2/planning_headcount",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-00747",
+    "need": "HR-SEL/Dev Team 2/planning_headcount",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 84,
+  "model": "deepseek-v4-flash",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00041",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01095",
+    "need": "IT-SEL/E-SEL-1006/assets",
+    "state": "delivered"
+   }
+  ]
+ },
+ {
+  "case": 85,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00090",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 86,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00120",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 87,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s13",
+  "task_id": "W-00016",
+  "class": "A",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 88,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00028",
+  "class": "B",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 89,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00045",
+  "class": "B",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 90,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00058",
+  "class": "B",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 91,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00115",
+  "class": "C",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 92,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00088",
+  "class": "C",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 93,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00098",
+  "class": "C",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 94,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00041",
+  "class": "D",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 95,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s12",
+  "task_id": "W-00070",
+  "class": "D",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 96,
+  "model": "deepseek-v4-flash",
+  "condition": "full_load",
+  "seed": "s14",
+  "task_id": "W-00057",
+  "class": "D",
+  "exact": "1",
+  "matcher": []
+ },
+ {
+  "case": 97,
+  "model": "qwen3.5-9b",
+  "condition": "direct",
+  "seed": "s14",
+  "task_id": "W-00084",
+  "class": "A",
+  "exact": "0",
+  "matcher": []
+ },
+ {
+  "case": 98,
+  "model": "qwen3.5-9b",
+  "condition": "routing",
+  "seed": "s13",
+  "task_id": "W-00139",
+  "class": "B",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01641",
+    "need": "IT-SEL/E-SEL-2015/assets",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 99,
+  "model": "qwen3.5-9b",
+  "condition": "ingress",
+  "seed": "s12",
+  "task_id": "W-00150",
+  "class": "D",
+  "exact": "0",
+  "matcher": [
+   {
+    "fid": "FR-01082",
+    "need": "FIN-SEL/Dev Team 1/budget_schedule",
+    "state": "missing"
+   },
+   {
+    "fid": "FR-01421",
+    "need": "FIN-SEL/Dev Team 1/budget_schedule",
+    "state": "missing"
+   }
+  ]
+ },
+ {
+  "case": 100,
+  "model": "qwen3.5-9b",
+  "condition": "full_load",
+  "seed": "s13",
+  "task_id": "W-00138",
+  "class": "C",
+  "exact": "1",
+  "matcher": []
+ }
+]

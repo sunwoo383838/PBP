@@ -45,9 +45,10 @@ $$\mathrm{class}(n)=\begin{cases}
 \mathrm D & \text{어떤 } S\subseteq G_n \text{도 피복하지 못함 } (R_n\subseteq\mathcal R_{G_n}\text{에만 존재})
 \end{cases} \tag{3}$$
 
-- $C_{ops}$는 클래스가 아니라 겹침 플래그: $R_n$에 운영 판단(예외 승인·대행 결정 등) 기록이 포함됨.
+- 피복 판정의 작업 기억 $W_a(t)$는 창과 요약을 모두 포함한다(생성기 `classify`의 alive). 결정 필수 기록이 없는 need(DB·규정만으로 답)는 A. D는 "활동 중인 어느 구성원의 창·요약에도 없음(축출 또는 이탈)"이다. 과제 등급 = 가장 어려운 원격 need의 등급.
+- 분류는 A–D 한 축만 쓴다. 조각 속성으로는 "과제 시점에 DB가 그 사실의 옛 버전을 보여 줌(기준 셀 결정 필수 기록 826개 중 139) / 아무것도 안 보여 줌(687 = 끝내 등록되지 않는 운영 기록 642 + 첫 등록 대기 45)"을 §5.1에서 보고한다. 생성기의 $C_{ops}$(C need의 운영 성분이 서로 다른 보유자에 흩어짐, 22.5%, 수락 기준 ≥20%)는 §5.1에서 생성기 지표로만 언급한다.
 - 클래스 A가 대조군인 이유가 (3)에서 바로 나온다: $h(n)\in\mathrm{hold}(r,t)$이면 정적 카드와 동적 기록이 같은 사람을 가리킨다. B·C·D는 카드와 보유가 어긋나는 세 가지 방식이다.
-- 서론의 "첫째·둘째·셋째" 조건 = B, C, D. "더 어려워지는 조건" = $C_{ops}$.
+- 서론의 "첫째·둘째·셋째" 조건 = B, C, D. "더 어려워지는 조건"(작업 맥락 의존)은 등급과 겹치는 성질이며 별도 범주로 세지 않는다.
 
 ## 3. §3.3 Boundary mechanisms as two decisions under partial observability
 
@@ -88,8 +89,8 @@ $\mathcal D_G(x)$ = 경계를 넘어도 되는 내용(허용 정책) — 모든 
 
 $$\begin{aligned}
 \gamma_{req} &: a_q\text{가 } n\text{을 묻는다}\\
-\gamma_{route} &: S\cap\mathrm{hold}(R_n,t)\neq\emptyset\ \ \lor\ \ R_n\cap E\neq\emptyset\\
-\gamma_{sel} &: R_n\cap\Delta(x)\neq\emptyset \quad(\text{하위 원인: window / answer / search / assembly})\\
+\gamma_{route} &: R_n \text{이 어떤 선택 단계의 관측 } O_\phi \text{에 들어감} \;\Leftrightarrow\; \exists a\in S:\ R_n\cap W_a(t)\neq\emptyset\ \ \lor\ \ \big(R_n\cap E\neq\emptyset\ \land\ E\subseteq O_\phi\big)\\
+\gamma_{sel} &: O_\phi \text{에 들어간 } R_n \text{이 출력에 실림: } R_n\cap\Delta(x)\neq\emptyset \quad(\text{하위 원인: window / answer / search / assembly})\\
 \gamma_{state} &: \text{전달된 버전}=r^{(t)}\\
 \gamma_{use} &: y_\tau=y^*
 \end{aligned} \tag{6}$$
@@ -97,7 +98,7 @@ $$\begin{aligned}
 $$\ell(n)=\min\{k:\gamma_k=0\},\qquad L_k(c)=P\big[\ell(n)=k\mid c\big],\qquad \delta(c)=1-\sum_{k\le\mathrm{state}}L_k(c) \tag{7}$$
 
 - $\gamma_{sel}$의 하위 원인은 $O_\phi$의 어느 성분이 비었는지: window(응답자 문맥에 없음), answer(있었으나 말하지 않음), search(검색이 놓침), assembly(검색됐으나 조립이 버림).
-- $\gamma_{route}$에 "$R_n\cap E\neq\emptyset$"를 넣는 것이 Ingress의 route 손실 0을 설명한다(검색이 중개 오류를 흡수). 이 정의를 명시해야 "Routing 11 vs Ingress 0"에 대한 질문이 안 나온다.
+- **route 손실 = 조각이 어떤 선택 단계의 관측 $O_\phi$에도 들어가지 못함**(선택된 보유자의 작업 기억에도, φ로 넘어가는 증거에도 없음). **select 손실 = $O_\phi$에는 들어갔는데 출력에 없음.** 증거 $E$는 φ로 넘어갈 때만 route를 통과시킨다: Ingress·sidecar(조립 입력)·Retrieve(원문 전달)는 $E\subseteq O_\phi$이고, Routing은 $E$를 σ에만 쓰므로 "$E$에는 있었는데 보유자를 안 고름"이 route 손실이다(σ가 본 것을 σ가 잃음). 이 정의가 Ingress route 0, Routing route 18(27B), Retrieve의 "증거에 있었으나 상한에서 잘림" = select를 함께 설명한다. 구현: `gbg/scoring/gates.py`.
 
 과제 지표:
 
@@ -172,6 +173,6 @@ $$\mathrm{cov}(\tau)=\frac{|\Delta(\tau)\cap R_\tau|}{|R_\tau|},\qquad \upsilon(
 ## 9. 주의
 
 - Full-load는 "상한"이라 부르지 않는다(27B: Ingress 53.4 ≥ Full-load 52.5).
-- $C_{ops}$를 네 번째 클래스처럼 세지 않는다(겹침 플래그). 서론 4문단 표기와 일치시킨다.
-- (6)의 $\gamma_{route}$ 정의(검색 포함)를 반드시 명시한다.
+- $C_{ops}$는 본문 범주로 쓰지 않는다(§5.1 생성기 지표로만). 본문 표·그림은 A–D만.
+- (6)의 $\gamma_{route}$ 정의("$O_\phi$에 들어갔는가", $E$는 φ로 넘어갈 때만)를 반드시 명시한다.
 - (9)의 $\rho$와 서론 헤드라인 수치는 같은 정의다. 55%(¬A 상승분/Direct 격차)는 쓰지 않는다.

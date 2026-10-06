@@ -219,6 +219,13 @@ runs = list(csv.DictReader(open(T / "runs.csv", encoding="utf-8")))
 NUM["ops"] = {"n_runs": len(runs), "total_cost_usd": sum(float(r["cost_usd_est"]) for r in runs), "total_llm_calls": sum(int(r["llm_calls_timing"]) for r in runs),
               "restarts": sum(int(r["restarts"]) for r in runs), "n_scored_rows": len(rows)}
 
+# 비A(B–D) 묶음: f8(b)의 대조군 대비용. 주 RNG 흐름(기존 CI)을 바꾸지 않도록 별도 RNG로 맨 끝에서 계산
+RNG_MAIN, RNG = RNG, np.random.default_rng(1)
+for m in MODELS:
+    sub = [x for x in common("base", m, C4, 15) if x["direct"]["state_class"] != "A"]
+    NUM["main"][m]["by_class"]["notA"] = {"n": len(sub), "acc": {c: acc(sub, c)[0] for c in C4},
+                                          "d_route": boot(sub, "routing", "direct"), "d_sel": boot(sub, "ingress", "routing"), "d_total": boot(sub, "ingress", "direct")}
+RNG = RNG_MAIN
 json.dump(NUM, open(OUT / "numbers.json", "w"), ensure_ascii=False, indent=1, default=float)
 
 # ─────────────────────────── LaTeX 표 ───────────────────────────
@@ -235,21 +242,21 @@ for m in MODELS:
 L += [r"\bottomrule", r"\end{tabular}"]
 tex("t1_main.tex", "\n".join(L))
 # T2 변형
-L = [r"\begin{tabular}{l cc l r cccc c rr}", r"\toprule",
-     r"Condition & Med. & Sel. & Where & Acc. & A & B & C & D & $C_{\text{ops}}$ & Calls & Tokens (k) \\", r"\midrule"]
+L = [r"\begin{tabular}{l cc l r cccc rr}", r"\toprule",
+     r"Condition & Med. & Sel. & Where & Acc. & A & B & C & D & Calls & Tokens (k) \\", r"\midrule"]
 FACT = {"direct": ("--", "--", "requester (cards)"), "direct_relay": ("--", "--", "responder asks peers"), "routing": (r"\checkmark", "--", "gateway picks responder"),
         "retrieve": (r"\checkmark", "raw", "records to requester"), "sidecar": ("--", r"\checkmark", "per-agent module"), "ingress": (r"\checkmark", r"\checkmark", "group gateway"),
         "full_load": ("n/a", "n/a", "no partition (ref.)")}
 for c in ["direct", "direct_relay", "routing", "retrieve", "sidecar", "ingress", "full_load"]:
     v = var["cond"][c]; f = FACT[c]
     L.append(f"{CN[c]} & {f[0]} & {f[1]} & {f[2]} & {pct(v['acc'])} & " + " & ".join(pct(v["by_class"][k]) for k in CLASSES)
-             + f" & {pct(v['c_ops'])} & {v['calls']:.0f} & {v['tokens']/1000:.0f} \\\\")
+             + f" & {v['calls']:.0f} & {v['tokens']/1000:.0f} \\\\")
 L += [r"\bottomrule", r"\end{tabular}"]
 tex("t2_variants.tex", "\n".join(L))
 # T3 등급별 (모델별)
 L = [r"\begin{tabular}{ll r cccc cc}", r"\toprule", r"Backbone & Class & $n$ & Direct & Routing & Ingress & Full-load & $\Delta_{\text{route}}$ & $\Delta_{\text{sel}}$ \\", r"\midrule"]
 for m in MODELS:
-    for k in CLASSES + ["c_ops"]:
+    for k in CLASSES:
         d = main[m]["by_class"][k]; a = d["acc"]
         klab = k if k != "c_ops" else r"$C_{\text{ops}}$"; mlab = MN[m] if k == "A" else ""
         L.append(f"{mlab} & {klab} & {d['n']} & {pct(a['direct'])} & {pct(a['routing'])} & {pct(a['ingress'])} & {pct(a['full_load'])} & "
@@ -265,13 +272,16 @@ for k, v in gws.items():
 L += [r"\bottomrule", r"\end{tabular}"]
 tex("t4_gateway.tex", "\n".join(L))
 # T5 규모
-L = [r"\begin{tabular}{l c r cccc c}", r"\toprule", r"Cell & $G$ & $n$ & Direct & Routing & Ingress & Full-load & $\Delta_{\text{total}}$ \\", r"\midrule"]
+# 위: 1~10일, 모든 셀에 있는 11개 템플릿(셀 간 비교용 n_shared). 오른쪽 두 열: 같은 기간의 모든 템플릿(n_all).
+# 아래: 기준 셀 1~15일 + G 셀 1~10일, 모든 템플릿 풀링(1,162)
+L = [r"\begin{tabular}{l c r cccc c r c}", r"\toprule",
+     r"Cell & $G$ & $n_{\text{shared}}$ & Direct & Routing & Ingress & Full-load & $\Delta_{\text{total}}$ (shared) & $n_{\text{all}}$ & $\Delta_{\text{total}}$ (all) \\", r"\midrule"]
 for c, g in CELLS:
     v = scale["cells"][c]; a = v["acc_shared"]
-    L.append(f"{c if c != 'base' else 'D5·R2 (base)'} & {g} & {v['n_shared']} & {pct(a['direct'])} & {pct(a['routing'])} & {pct(a['ingress'])} & {pct(a['full_load'])} & {fmt_ci(v['d_total_shared'])} \\\\")
-L += [r"\midrule", r"\multicolumn{8}{l}{\textit{By number of groups a task spans (all 27B cells pooled)}} \\"]
+    L.append(f"{c if c != 'base' else 'D5·R2 (base)'} & {g} & {v['n_shared']} & {pct(a['direct'])} & {pct(a['routing'])} & {pct(a['ingress'])} & {pct(a['full_load'])} & {fmt_ci(v['d_total_shared'])} & {v['n_all']} & {fmt_ci(v['d_total_all'])} \\\\")
+L += [r"\midrule", r"\multicolumn{10}{l}{\textit{By number of groups a task spans (base cell days 1--15 and the three other cells days 1--10, all templates)}} \\"]
 for lab, v in scale["by_groups_involved"].items():
-    a = v["acc"]; L.append(f"{lab} groups & -- & {v['n']} & {pct(a['direct'])} & {pct(a['routing'])} & {pct(a['ingress'])} & {pct(a['full_load'])} & {fmt_ci(v['d_total'])} \\\\")
+    a = v["acc"]; L.append(f"{lab} groups & -- & {v['n']} & {pct(a['direct'])} & {pct(a['routing'])} & {pct(a['ingress'])} & {pct(a['full_load'])} & {fmt_ci(v['d_total'])} & & \\\\")
 L += [r"\bottomrule", r"\end{tabular}"]
 tex("t5_scale.tex", "\n".join(L))
 # T6 비용
@@ -300,7 +310,7 @@ tex("t8_templates.tex", "\n".join(L))
 # ─────────────────────────── 그림 ───────────────────────────
 def save(fig, name):
     fig.savefig(OUT / "figures" / f"{name}.pdf", bbox_inches="tight"); fig.savefig(OUT / "figures" / f"{name}.png", bbox_inches="tight", dpi=200); plt.close(fig)
-XL = CLASSES + ["$C_{ops}$"]; KEYS = CLASSES + ["c_ops"]
+XL = list(CLASSES); KEYS = list(CLASSES)
 # F1 등급별 정확도 (27B, DeepSeek)
 fig, axes = plt.subplots(1, 2, figsize=(6.9, 2.3), sharey=True)
 for ax, m in zip(axes, MODELS[:2]):
