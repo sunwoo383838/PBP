@@ -1,0 +1,55 @@
+(1) needs whose delivered/lost/error status changed: 6
+
+== 27B direct: judged needs 451 | links /100: reach 66.7, ok 15.7, request 10.9, respond 4.0, observe.window 2.7
+   lost 380, of which older value arrived (stale flag) 40; delivered fragments 102, echoed from the question 1; task outcomes {'lost': 227, 'correct': 141, 'use': 56, 'E_format': 3}
+   old → new (top): route→reach 233, use→ok 61, req→request 49, state→reach 39, sel.answer→respond 16, sel.window→reach 16, sel.answer→reach 13, sel.window→observe.window 11
+
+== 27B routing: judged needs 452 | links /100: ok 41.2, reach 23.7, respond 13.1, request 11.5, observe.window 10.6
+   lost 266, of which older value arrived (stale flag) 35; delivered fragments 215, echoed from the question 1; task outcomes {'use': 82, 'correct': 164, 'lost': 180, 'E_format': 1}
+   old → new (top): use→ok 139, route→reach 81, req→request 51, sel.answer→respond 44, sel.window→observe.window 36, state→respond 15, state→reach 13, sel.answer→reach 7
+
+== 27B ingress: judged needs 453 | links /100: ok 51.0, select 13.2, observe.window 10.6, observe.search 10.2, request 9.5, respond 5.5
+   lost 222, of which older value arrived (stale flag) 13; delivered fragments 285, echoed from the question 1; task outcomes {'correct': 228, 'use': 75, 'lost': 124}
+   old → new (top): use→ok 107, sel.assembly→select 54, sel.search→observe.search 43, req→request 41, sel.window→observe.window 35, sel.answer→respond 22, sel.answer→observe.window 6, state→select 6
+
+== 27B full_load: judged needs 453 | links /100: ok 46.8, observe.search 39.5, request 13.7
+   lost 241, of which older value arrived (stale flag) 81; delivered fragments 575, echoed from the question 0; task outcomes {'use': 74, 'correct': 224, 'lost': 128, 'E_format': 1}
+   old → new (top): use→ok 132, sel.search→observe.search 118, state→observe.search 61, req→request 42, state→request 20
+
+== DS direct: judged needs 453 | links /100: reach 57.0, ok 23.4, request 7.9, observe.window 7.9, respond 3.8
+   lost 347, of which older value arrived (stale flag) 35; delivered fragments 154, echoed from the question 1; task outcomes {'lost': 215, 'correct': 148, 'use': 64}
+   old → new (top): route→reach 199, use→ok 91, req→request 36, sel.window→observe.window 35, state→reach 33, sel.window→reach 21, sel.answer→respond 14, sel.answer→reach 5
+
+== DS routing: judged needs 452 | links /100: ok 43.8, observe.window 24.6, reach 21.2, request 6.9, respond 3.5
+   lost 254, of which older value arrived (stale flag) 19; delivered fragments 337, echoed from the question 2; task outcomes {'use': 68, 'correct': 192, 'lost': 167}
+   old → new (top): use→ok 139, sel.window→observe.window 99, route→reach 67, req→request 31, sel.answer→respond 15, sel.window→reach 14, state→reach 13, state→observe.window 8
+
+== DS ingress: judged needs 452 | links /100: ok 55.8, observe.window 17.9, select 11.1, observe.search 7.7, request 6.2, respond 1.3
+   lost 200, of which older value arrived (stale flag) 20; delivered fragments 417, echoed from the question 3; task outcomes {'correct': 225, 'E_budget': 4, 'use': 77, 'lost': 121}
+   old → new (top): use→ok 141, sel.window→observe.window 64, sel.assembly→select 40, sel.search→observe.search 29, req→request 28, sel.assembly→observe.window 12, state→select 10, state→observe.search 5
+
+== DS full_load: judged needs 453 | links /100: ok 62.0, observe.search 35.5, request 2.4
+   lost 172, of which older value arrived (stale flag) 76; delivered fragments 709, echoed from the question 0; task outcomes {'correct': 267, 'use': 90, 'lost': 70}
+   old → new (top): use→ok 144, sel.search→observe.search 92, state→observe.search 69, state→request 7, req→request 4
+
+== 9B direct: judged needs 453 | links /100: reach 48.8, request 33.6, respond 7.3, ok 6.8, observe.window 3.5
+   lost 422, of which older value arrived (stale flag) 34; delivered fragments 12, echoed from the question 1; task outcomes {'lost': 250, 'correct': 80, 'use': 96, 'E_format': 1}
+   old → new (top): route→reach 163, req→request 151, use→ok 30, state→reach 28, sel.answer→respond 28, sel.answer→reach 20, sel.window→observe.window 12, sel.window→reach 10
+
+== 9B routing: judged needs 452 | links /100: reach 31.0, respond 23.0, request 17.9, observe.window 17.7, ok 10.4
+   lost 405, of which older value arrived (stale flag) 35; delivered fragments 20, echoed from the question 1; task outcomes {'lost': 242, 'correct': 97, 'use': 87, 'E_format': 1}
+   old → new (top): route→reach 103, sel.answer→respond 89, req→request 81, sel.window→observe.window 46, use→ok 45, sel.answer→observe.window 26, state→reach 17, state→respond 15
+
+== 9B ingress: judged needs 449 | links /100: ok 24.3, select 21.8, observe.window 18.9, request 18.0, observe.search 9.6, respond 7.3
+   lost 340, of which older value arrived (stale flag) 27; delivered fragments 107, echoed from the question 1; task outcomes {'correct': 107, 'lost': 206, 'use': 110, 'E_format': 4}
+   old → new (top): use→ok 89, req→request 81, sel.assembly→select 79, sel.window→observe.window 59, sel.search→observe.search 31, sel.answer→respond 30, state→select 19, sel.assembly→observe.window 14
+
+== 9B full_load: judged needs 450 | links /100: observe.search 44.2, ok 41.1, request 14.7
+   lost 265, of which older value arrived (stale flag) 89; delivered fragments 515, echoed from the question 0; task outcomes {'use': 106, 'correct': 164, 'lost': 155, 'E_format': 2}
+   old → new (top): use→ok 159, sel.search→observe.search 134, state→observe.search 65, req→request 42, state→request 24
+
+== 27B direct_relay (1-10d): judged 310; old → new: route→reach 117, use→ok 58, req→request 36, state→reach 20, sel.answer→respond 14, route→respond 12, sel.window→observe.window 11, sel.window→reach 7
+
+== 27B retrieve (1-10d): judged 310; old → new: use→ok 147, req→request 33, route→observe.search 20, sel.window→observe.window 14, sel.assembly→select 13, state→observe.window 4, sel.answer→respond 4, state→observe.search 3
+
+== 27B sidecar (1-10d): judged 310; old → new: use→ok 85, sel.assembly→select 61, req→request 34, sel.search→observe.search 26, sel.assembly→observe.search 12, state→select 6, sel.assembly→observe.window 2, sel.answer→respond 2

@@ -15,10 +15,12 @@ C4 = ["direct", "routing", "ingress", "full_load"]; APX = ["direct_relay", "retr
 CN = {"direct": "Direct", "routing": "Routing", "ingress": "Ingress", "full_load": "Full-load", "direct_relay": "Direct+relay", "retrieve": "Retrieve", "sidecar": "Sidecar"}
 COL = {"direct": "#8c8c8c", "routing": "#e69f00", "ingress": "#0072b2", "full_load": "#009e73", "direct_relay": "#bbbbbb", "retrieve": "#d55e00", "sidecar": "#56b4e9"}
 plt.rcParams.update({"font.size": 8, "axes.titlesize": 8.5, "axes.labelsize": 8, "legend.fontsize": 7, "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "pdf.fonttype": 42, "figure.dpi": 150})
-GATES = ["L_req", "L_route", "L_sel.window", "L_sel.answer", "L_sel.search", "L_sel.assembly", "L_state", "L_use", "error", "ok"]
-GL = {"L_req": "request", "L_route": "route", "L_sel.window": "sel:\nwindow", "L_sel.answer": "sel:\nanswer", "L_sel.search": "sel:\nsearch", "L_sel.assembly": "sel:\nassembly", "L_state": "state", "L_use": "use", "error": "error", "ok": "ok"}
-STAGE = {"L_req": "request", "L_route": "route", "L_sel.window": "select", "L_sel.answer": "select", "L_sel.search": "select", "L_sel.assembly": "select", "L_state": "state", "L_use": "use", "error": "use", "ok": "ok"}
-STAGES = ["request", "route", "select", "state", "use"]
+# §3.4 손실 고리 (인과 순서). 옛 버전 전달은 표시(stale), 오답은 과제 단위 결과(use), 오류 코드는 별도 범주(분포에서 뺌)
+GATES = ["L_request", "L_reach", "L_observe.window", "L_observe.search", "L_respond", "L_select", "ok"]
+GL = {"L_request": "request", "L_reach": "reach", "L_observe.window": "observe:\nwindow", "L_observe.search": "observe:\nsearch", "L_respond": "respond", "L_select": "select", "ok": "delivered"}
+STAGE = {"L_request": "request", "L_reach": "reach", "L_observe.window": "observe", "L_observe.search": "observe", "L_respond": "respond", "L_select": "select", "ok": "ok"}
+STAGES = ["request", "reach", "observe", "respond", "select"]
+C3 = ["direct", "routing", "ingress"]                                      # 원장 그림·표(f12·f18·t11)는 경계 조건만. full_load(π≡1)는 계산만
 def save(fig, name):
     fig.savefig(OUT / "figures" / f"{name}.pdf", bbox_inches="tight"); fig.savefig(OUT / "figures" / f"{name}.png", bbox_inches="tight", dpi=200); plt.close(fig)
 
@@ -29,9 +31,10 @@ for f in sorted(G.glob("*.json")):
     if not m: continue
     d = json.load(open(f))
     needs = [n for n in d["needs"] if n["gate"] != "unjudged" and n["scored"]]
-    for n in needs:
-        n["gate"] = "error" if n["gate"].startswith("E_") else n["gate"]
-    runs[m.groups()] = {"needs": needs, "tasks": {t["task_id"]: t for t in d["tasks"]}}
+    maxday = 15 if m.group(1) == "main" else 10
+    runs[m.groups()] = {"needs": [n for n in needs if not n["gate"].startswith("E_")], "errors": sum(n["gate"].startswith("E_") for n in needs),
+                        "tasks": {t["task_id"]: t for t in d["tasks"]},
+                        "outcomes": Counter(t.get("outcome") for t in d["tasks"] if t["day"] <= maxday and not t["unreachable"])}
 NUM = {"n_runs": len(runs)}
 GOLD = {}
 def gold(cell, seed):
@@ -53,17 +56,29 @@ def survival(d):
     alive = 1.0; out = [1.0]
     for st in STAGES:
         alive -= sum(v for g, v in d.items() if STAGE.get(g) == st and g != "ok"); out.append(alive)
-    return out                                                              # [start, after request, after route, after select, after state, after use]
+    return out                                                              # [start, after request, reach, observe, respond, select (= delivered)]
+def extra(needs):
+    """옛 버전 표시·질문 되풀이: 끊긴 need 가운데 고른 조각이 옛 버전만 전달된 비율, 전달된 조각 가운데 질문에 값이 있던 수."""
+    lost = [n for n in needs if n["gate"] != "ok"]; det = lambda n: n.get("gate_detail") or {}
+    deliv = sum(sum(f["state"] == "delivered" for f in n.get("frags", [])) for n in needs)
+    return {"stale_lost": sum(bool(det(n).get("stale")) for n in lost), "lost": len(lost),
+            "echo_frags": sum(len(det(n).get("echo") or []) for n in needs), "delivered_frags": deliv}
+def outcomes(exp, cell, model, cond):
+    c = Counter(); e = 0
+    for (x, cl, m, co, s), v in runs.items():
+        if (x, cl, m, co) == (exp, cell, model, cond): c += v["outcomes"]; e += v["errors"]
+    return dict(c), e
 
 # ─────────────────────────── 집계 ───────────────────────────
 ledger = {}
 for m in MODELS:
     ledger[m] = {}
     for c in C4:
-        needs = pool("main", "base", m, c); d, n = dist(needs)
-        ledger[m][c] = {"n_needs": n, "loss": d, "survival": survival(d),
+        needs = pool("main", "base", m, c); d, n = dist(needs); oc, ne = outcomes("main", "base", m, c)
+        ledger[m][c] = {"n_needs": n, "loss": d, "survival": survival(d), "extra": extra(needs), "task_outcomes": oc, "error_needs": ne,
                         "by_class": {k: dist([x for x in needs if x["class"] == k]) for k in "ABCD"}}
-ledger["variants"] = {c: dict(zip(("loss", "n_needs"), dist(pool("appendix", "base", "qwen3.5-27b", c)))) for c in APX}
+ledger["variants"] = {c: {**dict(zip(("loss", "n_needs"), dist(pool("appendix", "base", "qwen3.5-27b", c)))), "extra": extra(pool("appendix", "base", "qwen3.5-27b", c)),
+                         "task_outcomes": outcomes("appendix", "base", "qwen3.5-27b", c)[0]} for c in APX}
 for c in C4: ledger["variants"][c] = dict(zip(("loss", "n_needs"), dist([x for x in pool("main", "base", "qwen3.5-27b", c) if gold("base", x["seed"])[x["task_id"]]["day"] <= 10])))
 ledger["by_breadth"] = {}
 for c in ("direct", "ingress"):
@@ -75,23 +90,23 @@ NUM["ledger"] = ledger
 
 # ─────────────────────────── F12 생존 곡선 + 게이트별 손실 히트맵 ───────────────────────────
 fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.5), gridspec_kw={"width_ratios": [1, 1.3], "wspace": 0.5})
-ax = axes[0]; xs = ["judged\nneeds", "after\nrequest", "after\nroute", "after\nselect", "after\nstate", "after\nuse\n(= ok)"]
-for c in C4:
+ax = axes[0]; xs = ["judged", "request", "reach", "observe", "respond", "select"]
+for c in C3:
     sv = ledger["qwen3.5-27b"][c]["survival"]; ax.plot(range(6), [v * 100 for v in sv], "-o", ms=3, color=COL[c], label=f"{CN[c]} (n={ledger['qwen3.5-27b'][c]['n_needs']})")
     ax.text(4.75, sv[-1] * 100 + 2, f"{sv[-1]*100:.0f}", color=COL[c], fontsize=6.5, va="bottom", ha="right")
 ax.set_xticks(range(6)); ax.set_xticklabels(xs); ax.set_ylabel("Need events still alive (%)"); ax.set_ylim(0, 100); ax.grid(lw=.3, alpha=.5)
 ax.set_title("(a) Survival of needs across gates (Qwen3.5-27B)"); ax.legend(frameon=False, fontsize=6.5)
-ax = axes[1]; rows_ = [(m, c) for m in MODELS[:2] for c in C4]; cols = GATES[:-1]
+ax = axes[1]; rows_ = [(m, c) for m in MODELS[:2] for c in C3]; cols = GATES[:-1]
 mat = np.array([[ledger[m][c]["loss"][g] * 100 for g in cols] for m, c in rows_])
 im = ax.imshow(mat, cmap="OrRd", vmin=0, vmax=max(40, mat.max()), aspect="auto")
 for i in range(len(rows_)):
     for j in range(len(cols)): ax.text(j, i, f"{mat[i, j]:.0f}", ha="center", va="center", fontsize=6.5, color="white" if mat[i, j] > 25 else "black")
 ax.set_xticks(range(len(cols))); ax.set_xticklabels([GL[g] for g in cols], fontsize=6); ax.set_yticks(range(len(rows_))); ax.set_yticklabels([f"{'27B' if m == MODELS[0] else 'DS'} {CN[c]}" for m, c in rows_], fontsize=7)
-ax.axhline(3.5, color="k", lw=0.6); ax.set_title("(b) First failing gate, per 100 judged needs"); plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
+ax.axhline(2.5, color="k", lw=0.6); ax.set_title("(b) First broken link, per 100 judged needs"); plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
 save(fig, "f12_gate_ledger")
 
 # ─────────────────────────── F12c 등급별·폭별 손실 구성 (Direct vs Ingress, 27B) ───────────────────────────
-SC = {"L_req": "#4e79a7", "L_route": "#e15759", "L_sel.window": "#f28e2b", "L_sel.answer": "#ffbe7d", "L_sel.search": "#b07aa1", "L_sel.assembly": "#d4a6c8", "L_state": "#59a14f", "L_use": "#bab0ac", "error": "#333333"}
+SC = {"L_request": "#4e79a7", "L_reach": "#e15759", "L_observe.window": "#f28e2b", "L_observe.search": "#b07aa1", "L_respond": "#ffbe7d", "L_select": "#d4a6c8"}
 fig, axes = plt.subplots(1, 2, figsize=(6.9, 2.4), sharey=True)
 def stacked(ax, groups, getter, title, xlabel):
     x = np.arange(len(groups)); w = 0.36
@@ -100,11 +115,11 @@ def stacked(ax, groups, getter, title, xlabel):
         for g in GATES[:-1]:
             v = np.array([getter(c, k)[0].get(g, 0) * 100 for k in groups])
             ax.bar(x + (i - .5) * w, v, w, bottom=bottom, color=SC[g], edgecolor="k" if c == "ingress" else "none", lw=0.4, hatch="//" if c == "ingress" else None); bottom += v
-    ax.set_xticks(x); ax.set_xticklabels([f"{k} (n={getter('direct', k)[1]})" for k in groups]); ax.set_title(title); ax.set_xlabel(xlabel); ax.grid(axis="y", lw=.3, alpha=.5)
+    ax.set_xticks(x); ax.set_xticklabels([f"{k}\n(n={getter('direct', k)[1]})" for k in groups], fontsize=6.8); ax.set_title(title, fontsize=8); ax.set_xlabel(xlabel); ax.grid(axis="y", lw=.3, alpha=.5)
 stacked(axes[0], list("ABCD"), lambda c, k: ledger["qwen3.5-27b"][c]["by_class"][k], "(a) By state class (plain: Direct, hatched: Ingress)", "State class")
 stacked(axes[1], ["2", "3", "4", "5+"], lambda c, k: (ledger["by_breadth"][c][k]["loss"], ledger["by_breadth"][c][k]["n_needs"]), "(b) By groups a task spans (all 27B cells)", "Groups spanned")
-axes[0].set_ylabel("Needs lost per 100 (by first failing gate)")
-fig.legend([Patch(color=SC[g]) for g in GATES[:-1]], [GL[g].replace("\n", " ") for g in GATES[:-1]], loc="lower center", ncol=9, frameon=False, bbox_to_anchor=(0.5, -0.2), fontsize=6.5)
+axes[0].set_ylabel("Needs lost per 100 (by first broken link)")
+fig.legend([Patch(color=SC[g]) for g in GATES[:-1]], [GL[g].replace("\n", " ") for g in GATES[:-1]], loc="lower center", ncol=6, frameon=False, bbox_to_anchor=(0.5, -0.2), fontsize=6.5)
 save(fig, "f12c_gate_composition")
 
 # ─────────────────────────── F4b 가시 상태(전달된 결정 필수 조각 비율) vs 정답 ───────────────────────────
@@ -135,20 +150,27 @@ axes[0].set_ylabel("Task accuracy (%)"); axes[0].legend(frameon=False, ncol=2)
 save(fig, "f4b_coverage_vs_accuracy")
 
 # ─────────────────────────── T11 ───────────────────────────
-L = [r"\begin{tabular}{ll r " + "r" * len(GATES) + "}", r"\toprule", r"Backbone & Condition & Needs & " + " & ".join(g.replace("_", r"\_") for g in GATES) + r" \\", r"\midrule"]
+# 경계 조건만(full_load는 numbers3에만). 열: need 100개당 첫 끊긴 고리, 전달(현재 버전), 끊긴 need 중 옛 버전이 도착한 수,
+# 과제 단위 use(모든 원격 need 충족인데 오답) 수/과제 수, 오류 범주 need 수
+TC = GATES[:-1]
+L = [r"\begin{tabular}{ll r " + "r" * len(TC) + " r r r r}", r"\toprule",
+     r"Backbone & Condition & Needs & " + " & ".join(GL[g].replace("\n", " ") for g in TC) + r" & Delivered & Older value & Use (tasks) & Errors \\", r"\midrule"]
 for m in MODELS:
-    for c in C4:
-        d = ledger[m][c]; L.append(f"{MN[m] if c == 'direct' else ''} & {CN[c]} & {d['n_needs']} & " + " & ".join(f"{d['loss'][g]*100:.1f}" for g in GATES) + r" \\")
+    for c in C3:
+        d = ledger[m][c]; oc = d["task_outcomes"]; nt = sum(oc.values())
+        L.append(f"{MN[m] if c == 'direct' else ''} & {CN[c]} & {d['n_needs']} & " + " & ".join(f"{d['loss'][g]*100:.1f}" for g in TC)
+                 + f" & {d['loss']['ok']*100:.1f} & {d['extra']['stale_lost']} & {oc.get('use', 0)}/{nt} & {d['error_needs']} \\\\")
     L.append(r"\midrule")
 L[-1] = r"\bottomrule"; L.append(r"\end{tabular}")
 (OUT / "tables" / "t11_gates.tex").write_text("\n".join(L), encoding="utf-8")
 json.dump(NUM, open(OUT / "numbers3.json", "w"), ensure_ascii=False, indent=1, default=float)
-md = ["# numbers3 (gate ledger, heuristic)"]
+md = ["# numbers3 (loss ledger, heuristic; links request/reach/observe/respond/select, stale = flag, use = task outcome)"]
 for m in MODELS:
     for c in C4:
-        d = ledger[m][c]; md.append(f"{MN[m]} {c} n={d['n_needs']}: " + " ".join(f"{g}={d['loss'][g]*100:.1f}" for g in GATES) + " | survival " + " ".join(f"{v*100:.0f}" for v in d["survival"]))
-        md.append("   by class: " + "; ".join(f"{k} n={d['by_class'][k][1]} ok={d['by_class'][k][0]['ok']*100:.0f} route={d['by_class'][k][0]['L_route']*100:.0f} sel={sum(d['by_class'][k][0][g] for g in GATES if g.startswith('L_sel'))*100:.0f} state={d['by_class'][k][0]['L_state']*100:.0f} use={d['by_class'][k][0]['L_use']*100:.0f}" for k in "ABCD"))
-md.append("variants (1-10d): " + "; ".join(f"{c} n={v['n_needs']} ok={v['loss']['ok']*100:.0f} route={v['loss']['L_route']*100:.0f} sel={sum(v['loss'][g] for g in GATES if g.startswith('L_sel'))*100:.0f} use={v['loss']['L_use']*100:.0f}" for c, v in ledger["variants"].items()))
-md.append("breadth: " + "; ".join(f"{c} {k} n={v['n_needs']} ok={v['loss']['ok']*100:.0f} route={v['loss']['L_route']*100:.0f} sel={sum(v['loss'][g] for g in GATES if g.startswith('L_sel'))*100:.0f}" for c in ("direct", "ingress") for k, v in ledger["by_breadth"][c].items()))
+        d = ledger[m][c]; md.append(f"{MN[m]} {c} n={d['n_needs']}: " + " ".join(f"{g}={d['loss'][g]*100:.1f}" for g in GATES) + " | survival " + " ".join(f"{v*100:.0f}" for v in d["survival"])
+                                    + f" | stale(lost) {d['extra']['stale_lost']}/{d['extra']['lost']} echo {d['extra']['echo_frags']}/{d['extra']['delivered_frags']} | tasks {d['task_outcomes']} | error needs {d['error_needs']}")
+        md.append("   by class: " + "; ".join(f"{k} n={d['by_class'][k][1]} ok={d['by_class'][k][0]['ok']*100:.0f} reach={d['by_class'][k][0]['L_reach']*100:.0f} observe={(d['by_class'][k][0]['L_observe.window']+d['by_class'][k][0]['L_observe.search'])*100:.0f} respond={d['by_class'][k][0]['L_respond']*100:.0f} select={d['by_class'][k][0]['L_select']*100:.0f}" for k in "ABCD"))
+md.append("variants (1-10d): " + "; ".join(f"{c} n={v['n_needs']} ok={v['loss']['ok']*100:.0f} reach={v['loss']['L_reach']*100:.0f} observe={(v['loss']['L_observe.window']+v['loss']['L_observe.search'])*100:.0f} respond={v['loss']['L_respond']*100:.0f} select={v['loss']['L_select']*100:.0f}" for c, v in ledger["variants"].items()))
+md.append("breadth: " + "; ".join(f"{c} {k} n={v['n_needs']} ok={v['loss']['ok']*100:.0f} reach={v['loss']['L_reach']*100:.0f}" for c in ("direct", "ingress") for k, v in ledger["by_breadth"][c].items()))
 for m in MODELS[:2]: md.append(f"coverage {MN[m]}: " + "; ".join(f"{c} " + " ".join(f"{b}={v['acc']*100:.0f}({v['n']})" for b, v in cov[m][c].items()) for c in C4))
 (OUT / "numbers3.md").write_text("\n".join(md), encoding="utf-8"); print("\n".join(md))

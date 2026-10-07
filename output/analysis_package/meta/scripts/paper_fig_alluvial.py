@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path as MPath
 OUT = Path("/root/project/g2g/output/paper"); N3 = json.load(open(OUT / "numbers3.json"))
-STAGES = ["request", "route", "select", "state", "use"]
-GATE2STAGE = {"L_req": "request", "L_route": "route", "L_sel.window": "select", "L_sel.answer": "select", "L_sel.search": "select", "L_sel.assembly": "select", "L_state": "state", "L_use": "use", "error": "use"}
-SUB = {"select": ["L_sel.window", "L_sel.answer", "L_sel.search", "L_sel.assembly"]}
-SUBL = {"L_sel.window": "window", "L_sel.answer": "answer", "L_sel.search": "search", "L_sel.assembly": "assembly"}
-LOSSCOL = {"request": "#4e79a7", "route": "#e15759", "select": "#f28e2b", "state": "#59a14f", "use": "#9c9c9c"}
+STAGES = ["request", "reach", "observe", "respond", "select"]            # §3.4 손실 고리 (옛 버전 전달은 표시, 오답은 과제 단위 use)
+GATE2STAGE = {"L_request": "request", "L_reach": "reach", "L_observe.window": "observe", "L_observe.search": "observe", "L_respond": "respond", "L_select": "select"}
+SUB = {"observe": ["L_observe.window", "L_observe.search"]}
+SUBL = {"L_observe.window": "window", "L_observe.search": "search"}
+LOSSCOL = {"request": "#4e79a7", "reach": "#e15759", "observe": "#f28e2b", "respond": "#ffbe7d", "select": "#b07aa1"}
 ALIVE = "#1f77b4"
 plt.rcParams.update({"font.size": 8, "pdf.fonttype": 42})
 def band(ax, x0, x1, y0a, y0b, y1a, y1b, color, alpha=0.9, z=2):
@@ -42,12 +42,12 @@ def draw(ax, loss, title, show_labels=True):
         alive -= lost; x = x1 + gap
     ok = loss.get("ok", 0)
     band(ax, x - gap, x + 0.7, top, top - alive, top, top - alive, ALIVE, 0.85)
-    ax.text(x + 0.72, top - alive / 2, f"delivered &\nused: {ok*100:.0f}", ha="left", va="center", fontsize=7.5, color=ALIVE, fontweight="bold")
+    ax.text(x + 0.72, top - alive / 2, f"delivered\n(current): {ok*100:.0f}", ha="left", va="center", fontsize=7.5, color=ALIVE, fontweight="bold")
     ax.text(-0.03, 0.5, "100 judged\nneeds", ha="right", va="center", fontsize=7, color="#333")
 fig, axes = plt.subplots(3, 1, figsize=(6.9, 4.6))
 for ax, cond, title in zip(axes, ["direct", "routing", "ingress"], ["Direct", "Routing (request mediation only)", "Ingress (pull by proxy)"]):
     draw(ax, N3["ledger"]["qwen3.5-27b"][cond]["loss"], f"{title}  —  Qwen3.5-27B, {N3['ledger']['qwen3.5-27b'][cond]['n_needs']} judged needs")
 from matplotlib.patches import Patch
-fig.legend([Patch(color=ALIVE)] + [Patch(color=LOSSCOL[s]) for s in STAGES], ["still alive"] + [f"lost at {s}" for s in STAGES], loc="lower center", ncol=6, frameon=False, bbox_to_anchor=(0.5, -0.02), fontsize=7)
+fig.legend([Patch(color=ALIVE)] + [Patch(color=LOSSCOL[s]) for s in STAGES], ["still unbroken"] + [f"broken at {s}" for s in STAGES], loc="lower center", ncol=6, frameon=False, bbox_to_anchor=(0.5, -0.02), fontsize=7)
 fig.savefig(OUT / "figures" / "f18_need_flow.pdf", bbox_inches="tight"); fig.savefig(OUT / "figures" / "f18_need_flow.png", bbox_inches="tight", dpi=200)
 print("ok")

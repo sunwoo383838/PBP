@@ -11,27 +11,28 @@ plt.rcParams.update({"font.size": 8, "axes.titlesize": 8.5, "axes.labelsize": 8,
 C4 = ["direct", "routing", "ingress", "full_load"]; CN = {"direct": "Direct", "routing": "Routing", "ingress": "Ingress", "full_load": "Full-load"}
 COL = {"direct": "#8c8c8c", "routing": "#e69f00", "ingress": "#0072b2", "full_load": "#009e73"}
 MODELS = ["qwen3.5-27b", "deepseek-v4-flash"]; MN = {"qwen3.5-27b": "Qwen3.5-27B", "deepseek-v4-flash": "DeepSeek-V4-Flash"}
-GATES = ["L_req", "L_route", "L_sel.window", "L_sel.answer", "L_sel.search", "L_sel.assembly", "L_state", "L_use", "error"]
-GL = {"L_req": "request", "L_route": "route", "L_sel.window": "sel: window", "L_sel.answer": "sel: answer", "L_sel.search": "sel: search", "L_sel.assembly": "sel: assembly", "L_state": "state", "L_use": "use", "error": "error"}
+GATES = ["L_request", "L_reach", "L_observe.window", "L_observe.search", "L_respond", "L_select"]     # §3.4 손실 고리
+GL = {"L_request": "request", "L_reach": "reach", "L_observe.window": "observe: window", "L_observe.search": "observe: search", "L_respond": "respond", "L_select": "select"}
+C3 = ["direct", "routing", "ingress"]                                      # 원장 그림은 경계 조건만 (full_load 제외)
 def save(fig, name):
     fig.savefig(FIG / f"{name}.pdf", bbox_inches="tight"); fig.savefig(FIG / f"{name}.png", bbox_inches="tight", dpi=200); plt.close(fig); print("saved", name)
 # F12
 led = N3["ledger"]
 fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.6), gridspec_kw={"width_ratios": [1, 1.3], "wspace": 0.5})
-ax = axes[0]; xs = ["judged", "req.", "route", "select", "state", "use"]
-for c in C4:
+ax = axes[0]; xs = ["judged", "request", "reach", "observe", "respond", "select"]
+for c in C3:
     sv = led["qwen3.5-27b"][c]["survival"]; ax.plot(range(6), [v * 100 for v in sv], "-o", ms=3, color=COL[c], label=f"{CN[c]} (n={led['qwen3.5-27b'][c]['n_needs']})")
     ax.text(5.08, sv[-1] * 100, f"{sv[-1]*100:.0f}", color=COL[c], fontsize=6.5, va="center", ha="left")
-ax.set_xticks(range(6)); ax.set_xticklabels(xs, fontsize=6.8); ax.set_xlabel("needs alive after each gate"); ax.set_xlim(-0.2, 5.5); ax.set_ylabel("Need events still alive (%)"); ax.set_ylim(0, 100); ax.grid(lw=.3, alpha=.5)
-ax.set_title("(a) Survival of needs across gates (Qwen3.5-27B)"); ax.legend(frameon=False, fontsize=6.5)
-ax = axes[1]; rows_ = [(m, c) for m in MODELS for c in C4]
+ax.set_xticks(range(6)); ax.set_xticklabels(xs, fontsize=6.5, rotation=20); ax.set_xlabel("needs still unbroken after each link"); ax.set_xlim(-0.2, 5.5); ax.set_ylabel("Needs still unbroken (%)"); ax.set_ylim(0, 100); ax.grid(lw=.3, alpha=.5)
+ax.set_title("(a) Needs across the links (Qwen3.5-27B)"); ax.legend(frameon=False, fontsize=6.5)
+ax = axes[1]; rows_ = [(m, c) for m in MODELS for c in C3]
 mat = np.array([[led[m][c]["loss"][g] * 100 for g in GATES] for m, c in rows_])
 im = ax.imshow(mat, cmap="OrRd", vmin=0, vmax=max(40, mat.max()), aspect="auto")
 for i in range(len(rows_)):
     for j in range(len(GATES)): ax.text(j, i, f"{mat[i, j]:.0f}", ha="center", va="center", fontsize=6.5, color="white" if mat[i, j] > 25 else "black")
 ax.set_xticks(range(len(GATES))); ax.set_xticklabels([GL[g] for g in GATES], fontsize=6.3, rotation=35, ha="right", rotation_mode="anchor")
 ax.set_yticks(range(len(rows_))); ax.set_yticklabels([f"{'27B' if m == MODELS[0] else 'DS'} {CN[c]}" for m, c in rows_], fontsize=7)
-ax.axhline(3.5, color="k", lw=0.6); ax.set_title("(b) First failing gate, per 100 judged needs"); plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
+ax.axhline(2.5, color="k", lw=0.6); ax.set_title("(b) First broken link, per 100 judged needs"); plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
 save(fig, "f12_gate_ledger")
 # F13a
 load = N2["responder_load"]; LB = ["0", "1–5", "6–15", "16+"]

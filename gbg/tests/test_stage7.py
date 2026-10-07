@@ -54,12 +54,13 @@ def test_leak_check_reports_answer_only_identifiers():
 
 def test_gate_sum_equals_total_loss():
     needs = [{"gate": g, "unreachable": False} for g in
-             ["ok", "L_req", "L_route", "L_sel.search", "L_sel.assembly", "L_state", "L_use", "E_budget", "unjudged", "ok"]]
+             ["ok", "L_request", "L_reach", "L_observe.search", "L_select", "L_respond", "L_observe.window", "E_budget", "unjudged", "ok"]]
     t = metrics.gate_table(needs)
     failed = sum(v["failed"] for k, v in t["stages"].items() if k != "ok") + sum(t["errors"].values())
     assert failed == t["lost"] == 7 and t["stages"]["ok"]["reached"] == 2 and t["unjudged"] == 1
-    assert t["stages"]["L_sel"]["reached"] == 6 and t["stages"]["L_sel"]["failed"] == 2
-    assert t["L_sel_detail"] == {"L_sel.search": 1, "L_sel.assembly": 1}
+    assert t["stages"]["L_observe"]["reached"] == 6 and t["stages"]["L_observe"]["failed"] == 2
+    assert t["stages"]["L_respond"]["reached"] == 4 and t["stages"]["L_select"]["reached"] == 3
+    assert t["L_observe_detail"] == {"L_observe.search": 1, "L_observe.window": 1}
 
 
 def test_paired_bootstrap_is_deterministic_and_judges_margins():

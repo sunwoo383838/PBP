@@ -4,19 +4,20 @@
     설명      슬롯 정답률, need 전달률, 게이트 분포와 게이트별 도달·조건부 실패율, 호출 분포(p50·p95), 예산 소진·응답자
               단계 상한 비율, 제출 실패
     층화      등급(A–D), C_ops, 템플릿, 보유자 수(max_holders), 관여 그룹 수
-게이트 순서: L_req → L_route → L_sel(window·answer·search·assembly) → L_state → L_use. 오류 코드(E_*)는 따로 센다.
+손실 고리 순서: L_request → L_reach → L_observe(window·search) → L_respond → L_select → ok. 옛 버전 전달은 고리가 아니라 표시(stale),
+오답은 과제 단위 결과(use). 오류 코드(E_*)는 따로 센다.
 """
 from collections import Counter, defaultdict
 
 from .redirects import summarize as summarize_redirects
 
-GATE_ORDER = ["L_req", "L_route", "L_sel", "L_state", "L_use", "ok"]
+GATE_ORDER = ["L_request", "L_reach", "L_observe", "L_respond", "L_select", "ok"]
 
 
 def _stage(gate: str | None) -> str | None:
     if gate is None:
         return None
-    return "L_sel" if gate.startswith("L_sel") else gate
+    return "L_observe" if gate.startswith("L_observe") else gate
 
 
 def _pct(xs: list[float], q: float):
@@ -43,8 +44,8 @@ def gate_table(needs: list[dict]) -> dict:
         out[gname] = {"reached": remaining, "failed": fail, "conditional_failure": round(fail / remaining, 4) if remaining else None}
         remaining -= fail
     out["ok"] = {"reached": remaining}
-    detail = Counter(r["gate"] for r in needs if r["gate"] and r["gate"].startswith("L_sel"))
-    return {"stages": out, "L_sel_detail": dict(detail), "errors": dict(errors), "needs": len(needs), "unjudged": unjudged,
+    detail = Counter(r["gate"] for r in needs if r["gate"] and r["gate"].startswith("L_observe"))
+    return {"stages": out, "L_observe_detail": dict(detail), "errors": dict(errors), "needs": len(needs), "unjudged": unjudged,
             "lost": sum(s != "ok" for s in stages if s is not None)}
 
 

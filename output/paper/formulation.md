@@ -85,20 +85,27 @@ $\mathcal D_G(x)$ = 경계를 넘어도 되는 내용(허용 정책) — 모든 
 
 ## 4. §3.4 Loss model and metrics
 
-요구 $n$마다 다섯 관문을 순서 있는 사건으로 둔다.
+**(2026-10-08 갱신: 사용자 §3 초안의 손실 고리를 따른다.)** 결정 필수 조각 $f\in F_n$마다 인과 순서의 고리를 둔다. 선택 경로의 기록 범위 $\Omega$와 실제 관측 $O^*$:
 
-$$\begin{aligned}
-\gamma_{req} &: a_q\text{가 } n\text{을 묻는다}\\
-\gamma_{route} &: R_n \text{이 어떤 선택 단계의 관측 } O_\phi \text{에 들어감} \;\Leftrightarrow\; \exists a\in S:\ R_n\cap W_a(t)\neq\emptyset\ \ \lor\ \ \big(R_n\cap E\neq\emptyset\ \land\ E\subseteq O_\phi\big)\\
-\gamma_{sel} &: O_\phi \text{에 들어간 } R_n \text{이 출력에 실림: } R_n\cap\Delta(x)\neq\emptyset \quad(\text{하위 원인: window / answer / search / assembly})\\
-\gamma_{state} &: \text{전달된 버전}=r^{(t)}\\
-\gamma_{use} &: y_\tau=y^*
-\end{aligned} \tag{6}$$
+$$\Omega=\bigcup_{a\in S}H_a(t)\ \cup\ \begin{cases}\mathcal R_{g(n)}(t), & \eta_\varphi=1\\ \emptyset, & \eta_\varphi=0\end{cases},\qquad O^*=\bigcup_{a\in S}W_a(t)\ \cup\ E_\varphi \tag{6}$$
 
-$$\ell(n)=\min\{k:\gamma_k=0\},\qquad L_k(c)=P\big[\ell(n)=k\mid c\big],\qquad \delta(c)=1-\sum_{k\le\mathrm{state}}L_k(c) \tag{7}$$
+| 고리 | 통과 조건 | 실패 원인 |
+|---|---|---|
+| request | need가 대상 그룹에 요청됨 | 묻지 않음 |
+| reach | $f\in\mathrm{supp}(\Omega)$ | 이력 보유자에게 닿지 않았고 기록 경로도 없음 ($\eta_\varphi{=}0$에서만 가능) |
+| observe | $f\in\mathrm{supp}(O^*)$ | window(닿은 보유자의 창에 없음) / search(검색이 놓침) |
+| respond | 지역 응답 $u_a$에 실림 | 보유자가 창에 갖고도 답에 안 실음 |
+| select | 최종 메시지 $m$에 실림 | 정보 선택의 입력에 있었는데 빠짐 (조립·전달 묶음·relay 중계) |
 
-- $\gamma_{sel}$의 하위 원인은 $O_\phi$의 어느 성분이 비었는지: window(응답자 문맥에 없음), answer(있었으나 말하지 않음), search(검색이 놓침), assembly(검색됐으나 조립이 버림).
-- **route 손실 = 조각이 어떤 선택 단계의 관측 $O_\phi$에도 들어가지 못함**(선택된 보유자의 작업 기억에도, φ로 넘어가는 증거에도 없음). **select 손실 = $O_\phi$에는 들어갔는데 출력에 없음.** 증거 $E$는 φ로 넘어갈 때만 route를 통과시킨다: Ingress·sidecar(조립 입력)·Retrieve(원문 전달)는 $E\subseteq O_\phi$이고, Routing은 $E$를 σ에만 쓰므로 "$E$에는 있었는데 보유자를 안 고름"이 route 손실이다(σ가 본 것을 σ가 잃음). 이 정의가 Ingress route 0, Routing route 18(27B), Retrieve의 "증거에 있었으나 상한에서 잘림" = select를 함께 설명한다. 구현: `gbg/scoring/gates.py`.
+- 조각의 손실 지점 = 처음 실패한 고리, **need의 손실 지점 = 미전달 조각들 가운데 가장 이른 고리**. 모든 조각이 현재 버전으로 전달되거나 계산형 중간값이 전달되면 손실 없음.
+- **옛 버전 전달은 고리가 아니라 표시(stale)**: 현재 버전을 잃은 고리에 두고 표시만 붙인다(DB 옛 값은 증상).
+- **use는 과제 단위 결과**: 모든 원격 need가 충족됐는데 오답. need에 붙이지 않는다. 오류 코드는 별도 범주.
+- $\eta_\varphi=1$(Ingress·Sidecar·Retrieve)이면 $\Omega$가 그룹 기록 전체라 reach 손실이 정의상 0 → reach 감소는 Direct·Routing 사이에서만 중개 개선으로 읽는다. Routing의 "검색 증거에 있었는데 보유자를 안 고름"은 $\eta_\varphi=0$이므로 reach. Direct+relay는 응답자가 그 need에 관해 다시 물은 동료도 $S$에 넣는다(이력은 $\Omega$, 맥락은 $O^*$, 중계에서 빠지면 select).
+- Full-load($\pi\equiv1$)는 이 틀 밖: 계산만 하고 원장 그림·표에는 넣지 않는다.
+
+$$L_k(c)=P\big[\ell(n)=k\mid c\big],\qquad \delta(c)=1-\sum_{k}L_k(c)\ \ (\text{모든 고리 통과} = \text{현재 버전 전달}) \tag{7}$$
+
+구현: `gbg/scoring/gates.py` (L_request / L_reach / L_observe.window / L_observe.search / L_respond / L_select, gate_detail의 stale·frag_stages·echo), `gbg/scoring/ledger.py` (과제 outcome).
 
 과제 지표:
 
@@ -156,7 +163,7 @@ $$\mathrm{cov}(\tau)=\frac{|\Delta(\tau)\cap R_\tau|}{|R_\tau|},\qquad \upsilon(
 | $\phi$, Add/Conf/Prop/$s_G$ | assembly의 additions/conflicts/proposals; `boundary_state`, `version_marks` |
 | $E=\mathrm{Retr}$ | 임베딩 검색(float64), 게이트웨이·sidecar·Full-load가 같은 검색기 |
 | $\Delta(x)$, cov | `gbg/scoring/delivery.py`; coverage 0/partial/1 (`numbers3.json`) |
-| $\gamma_k$, $\ell(n)$, $L_k$, $\delta$ | `gbg/scoring/{gates,ledger}.py`; L_req/L_route/L_sel.*/L_state/L_use; Fig. 3·`t11_gates.tex` |
+| 고리, $\ell(n)$, $L_k$, $\delta$ | `gbg/scoring/{gates,ledger}.py`; L_request/L_reach/L_observe.*/L_respond/L_select, stale 표시, 과제 outcome(use); Fig. 3·`t11_gates.tex` |
 | $\Pi,\rho,\upsilon$ | `numbers5_metrics.json`, `t12_boundary_metrics.tex`, Fig. 2(b) |
 | 조건 좌표 | `configs/conditions.yaml`: direct / routing / ingress / full_load / direct_relay / retrieve / sidecar |
 
@@ -174,5 +181,5 @@ $$\mathrm{cov}(\tau)=\frac{|\Delta(\tau)\cap R_\tau|}{|R_\tau|},\qquad \upsilon(
 
 - Full-load는 "상한"이라 부르지 않는다(27B: Ingress 53.4 ≥ Full-load 52.5).
 - $C_{ops}$는 본문 범주로 쓰지 않는다(§5.1 생성기 지표로만). 본문 표·그림은 A–D만.
-- (6)의 $\gamma_{route}$ 정의("$O_\phi$에 들어갔는가", $E$는 φ로 넘어갈 때만)를 반드시 명시한다.
+- (6)의 $\Omega$·$O^*$ 정의와 $\eta_\varphi$를 반드시 명시한다(reach는 선택 경로의 기록 범위, $E$는 정보 선택으로 넘어갈 때만 범위에 들어감).
 - (9)의 $\rho$와 서론 헤드라인 수치는 같은 정의다. 55%(¬A 상승분/Direct 격차)는 쓰지 않는다.

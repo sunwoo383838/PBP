@@ -138,7 +138,7 @@ def test_gate_counts_reach_only_for_questions_about_the_need():
         return need_gates(es, g, frags, rows, {}, False, {"E-SEL-2004": ["Ok Dain"]})[0]
     assert run("What is the grade of Ok Dain?")["reached"] == ["hr-sel.a3"]
     unrelated = run("How many people are in Dev Team 1?")
-    assert unrelated["reached"] == [] and unrelated["gate"] == "L_route"
+    assert unrelated["reached"] == [] and unrelated["gate"] == "L_reach"
 
 
 def test_matcher_does_not_take_numbers_from_names_other_items_or_regions():

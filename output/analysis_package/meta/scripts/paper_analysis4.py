@@ -94,7 +94,7 @@ for m in MODELS:
         d = json.load(open(G / f"main__base__{m}__ingress__{s}.json"))
         for n in d["needs"]:
             if n["gate"] == "unjudged": continue
-            h = hmax(GOLD[s][n["task_id"]]); tier[h] += 1; inev[h] += bool(n.get("gate_detail", {}).get("in_evidence")); srch[h] += n["gate"] == "L_sel.search"
+            h = hmax(GOLD[s][n["task_id"]]); tier[h] += 1; inev[h] += bool(n.get("gate_detail", {}).get("in_evidence")); srch[h] += n["gate"] == "L_observe.search"
     bounds[m]["H_in_evidence"] = {h: {"needs": tier[h], "in_evidence": inev[h] / max(1, tier[h]), "search_loss": srch[h] / max(1, tier[h])} for h in ("H0", "H1", "H2")}
 NUM["bounds"] = bounds
 HL = {"H0": "H0\nlog text", "H1": "H1\nactivity trace", "H2": "H2\nreferring\nutterance", "none": "none\n(DB/rules)"}
