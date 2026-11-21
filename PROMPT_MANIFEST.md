@@ -1755,4 +1755,4 @@ cite the record, for example [E3] or [V2]
 
 [Notes from the group's records] <조립 LLM의 answer 요약; 비면 이 줄 없음>
 ```
-조립 실패(`assembly_failed`) + `on_failure: forward`: Routing의 `_forward`와 같은 문자열(`[Reply i] (<status>) <answer>` 줄들, 항목 ref에 `Reply i:` 접두).
+조립 실패(`assembly_failed`) + `on_failure: forward`: 답이 1개면 sidecar처럼 그 답 그대로, 2개 이상이면 Routing의 `_forward`와 같은 문자열(`[Reply i] (<status>) <answer>` 줄들, 항목 ref에 `Reply i:` 접두).

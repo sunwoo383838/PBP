@@ -367,10 +367,13 @@ class BoundaryModule:
     def _with_replies(self, bctx, req, out: Response, replies, trace) -> Response:
         """[리버탈 ingress_plain_sym] sidecar와 같은 반환 처리 (구성원 n명으로 일반화): 구성원 답 문장을 [Reply i]로 앞에
         두고 조립 요약을 [Notes from the group's records]로 붙인다. missing은 구성원 답과 조립의 것을 순서 유지로 합치고,
-        status는 합친 missing이 있거나 items가 비면 partial. 조립 실패는 on_failure: forward면 Routing과 같은 출력."""
+        status는 합친 missing이 있거나 items가 비면 partial. 조립 실패 + on_failure: forward: 답이 1개면 sidecar처럼 그 답을
+        그대로, 2개 이상이면 Routing과 같은 출력."""
         if out.status == "error":
             trace["assembly_fallback"] = bool(self.cond.ingress.on_failure == "forward" and replies)
-            return self._forward(bctx, req, replies, None, trace) if trace["assembly_fallback"] else out
+            if not trace["assembly_fallback"]:
+                return out
+            return replies[0][1] if len(replies) == 1 else self._forward(bctx, req, replies, None, trace)
         trace["assembly_fallback"] = False
         answer = "\n".join(f"[Reply {i}] ({r.status}) {r.answer}".rstrip() for i, (_, r) in enumerate(replies, 1))
         if out.answer:

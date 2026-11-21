@@ -105,14 +105,18 @@ def test_plain_sym_joins_several_replies_and_merges_their_missing():
     assert empty.answer == "[Reply 1] (ok) I found 100." and empty.status == "ok"
 
 
-def test_plain_sym_assembly_failure_forwards_replies_or_keeps_the_error():
+def test_plain_sym_assembly_failure_falls_back_like_sidecar_or_routing():
+    """조립 실패 + on_failure: forward. 답 1개 = sidecar의 되돌림(담당자 답 그대로), 2개 이상 = Routing 출력."""
     failed = Response(rid="r1", status="error", answer="assembly_failed", items=[], missing=[], referral_to=None,
                       need=[], as_of=3)
-    replies = [("b.1", _reply(["owner"]))]
+    reply = _reply(["owner"])
+    one, trace = _plain([("b.1", reply)], failed)
+    assert trace["assembly_fallback"] is True and one.model_dump() == _sidecar(reply, failed).model_dump() == reply.model_dump()
+    replies = [("b.1", reply), ("b.2", _reply())]
     fwd, trace = _plain(replies, failed)
     routing = BoundaryModule._forward(_fake("routing", failed), SimpleNamespace(day=3), REQ, replies, None, {})
     assert trace["assembly_fallback"] is True and fwd.model_dump() == routing.model_dump()
-    assert fwd.answer.startswith("[Reply 1] (partial) I found 100.") and fwd.items[0].ref == "Reply 1: D1"
+    assert fwd.answer.startswith("[Reply 1] (partial) I found 100.\n[Reply 2] (ok)") and fwd.items[0].ref == "Reply 1: D1"
     err, trace = _plain(replies, failed, on_failure="error")
     assert err.status == "error" and err.answer == "assembly_failed" and trace["assembly_fallback"] is False
     none, trace = _plain([], failed)
