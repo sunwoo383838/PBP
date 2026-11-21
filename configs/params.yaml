@@ -26,6 +26,7 @@ llm:
     min_p: 0
     presence_penalty: 1.5
     repetition_penalty: 1.0
+  safe_tool_names: [deepseek-v4-flash]       # 리버탈 2026-11-22: DeepInfra가 DeepSeek에서 점이 든 도구 이름(db.query)을 거부. 보내는 본문에서만 밑줄로, 응답은 되돌림
   seed_per_call: true                       # 호출마다 seed = 요청 내용의 해시에서 결정적으로. 기록하고, 재현은 캐시·WAL로
   # service_tier: priority                  # 2026-09-30 끔 (사용자 지시): 우선 처리는 1.5배 과금. 응답 내용과 무관(캐시 키 밖)
   concurrency: 150                          # 모델별 전역 동시 요청 상한 (DeepInfra 기본 한도 200/모델)

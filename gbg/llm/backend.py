@@ -103,6 +103,31 @@ def normalize(raw: dict) -> dict:
     return out
 
 
+_UNSAFE = re.compile(r"[^A-Za-z0-9_-]")
+
+
+def safe_tool_body(req: dict) -> tuple[dict, dict[str, str]]:
+    """[리버탈] 도구 이름의 허용되지 않는 문자를 밑줄로 바꾼 본문과 되돌림 표(바꾼 이름 → 원래 이름).
+    바꾸는 곳: tools의 이름, tool_choice의 함수 이름, 대화 기록의 assistant tool_calls 이름. 설명 글은 그대로."""
+    names = [t["function"]["name"] for t in req.get("tools", [])]
+    names += [c["function"]["name"] for m in req["messages"] for c in m.get("tool_calls") or []]
+    fwd = {n: _UNSAFE.sub("_", n) for n in dict.fromkeys(names)}
+    back = {v: k for k, v in fwd.items()}
+    if len(back) != len(fwd):
+        raise LLMError(f"도구 이름을 바꾸면 겹친다: {fwd}")
+    if all(k == v for k, v in fwd.items()):
+        return req, {}
+    body = {**req, "messages": [{**m, "tool_calls": [{**c, "function": {**c["function"], "name": fwd[c["function"]["name"]]}}
+                                                      for c in m["tool_calls"]]} if m.get("tool_calls") else m
+                                for m in req["messages"]]}
+    if "tools" in req:
+        body["tools"] = [{**t, "function": {**t["function"], "name": fwd[t["function"]["name"]]}} for t in req["tools"]]
+    tc = req.get("tool_choice")
+    if isinstance(tc, dict) and tc.get("function", {}).get("name") in fwd:
+        body["tool_choice"] = {**tc, "function": {**tc["function"], "name": fwd[tc["function"]["name"]]}}
+    return body, {k: v for k, v in back.items() if k != v}
+
+
 class LLMBackend:
     def __init__(self, params: LLMParams, *, mode: Mode, model: str | None = None, cache: ResponseCache | None = None,
                  script: Script | None = None, transport: httpx.AsyncBaseTransport | None = None,
@@ -186,12 +211,18 @@ class LLMBackend:
                     status = None
                     try:
                         body = {**req, "service_tier": self.params.service_tier} if self.params.service_tier else req
+                        back = {}
+                        if self.model in self.params.safe_tool_names:          # [리버탈] DeepSeek: 도구 이름의 점 → 밑줄
+                            body, back = safe_tool_body(body)
                         resp = await client.post("/chat/completions", json=body)
                     except httpx.TransportError as e:
                         last = f"{type(e).__name__}: {e}"
                     else:
                         if resp.status_code == 200:
-                            return normalize(resp.json()), attempt
+                            out = normalize(resp.json())
+                            if back:                                           # 응답의 도구 이름을 원래 이름으로
+                                out["tool_calls"] = [{**c, "name": back.get(c["name"], c["name"])} for c in out["tool_calls"]]
+                            return out, attempt
                         status, last = resp.status_code, f"HTTP {resp.status_code}: {resp.text[:300]}"
                         if resp.status_code != 429 and resp.status_code < 500:
                             raise LLMError(f"요청 거부 {last}")

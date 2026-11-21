@@ -161,3 +161,38 @@ def test_rag_only_answers_from_records_without_asking_members(tmp_path):
                                     for s, u, d in seen["assemble"])
     assert seen["ask"] and all("without asking its members" in d for d in seen["ask"])
 
+
+
+def test_safe_tool_names_only_for_listed_models_and_mapped_back(tmp_path):
+    """[리버탈] DeepSeek: 보내는 본문의 도구 이름만 밑줄로, 응답 도구 호출은 원래 이름으로. 캐시 키는 원래 요청 그대로."""
+    import json as _json
+    import httpx
+    from gbg.llm.cache import ResponseCache
+    sent = []
+
+    def handler(request):
+        body = _json.loads(request.content)
+        sent.append(body)
+        name = body["tools"][0]["function"]["name"]
+        return httpx.Response(200, json={"choices": [{"message": {"content": None, "tool_calls": [
+            {"id": "x", "type": "function", "function": {"name": name, "arguments": "{}"}}]}, "finish_reason": "tool_calls"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1}})
+    tools = [{"type": "function", "function": {"name": "db.query", "description": "Use db.query.", "parameters": {"type": "object"}}}]
+    msgs = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"},
+            {"role": "assistant", "content": None, "tool_calls": [{"id": "c1", "type": "function",
+                                                                    "function": {"name": "db.query", "arguments": "{}"}}]},
+            {"role": "tool", "tool_call_id": "c1", "content": "{}"}]
+    params = T.FAST.model_copy(update={"safe_tool_names": ["deepseek-v4-flash"]})
+    keys = {}
+    for model in ("deepseek-v4-flash", "qwen3.5-27b"):
+        b = T.backend("LIVE", cache=ResponseCache(tmp_path / f"{model}.sqlite"), transport=httpx.MockTransport(handler),
+                      model=model, params=params)
+        res = asyncio.run(b.complete(msgs, tools, force="db.query"))
+        assert [c["name"] for c in res.message["tool_calls"]] == ["db.query"]
+        keys[model] = b.build_request(msgs, tools, "db.query")
+    ds, qw = sent
+    assert ds["tools"][0]["function"]["name"] == "db_query" and ds["tool_choice"]["function"]["name"] == "db_query"
+    assert ds["messages"][2]["tool_calls"][0]["function"]["name"] == "db_query"
+    assert ds["tools"][0]["function"]["description"] == "Use db.query."                 # 설명 글은 그대로
+    assert qw["tools"][0]["function"]["name"] == "db.query"                             # 목록 밖 모델은 그대로
+    assert keys["deepseek-v4-flash"]["tools"][0]["function"]["name"] == "db.query"      # 캐시 키용 요청은 원래 이름

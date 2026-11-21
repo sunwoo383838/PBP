@@ -37,6 +37,9 @@ class LLMParams(Contract):
     tool_choice: Literal["auto", "none"] = "auto"
     extra_body: dict[str, JsonValue] = {}
     service_tier: Literal["priority", "default"] | None = None   # 처리 순서만 바꾼다: 캐시 키에 넣지 않는다
+    # [리버탈 2026-11-22] 도구 이름의 점을 밑줄로 바꿔 보낼 모델 별칭 (DeepInfra가 DeepSeek에서 "db.query" 같은 이름을
+    # 거부: a-z A-Z 0-9 _ - 만 허용). API로 보내는 본문에서만 바꾸고 응답은 원래 이름으로 되돌린다. 캐시 키·기록은 원래 이름
+    safe_tool_names: list[str] = []
     seed_per_call: bool = False                 # 호출마다 요청 내용에서 정한 seed를 싣고 기록한다
     concurrency: int = Field(ge=1)
     timeout_s: float = Field(gt=0)
