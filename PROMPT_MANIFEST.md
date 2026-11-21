@@ -1709,3 +1709,50 @@ Output format: submit with these slots:
 | 경계 템플릿 (I+E 재발신) | RESEND_TEXT | {question}\nFrom your group, only this part is needed: {item} |
 | 요청자가 받는 응답 | not_handled_here | \"not_handled_here\": [{\"item\": \"<entity> <attribute>\", \"ask\": \"<group>\"}] |
 | 응답 표기 (render_response) | redirect | not handled there: <entity> <attribute> → ask <group> |
+
+## 4. 리버탈 조건 (2026-11-22, AAMAS #3761, 문구 사용자 확정)
+
+새 조건 세 개. 아래에 없는 프롬프트는 기존 조건과 같다: `ingress_plain_sym`은 ingress_sel과 같은 문구에 버전 표시(VERSION_RULE)를 더한 것(과거 문답 없음)이고 반환 문자열만 sidecar와 같은 형식이며, `ingress_no_requery`는 ingress와 같은 문구에서 재질의 호출만 없다. `rag_only`(와 같은 경로인 gateway_rag)는 구성원에게 묻지 않는 창구(internal_query: false)라서 아래 다섯 문구를 쓰고, 조립 사용자 메시지에서 `Replies:` 블록을 뺀다. 기존 문구의 교차 확인 줄(Cross-check the replies ...)은 넣지 않는다. 기존 상수는 바뀌지 않았다.
+
+### 1. rag_only · 요청자 도구 `ask_group` 설명 (COMM_TOOLS["ask_group_records"])
+```
+Ask a group in the directory (by its id) a question. The group's intake desk answers from the group's records and registered database versions without asking its members, and returns the items it finds, conflict notes and proposed values with their sources. Ask each group whose area covers a piece you need.
+```
+
+### 2. rag_only · 경계: 조립 system (ASSEMBLE_SYSTEM_RECORDS)
+`{state_cite}`는 과거 문답이 있을 때만 채워진다(rag_only는 항상 빈 문자열). `{version_rule}`은 VERSION_RULE.
+```
+You are the intake desk of a business group. No member is asked for this request. Using only the group records given below, state what the request needs:
+- additions: facts from the group records that answer the request, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1]{state_cite}.
+- conflicts: where group records disagree with each other, name the item, say what disagrees, and cite the refs.
+- proposals: where group records disagree and one value should count, name the item, give the value you propose, cite the refs it rests on ([E1], [V1]{state_cite}), and give a one-sentence rationale.
+- missing: requested items that the records do not confirm. Do not guess.
+- When records disagree, the one with the later record date counts. Raise such cases as conflicts or proposals.{version_rule}
+First work through the request and the records step by step in your reply text, then call the answer tool once.
+
+This group: {group_desc}
+```
+
+### 3. rag_only · 경계: 조립 도구 `answer` 설명 (ANSWER_TOOL_RECORDS)
+```
+Send the group's additions, conflict notes, proposed values and what could not be confirmed.
+```
+
+### 4. rag_only · 경계: 조립 도구의 conflicts·proposals refs 설명 (_CITES_RECORDS; 나머지 스키마는 ANSWER_TOOL과 같음)
+```
+Citations such as "[E3]", "[V2]".
+```
+
+### 5. rag_only · 경계: 인용 누락 재시도 문구 (RECORDS_CITE_HINT, cites_ok)
+```
+cite the record, for example [E3] or [V2]
+```
+
+### ingress_plain_sym · 반환 문자열 (코드가 조립, sidecar와 같음)
+```
+[Reply 1] (<status>) <구성원 1의 answer>
+[Reply 2] (<status>) <구성원 2의 answer>
+
+[Notes from the group's records] <조립 LLM의 answer 요약; 비면 이 줄 없음>
+```
+조립 실패(`assembly_failed`) + `on_failure: forward`: Routing의 `_forward`와 같은 문자열(`[Reply i] (<status>) <answer>` 줄들, 항목 ref에 `Reply i:` 접두).

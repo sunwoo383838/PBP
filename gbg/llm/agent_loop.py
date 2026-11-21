@@ -300,6 +300,8 @@ class LLMAgent:
             return ["search_memory"]
         tool = ({"forward": "ask_group_forward", "read": "ask_group_read"}.get(c.ingress.deliver, c.agent_tool)
                 if c.agent_tool == "ask_group" and c.ingress is not None else c.agent_tool)   # Routing: 응답 원문만 / retrieve: + 근거 원문
+        if tool == "ask_group" and not c.ingress.internal_query:          # [rag_only·gateway_rag] 구성원에게 묻지 않는 창구
+            tool = "ask_group_records"
         return [tool] + (["ask_agent"] if c.ingress is not None and c.ingress.reveal_holders else ["ask_member"])
 
     def _relays(self, ctx) -> bool:

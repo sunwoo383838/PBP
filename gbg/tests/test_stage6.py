@@ -15,7 +15,7 @@ from gbg.tests import test_stage3 as T
 from gbg.tests.support import FIXTURES
 from gbg.tests.test_stage5 import FRAGS, GOLD, _recall, _tools, oracle, run
 
-DEFERRED = {"ingress_no_requery", "egress_no_history", "retrieval_oracle"}
+DEFERRED = {"egress_no_history", "retrieval_oracle"}   # ingress_no_requery는 리버탈(2026-11-22)에서 실행
 
 
 def with_conditions(**extra) -> ConditionSet:

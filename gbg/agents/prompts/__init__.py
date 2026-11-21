@@ -75,6 +75,13 @@ COMM_TOOLS = {
                                     "a piece you need.",
                        {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
                         "required": ["group", "question"], "additionalProperties": False}),
+    # [리버탈 rag_only] 구성원에게 묻지 않는 창구(internal_query: false)용 설명 (2026-11-22 사용자 확정)
+    "ask_group_records": ("ask_group", "Ask a group in the directory (by its id) a question. The group's intake desk "
+                                       "answers from the group's records and registered database versions without asking "
+                                       "its members, and returns the items it finds, conflict notes and proposed values "
+                                       "with their sources. Ask each group whose area covers a piece you need.",
+                          {"type": "object", "properties": {"group": {"type": "string"}, "question": {"type": "string"}},
+                           "required": ["group", "question"], "additionalProperties": False}),
     "ask_colleague": ("ask_colleague", "Ask a colleague in your own group (listed under 'Members of your group', by id) a "
                                        "question about a part you cannot find in your own records. The colleague answers "
                                        "from their own records, database and rules only. You can ask at most {max_asks} "

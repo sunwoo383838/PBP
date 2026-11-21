@@ -361,7 +361,23 @@ class BoundaryModule:
 
         if cfg.deliver in ("forward", "read"):                            # read = 검색된 기록 원문 첨부 (ingress_read)
             return self._forward(bctx, req, replies, ev if cfg.deliver == "read" else None, trace)
-        return await self._assemble(bctx, span, req, text, it, entities, ev, replies, stores, step, trace)
+        out = await self._assemble(bctx, span, req, text, it, entities, ev, replies, stores, step, trace)
+        return self._with_replies(bctx, req, out, replies, trace) if cfg.reply_text else out
+
+    def _with_replies(self, bctx, req, out: Response, replies, trace) -> Response:
+        """[리버탈 ingress_plain_sym] sidecar와 같은 반환 처리 (구성원 n명으로 일반화): 구성원 답 문장을 [Reply i]로 앞에
+        두고 조립 요약을 [Notes from the group's records]로 붙인다. missing은 구성원 답과 조립의 것을 순서 유지로 합치고,
+        status는 합친 missing이 있거나 items가 비면 partial. 조립 실패는 on_failure: forward면 Routing과 같은 출력."""
+        if out.status == "error":
+            trace["assembly_fallback"] = bool(self.cond.ingress.on_failure == "forward" and replies)
+            return self._forward(bctx, req, replies, None, trace) if trace["assembly_fallback"] else out
+        trace["assembly_fallback"] = False
+        answer = "\n".join(f"[Reply {i}] ({r.status}) {r.answer}".rstrip() for i, (_, r) in enumerate(replies, 1))
+        if out.answer:
+            answer += f"\n\n[Notes from the group's records] {out.answer}"
+        missing = list(dict.fromkeys([*(m for _, r in replies for m in r.missing), *out.missing]))
+        return out.model_copy(update={"answer": answer, "missing": missing,
+                                      "status": "partial" if missing or not out.items else "ok"})
 
     def _mask_route(self, route: dict, ev: Evidence, req, trace) -> dict:
         """Routing: 라우터 출력(항목의 엔티티·속성·대상, referral 대상, 인용)에서 요청 원문에 없고 검색 결과에만 있는
@@ -510,14 +526,18 @@ class BoundaryModule:
         cfg = self.cond.ingress
         versions = self._versions(stores, entities, bctx.day) if cfg.version_marks else []
         state = self._state(stores, entities, bctx.task_id) if cfg.boundary_state else []
-        system = P.ASSEMBLE_SYSTEM.format(state_cite=P.STATE_CITE if state else "",
+        records_only = not cfg.internal_query                           # [rag_only·gateway_rag] 구성원 답 없이 기록만
+        system = (P.ASSEMBLE_SYSTEM_RECORDS if records_only else P.ASSEMBLE_SYSTEM).format(
+                                          state_cite=P.STATE_CITE if state else "",
                                           version_rule=P.VERSION_RULE if cfg.version_marks else "",
                                           group_desc=self._group_desc(stores))
 
         def user_text(replies):
-            parts = [f"Today is day {bctx.day}.\nRequest from {req.from_group}:\n{text}", "Replies:\n" + "\n".join(
-                f"[R{i}] ({r.status}) {r.answer}".rstrip() + ("\n" + render_items(r.items) if r.items else "")
-                + (f"\n  missing: {r.missing}" if r.missing else "") for i, (_, r) in enumerate(replies, 1))]
+            parts = [f"Today is day {bctx.day}.\nRequest from {req.from_group}:\n{text}"]
+            if not records_only:
+                parts.append("Replies:\n" + "\n".join(
+                    f"[R{i}] ({r.status}) {r.answer}".rstrip() + ("\n" + render_items(r.items) if r.items else "")
+                    + (f"\n  missing: {r.missing}" if r.missing else "") for i, (_, r) in enumerate(replies, 1)))
             parts.append("Group records:\n" + (ev.text or "(none)"))
             uncovered = _uncovered(ev, replies)
             if uncovered:
@@ -548,7 +568,7 @@ class BoundaryModule:
         def cites_ok(refs) -> str | None:
             cs = [c for r in refs for c in re.findall(r"[REVS]\d+", r)]
             if not cs:
-                return "cite the reply or record, for example [R1] or [E3]"
+                return P.RECORDS_CITE_HINT if records_only else "cite the reply or record, for example [R1] or [E3]"
             bad = [c for c in cs if not exists(c)]
             return f"unknown citation {bad[0]}" if bad else None
 
@@ -625,7 +645,8 @@ class BoundaryModule:
                         self._state_refs(stores, entities, bctx.task_id) if cfg.boundary_state else [], 1)},
                     "uncovered": _uncovered(ev, replies)}
 
-        out = await self._tool(bctx, step, "assemble", system, user_text(replies), P.ANSWER_TOOL, check_answer,
+        tool = P.ANSWER_TOOL_RECORDS if records_only else P.ANSWER_TOOL
+        out = await self._tool(bctx, step, "assemble", system, user_text(replies), tool, check_answer,
                                cites(replies))
         requeried = []
         first_dropped = list(out[5]) if out is not None else []

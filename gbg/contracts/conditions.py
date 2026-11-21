@@ -59,6 +59,10 @@ class IngressConfig(Contract):
     reveal_holders: bool = False                # 전달하지 않고 담당자 목록만 돌려준다 (요청자가 직접 묻는다)
     internal_query: bool = True                 # False = 담당자에게 묻지 않고 그룹 기록만으로 조립 (gateway_rag)
     evidence: Literal["search", "oracle"] = "search"   # oracle = 증거 블록을 정답 조각으로 대체 (retrieval_oracle)
+    # [리버탈 ingress_plain_sym] 반환 처리를 sidecar와 맞춘다: 구성원 답 문장을 [Reply i]로 앞에 두고 조립 요약을
+    # [Notes from the group's records]로 붙이며, 구성원 답의 missing을 합쳐 status를 정한다
+    reply_text: bool = False
+    on_failure: Literal["error", "forward"] = "error"   # forward = 조립 실패 시 구성원 답을 Routing 형식으로 전달
 
     @model_validator(mode="after")
     def _deliver(self):
@@ -70,6 +74,8 @@ class IngressConfig(Contract):
             raise ValueError("internal_query: false(gateway_rag)는 조립하는 게이트웨이에서만, 재질의 없이")
         if self.evidence == "oracle" and self.deliver != "assemble":
             raise ValueError("evidence: oracle(retrieval_oracle)은 조립하는 게이트웨이에서만")
+        if (self.reply_text or self.on_failure != "error") and (self.deliver != "assemble" or not self.internal_query):
+            raise ValueError("reply_text·on_failure는 구성원에게 묻고 조립하는 게이트웨이에서만 (ingress_plain_sym)")
         return self
 
 
@@ -115,6 +121,8 @@ class Condition(Contract):
         if self.sidecar and (self.sidecar.deliver != "assemble" or self.sidecar.requery or self.sidecar.boundary_state
                              or not self.sidecar.internal_query or self.sidecar.evidence != "search"):
             raise ValueError("sidecar는 검색·조립만 한다: deliver assemble, 재질의·경계 상태 없음 (요청 간 상태 공유 없음)")
+        if self.sidecar and (self.sidecar.reply_text or self.sidecar.on_failure != "error"):
+            raise ValueError("reply_text·on_failure는 ingress 설정에만 (sidecar는 반환 처리가 코드에 고정)")
         if self.budget_bonus_calls < 0:
             raise ValueError("budget_bonus_calls는 0 이상")
         return self
