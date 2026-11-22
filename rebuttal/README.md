@@ -37,12 +37,13 @@
 
 | 파일 | 내용 |
 |---|---|
-| `ledgers/*.json.gz` | 런별 과제·need 원장 (새 런 18개 + 비교 기준 45개). master의 `gbg/scoring/ledger.py`로 만들었다 |
+| `ledgers/*.json.gz` | 런별 과제·need 원장 (새 런 21개 + 비교 기준 45개). master의 `gbg/scoring/ledger.py`로 만들었다 |
 | `contrasts.py` → `contrasts.json` | 모델별 공통 과제의 정확도·고리 분포·대비, 민감도 이득(관측·자연 등급 가중) |
 | `extract_requests.py` → `requests.json.gz` | 과제별 필요한 그룹과 실제로 요청한 그룹 |
 | `request_delivery.py` → `request_delivery.json` | direct·sidecar의 전달률, need 전부 전달된 과제, 요청 범위, 부분집합 이득 |
 | `decomposition.py` | ingress_no_requery − ingress_plain_sym 원인 분해 (실행 기록 필요) |
-| `common_tasks_27b.json` | 27B 아홉 조건의 공통 과제 285개 |
+| `rag_only.py` → `rag_only.json` | rag_only 실행 확인, need 출처(DB 목록 조회·부재 확인)별 정확도, 비용 (실행 기록·시나리오 필요) |
+| `common_tasks_27b.json` | 27B 열 조건의 공통 과제 285개 |
 
 결과 표는 `RESULTS.md`.
 

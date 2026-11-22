@@ -1,0 +1,2053 @@
+{
+ "checks": {
+  "llm_requester": 2247,
+  "responder_for_desk": 0,
+  "requests_to_agent": 223,
+  "requests_to_agent_from_assignee": 223,
+  "llm_responder": 567,
+  "requests_to_group": 1155,
+  "llm_boundary": 2314,
+  "decisions": 1119,
+  "action_coordinate": 1119,
+  "requery_nonempty": 0,
+  "S_source": 0,
+  "selected_members": 0,
+  "items": 3168,
+  "items_rule": 429,
+  "cites_rule": 256,
+  "resp_boundary_ok": 583,
+  "resp_boundary_error": 46,
+  "resp_boundary_partial": 490,
+  "resp_kernel_error": 36,
+  "kernel_unknown_group": 36
+ },
+ "assembly_error_rate": 0.041108132260947276,
+ "split": {
+  "전체": {
+   "n": 285,
+   "acc": {
+    "direct": 33.68421052631579,
+    "routing": 40.35087719298246,
+    "retrieve": 47.01754385964912,
+    "sidecar": 55.78947368421053,
+    "ingress_plain_sym": 51.578947368421055,
+    "ingress_no_requery": 57.54385964912281,
+    "ingress": 56.14035087719298,
+    "rag_only": 59.64912280701754,
+    "full_load": 53.68421052631579
+   },
+   "sidecar_minus_rag": [
+    -3.8596491228070176,
+    -9.824561403508772,
+    2.1052631578947367
+   ],
+   "rag_minus_direct": [
+    25.964912280701753,
+    19.298245614035086,
+    32.631578947368425
+   ]
+  },
+  "DB 목록 조회 또는 부재 확인 필요": {
+   "n": 170,
+   "acc": {
+    "direct": 30.58823529411765,
+    "routing": 35.294117647058826,
+    "retrieve": 43.529411764705884,
+    "sidecar": 50.588235294117645,
+    "ingress_plain_sym": 45.88235294117647,
+    "ingress_no_requery": 52.94117647058823,
+    "ingress": 48.23529411764706,
+    "rag_only": 54.11764705882353,
+    "full_load": 44.11764705882353
+   },
+   "sidecar_minus_rag": [
+    -3.5294117647058822,
+    -10.588235294117647,
+    3.5294117647058822
+   ],
+   "rag_minus_direct": [
+    23.529411764705884,
+    14.705882352941178,
+    31.76470588235294
+   ]
+  },
+  "DB 목록 조회(db_query) 필요": {
+   "n": 150,
+   "acc": {
+    "direct": 31.333333333333332,
+    "routing": 32.666666666666664,
+    "retrieve": 42.666666666666664,
+    "sidecar": 49.333333333333336,
+    "ingress_plain_sym": 44.0,
+    "ingress_no_requery": 51.333333333333336,
+    "ingress": 46.666666666666664,
+    "rag_only": 53.333333333333336,
+    "full_load": 40.0
+   },
+   "sidecar_minus_rag": [
+    -4.0,
+    -11.333333333333332,
+    3.3333333333333335
+   ],
+   "rag_minus_direct": [
+    22.0,
+    13.333333333333334,
+    30.666666666666664
+   ]
+  },
+  "부재 확인(negative) 필요": {
+   "n": 41,
+   "acc": {
+    "direct": 26.829268292682926,
+    "routing": 39.02439024390244,
+    "retrieve": 36.58536585365854,
+    "sidecar": 39.02439024390244,
+    "ingress_plain_sym": 41.46341463414634,
+    "ingress_no_requery": 43.90243902439025,
+    "ingress": 39.02439024390244,
+    "rag_only": 41.46341463414634,
+    "full_load": 56.09756097560975
+   },
+   "sidecar_minus_rag": [
+    -2.4390243902439024,
+    -17.073170731707318,
+    14.634146341463413
+   ],
+   "rag_minus_direct": [
+    14.634146341463415,
+    -4.878048780487805,
+    34.146341463414636
+   ]
+  },
+  "둘 다 불필요": {
+   "n": 115,
+   "acc": {
+    "direct": 38.26086956521739,
+    "routing": 47.82608695652174,
+    "retrieve": 52.17391304347826,
+    "sidecar": 63.47826086956522,
+    "ingress_plain_sym": 60.0,
+    "ingress_no_requery": 64.34782608695652,
+    "ingress": 67.82608695652173,
+    "rag_only": 67.82608695652173,
+    "full_load": 67.82608695652173
+   },
+   "sidecar_minus_rag": [
+    -4.3478260869565215,
+    -14.782608695652174,
+    6.086956521739131
+   ],
+   "rag_minus_direct": [
+    29.565217391304348,
+    18.26086956521739,
+    40.869565217391305
+   ]
+  },
+  "원격 need에 조각 출처 있음": {
+   "n": 238,
+   "acc": {
+    "direct": 24.789915966386555,
+    "routing": 31.932773109243698,
+    "retrieve": 41.596638655462186,
+    "sidecar": 50.0,
+    "ingress_plain_sym": 45.378151260504204,
+    "ingress_no_requery": 52.94117647058823,
+    "ingress": 51.260504201680675,
+    "rag_only": 54.621848739495796,
+    "full_load": 47.05882352941177
+   },
+   "sidecar_minus_rag": [
+    -4.621848739495798,
+    -11.344537815126051,
+    2.100840336134454
+   ],
+   "rag_minus_direct": [
+    29.831932773109244,
+    22.268907563025213,
+    37.39495798319328
+   ]
+  },
+  "원격 need에 조각 출처 없음": {
+   "n": 47,
+   "acc": {
+    "direct": 78.72340425531915,
+    "routing": 82.97872340425532,
+    "retrieve": 74.46808510638297,
+    "sidecar": 85.1063829787234,
+    "ingress_plain_sym": 82.97872340425532,
+    "ingress_no_requery": 80.85106382978724,
+    "ingress": 80.85106382978724,
+    "rag_only": 85.1063829787234,
+    "full_load": 87.23404255319149
+   },
+   "sidecar_minus_rag": [
+    0.0,
+    -10.638297872340425,
+    10.638297872340425
+   ],
+   "rag_minus_direct": [
+    6.382978723404255,
+    -4.25531914893617,
+    17.02127659574468
+   ]
+  },
+  "등급 A": {
+   "n": 121,
+   "acc": {
+    "direct": 71.07438016528926,
+    "routing": 68.59504132231405,
+    "retrieve": 66.94214876033058,
+    "sidecar": 76.03305785123968,
+    "ingress_plain_sym": 71.07438016528926,
+    "ingress_no_requery": 68.59504132231405,
+    "ingress": 69.42148760330579,
+    "rag_only": 70.24793388429752,
+    "full_load": 77.68595041322314
+   },
+   "sidecar_minus_rag": [
+    5.785123966942149,
+    -2.479338842975207,
+    14.049586776859504
+   ],
+   "rag_minus_direct": [
+    -0.8264462809917356,
+    -9.917355371900827,
+    8.264462809917356
+   ]
+  },
+  "등급 B": {
+   "n": 58,
+   "acc": {
+    "direct": 15.517241379310345,
+    "routing": 34.48275862068966,
+    "retrieve": 48.275862068965516,
+    "sidecar": 39.6551724137931,
+    "ingress_plain_sym": 44.827586206896555,
+    "ingress_no_requery": 58.62068965517241,
+    "ingress": 51.724137931034484,
+    "rag_only": 43.10344827586207,
+    "full_load": 43.10344827586207
+   },
+   "sidecar_minus_rag": [
+    -3.4482758620689653,
+    -15.517241379310345,
+    8.620689655172415
+   ],
+   "rag_minus_direct": [
+    27.586206896551722,
+    12.068965517241379,
+    43.103448275862064
+   ]
+  },
+  "등급 C": {
+   "n": 63,
+   "acc": {
+    "direct": 1.5873015873015872,
+    "routing": 17.46031746031746,
+    "retrieve": 25.396825396825395,
+    "sidecar": 42.857142857142854,
+    "ingress_plain_sym": 38.095238095238095,
+    "ingress_no_requery": 46.03174603174603,
+    "ingress": 39.682539682539684,
+    "rag_only": 55.55555555555556,
+    "full_load": 28.571428571428573
+   },
+   "sidecar_minus_rag": [
+    -12.698412698412698,
+    -23.809523809523807,
+    0.0
+   ],
+   "rag_minus_direct": [
+    53.96825396825397,
+    41.269841269841265,
+    65.07936507936508
+   ]
+  },
+  "등급 D": {
+   "n": 43,
+   "acc": {
+    "direct": 0.0,
+    "routing": 2.3255813953488373,
+    "retrieve": 20.930232558139537,
+    "sidecar": 39.53488372093023,
+    "ingress_plain_sym": 25.58139534883721,
+    "ingress_no_requery": 41.86046511627907,
+    "ingress": 48.83720930232558,
+    "rag_only": 58.13953488372093,
+    "full_load": 37.2093023255814
+   },
+   "sidecar_minus_rag": [
+    -18.6046511627907,
+    -34.883720930232556,
+    -2.3255813953488373
+   ],
+   "rag_minus_direct": [
+    58.13953488372093,
+    44.18604651162791,
+    72.09302325581395
+   ]
+  }
+ },
+ "discordant_vs_sidecar": {
+  "both": 128,
+  "sidecar_only": 31,
+  "rag_only": 42,
+  "neither": 84
+ },
+ "cost": {
+  "direct": {
+   "calls": 20.810526315789474,
+   "tokens": 228699.92631578946,
+   "requester": 7.47719298245614,
+   "boundary": 0.0,
+   "responder": 13.333333333333334
+  },
+  "retrieve": {
+   "calls": 28.25263157894737,
+   "tokens": 327889.81052631576,
+   "requester": 5.954385964912281,
+   "boundary": 4.891228070175439,
+   "responder": 17.40701754385965
+  },
+  "sidecar": {
+   "calls": 26.410526315789475,
+   "tokens": 283887.46315789473,
+   "requester": 6.6947368421052635,
+   "boundary": 8.505263157894737,
+   "responder": 11.210526315789474
+  },
+  "ingress": {
+   "calls": 49.41754385964912,
+   "tokens": 575575.7438596492,
+   "requester": 6.463157894736842,
+   "boundary": 10.733333333333333,
+   "responder": 32.22105263157895
+  },
+  "rag_only": {
+   "calls": 16.673684210526314,
+   "tokens": 143179.65263157894,
+   "requester": 7.203508771929824,
+   "boundary": 7.631578947368421,
+   "responder": 1.8385964912280701
+  },
+  "full_load": {
+   "calls": 6.8,
+   "tokens": 199651.12280701756,
+   "requester": 6.8,
+   "boundary": 0.0,
+   "responder": 0.0
+  }
+ },
+ "flags": {
+  "s12/W-00001": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00003": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00004": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00005": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00006": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00007": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00008": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00009": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00010": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00011": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00012": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00013": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00014": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00015": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00016": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00017": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00018": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00019": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00020": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00022": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00023": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00024": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00025": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00026": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00027": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00028": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00029": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00030": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00031": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00032": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00033": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00034": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00035": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00036": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00037": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00038": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00039": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00040": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00041": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00042": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00043": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00044": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00045": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00046": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00047": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00048": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00049": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00050": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00051": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00052": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00053": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00054": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00055": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00056": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00057": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00058": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00059": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00060": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00061": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00062": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00063": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00064": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00065": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00066": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00067": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00068": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00069": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00070": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00071": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00072": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00073": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00074": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00076": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00077": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00078": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00079": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00080": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00081": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00082": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00083": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00084": {
+   "db_query": true,
+   "negative": true,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00085": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00087": {
+   "db_query": true,
+   "negative": true,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00088": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00089": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00090": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00091": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s12/W-00092": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s12/W-00093": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00094": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00095": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00096": {
+   "db_query": false,
+   "negative": true,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00097": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s12/W-00098": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s12/W-00099": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s12/W-00100": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00002": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00003": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00005": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00006": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00007": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00008": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00009": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00010": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00011": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00012": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00013": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00014": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00015": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00016": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00017": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00018": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00019": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00020": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00021": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00022": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00023": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00024": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00025": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00026": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00027": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00028": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00029": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00030": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00031": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00032": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00033": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00034": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00036": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00037": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00038": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00039": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00040": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00041": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00042": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00043": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00044": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00045": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00046": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00047": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00048": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00049": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00050": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00051": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00052": {
+   "db_query": false,
+   "negative": true,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00053": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00055": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00056": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00057": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00058": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00059": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00061": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00062": {
+   "db_query": true,
+   "negative": true,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00063": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00064": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00065": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00066": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00068": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00069": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00070": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00071": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00072": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00073": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00074": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00075": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00076": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00077": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00078": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00079": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00080": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00081": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00082": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00084": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00085": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00086": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00087": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00088": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s13/W-00089": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00090": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00091": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s13/W-00094": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00095": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s13/W-00096": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00097": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00098": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s13/W-00099": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s13/W-00100": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00002": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00003": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00004": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00006": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00007": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00008": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00009": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00010": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00011": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00012": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00013": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00014": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00015": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00016": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00017": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00018": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00019": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00020": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00021": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00022": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00023": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00024": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00025": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00026": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00027": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00028": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00029": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00030": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00031": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00032": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00033": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00034": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00035": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00036": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00037": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00038": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00039": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00040": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00041": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00042": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00043": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00044": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00045": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00046": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00047": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00048": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00049": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00050": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00051": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00052": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00053": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00054": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00055": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00056": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00057": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00058": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00059": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00060": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00061": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00062": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00063": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00064": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00065": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00066": {
+   "db_query": false,
+   "negative": true,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00067": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00068": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00069": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00070": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00071": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00072": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00073": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00074": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00075": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00076": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00077": {
+   "db_query": true,
+   "negative": true,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00078": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00079": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00080": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00081": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00082": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00083": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00084": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00085": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00086": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00087": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00088": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00089": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00090": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00091": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00092": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "D"
+  },
+  "s14/W-00093": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00094": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00095": {
+   "db_query": true,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00096": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  },
+  "s14/W-00097": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "A"
+  },
+  "s14/W-00098": {
+   "db_query": false,
+   "negative": false,
+   "frag": true,
+   "class": "C"
+  },
+  "s14/W-00099": {
+   "db_query": false,
+   "negative": false,
+   "frag": false,
+   "class": "A"
+  },
+  "s14/W-00100": {
+   "db_query": true,
+   "negative": false,
+   "frag": true,
+   "class": "B"
+  }
+ }
+}

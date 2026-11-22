@@ -53,7 +53,7 @@ def table(model,conds,contrasts,base='direct'):
     OUT[model]=res
     return common
 D=lambda a,b:[(1,a),(-1,b)]
-c27=table('qwen3.5-27b',['direct','routing','direct_relay','retrieve','sidecar','ingress_plain_sym','ingress_no_requery','ingress','full_load'],[
+c27=table('qwen3.5-27b',['direct','routing','direct_relay','retrieve','sidecar','ingress_plain_sym','ingress_no_requery','ingress','rag_only','full_load'],[
  ('routing − direct',D('routing','direct')),('direct_relay − direct',D('direct_relay','direct')),('sidecar − direct',D('sidecar','direct')),
  ('retrieve − routing',D('retrieve','routing')),('plain_sym − routing',D('ingress_plain_sym','routing')),('plain_sym − retrieve',D('ingress_plain_sym','retrieve')),
  ('plain_sym − sidecar',D('ingress_plain_sym','sidecar')),
@@ -62,7 +62,9 @@ c27=table('qwen3.5-27b',['direct','routing','direct_relay','retrieve','sidecar',
  ('상호작용 (no_requery − sidecar) − (routing − direct)',[(1,'ingress_no_requery'),(-1,'sidecar'),(-1,'routing'),(1,'direct')]),('no_requery − retrieve',D('ingress_no_requery','retrieve')),
  ('상호작용 (ingress − sidecar) − (routing − direct)',[(1,'ingress'),(-1,'sidecar'),(-1,'routing'),(1,'direct')]),
  ('ingress − no_requery',D('ingress','ingress_no_requery')),('ingress − sidecar',D('ingress','sidecar')),('ingress − direct',D('ingress','direct')),
- ('full_load − ingress',D('full_load','ingress'))])
+ ('full_load − ingress',D('full_load','ingress')),
+ ('rag_only − direct',D('rag_only','direct')),('rag_only − retrieve',D('rag_only','retrieve')),('sidecar − rag_only',D('sidecar','rag_only')),('plain_sym − rag_only',D('ingress_plain_sym','rag_only')),
+ ('no_requery − rag_only',D('ingress_no_requery','rag_only')),('ingress − rag_only',D('ingress','rag_only')),('full_load − rag_only',D('full_load','rag_only'))])
 json.dump({s:sorted(v) for s,v in c27.items()},open(os.path.join(HERE,'common_tasks_27b.json'),'w'))
 for m in ('deepseek-v4-flash','qwen3.5-9b'):
     table(m,['direct','routing','sidecar','ingress','full_load'],[('routing − direct',D('routing','direct')),('sidecar − direct',D('sidecar','direct')),
