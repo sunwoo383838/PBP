@@ -1,0 +1,14 @@
+{
+  "scenarios_d/lag1/D5_s12_T45": {
+    "ok": true,
+    "checked": {
+      "tasks": 450,
+      "db_sources": 3449,
+      "catalog_sources": 1638,
+      "pending_values": 217,
+      "public_fragments": 2869
+    },
+    "errors": [],
+    "scope": "input/source integrity only; not a solving oracle; follow-up results supplied by runtime agents"
+  }
+}

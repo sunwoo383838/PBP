@@ -1,0 +1,122 @@
+{
+ "base": {
+  "candidates_natural": {
+   "A": 0.461,
+   "B": 0.222,
+   "C": 0.146,
+   "D": 0.171
+  },
+  "candidates_natural_n": 58678,
+  "candidates_day1_10": {
+   "A": 0.4303,
+   "B": 0.2756,
+   "C": 0.1268,
+   "D": 0.1672
+  },
+  "candidates_day1_10_n": 9353,
+  "params": {
+   "D": 5,
+   "R": 2,
+   "T": 45,
+   "K": 8000,
+   "S": 2000,
+   "warmup": 20,
+   "db_lag": [
+    1,
+    3
+   ],
+   "tasks_per_day": 10
+  },
+  "world_hash": "bf0e805b56a46562af99"
+ },
+ "K16k": {
+  "candidates_natural": {
+   "A": 0.456,
+   "B": 0.217,
+   "C": 0.166,
+   "D": 0.161
+  },
+  "candidates_natural_n": 67572,
+  "candidates_day1_10": {
+   "A": 0.452,
+   "B": 0.2773,
+   "C": 0.1485,
+   "D": 0.1222
+  },
+  "candidates_day1_10_n": 9239,
+  "params": {
+   "D": 5,
+   "R": 2,
+   "T": 45,
+   "K": 16000,
+   "S": 4000,
+   "warmup": 20,
+   "db_lag": [
+    1,
+    3
+   ],
+   "tasks_per_day": 10
+  },
+  "world_hash": "5398c33e62f791336ea2"
+ },
+ "lag1": {
+  "candidates_natural": {
+   "A": 0.48,
+   "B": 0.231,
+   "C": 0.118,
+   "D": 0.171
+  },
+  "candidates_natural_n": 78806,
+  "candidates_day1_10": {
+   "A": 0.4821,
+   "B": 0.2426,
+   "C": 0.1188,
+   "D": 0.1565
+  },
+  "candidates_day1_10_n": 11187,
+  "params": {
+   "D": 5,
+   "R": 2,
+   "T": 45,
+   "K": 8000,
+   "S": 2000,
+   "warmup": 20,
+   "db_lag": [
+    1,
+    1
+   ],
+   "tasks_per_day": 10
+  },
+  "world_hash": "dc5cbb0d4144cba1e5d2"
+ },
+ "warm10": {
+  "candidates_natural": {
+   "A": 0.462,
+   "B": 0.254,
+   "C": 0.148,
+   "D": 0.137
+  },
+  "candidates_natural_n": 71090,
+  "candidates_day1_10": {
+   "A": 0.45,
+   "B": 0.2807,
+   "C": 0.155,
+   "D": 0.1143
+  },
+  "candidates_day1_10_n": 10989,
+  "params": {
+   "D": 5,
+   "R": 2,
+   "T": 45,
+   "K": 8000,
+   "S": 2000,
+   "warmup": 10,
+   "db_lag": [
+    1,
+    3
+   ],
+   "tasks_per_day": 10
+  },
+  "world_hash": "4006e062a119ff2633c1"
+ }
+}

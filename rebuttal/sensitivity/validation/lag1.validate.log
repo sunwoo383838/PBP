@@ -1,0 +1,29 @@
+
+== scenarios_d/lag1/D5_s12_T45 ==
+  [PASS] I1 timeline order inversions == 0              0 inversions / 20217 events
+  [PASS] I2 no init workers, spawn==despawn, 0 live workers at day0 spawn 608 despawn 608 init 0 live@day0 0
+  [PASS] I3 all gold rule refs in rulebook              51 refs used, missing []
+  [PASS] I4 unreachable / inconsistent needs == 0       0 []
+  [PASS] I5 canary values unique (quotes, commits)      dup quotes 0 dup commits 0
+  [PASS] I6 surfaces free of group/agent/internal ids   0 leaks []
+  [PASS] I7 fragment text/discoverability/index         3380 fragments ok
+  [PASS] I8 design class re-derived independently       need/task mismatches {} c_ops mismatches 0 (450 tasks)
+  [PASS] I9 no answer/fragment leaks in harness/, fixed slots, scope-only cards leaky files [] varying slots [] bad cards [] hidden follow params []
+  [PASS] I10 population within ±20% of target           employee days out 0 agent groups out {}
+  [PASS] I11 10-day window rates ±10%, template mix ±10%p local counts [541, 549, 547, 547] maxdev 0.009; mix maxdev 0.050
+  [PASS] F1 state class A/B/C/D 40/20/25/15 ±5          {'A': 0.4, 'B': 0.202, 'C': 0.244, 'D': 0.153}
+  [PASS] F2 group count bins ±5                         {'2': 0.202, '3': 0.302, '4': 0.3, '5+': 0.196}
+  [PASS] F3 R tiers 15/40/25/20 ±5                      {'R0': 0.142, 'R1': 0.4, 'R2': 0.253, 'R3': 0.204}
+  [PASS] F4 discoverability of critical comps 40/40/20 ±5 {'H0': 0.405, 'H1': 0.394, 'H2': 0.201}
+  [PASS] F5 structural card+DB 40±5, single 60±5, DB ≤30 {'card_db': 0.4, 'single_holder': 0.596, 'db_only': 0.178}
+  [PASS] I12 all-history oracle not falsely asserted    not measured
+  [PASS] I13 public inputs and shadow lineage           {'tasks': 450, 'db_sources': 3449, 'catalog_sources': 1638, 'pending_values': 217, 'public_fragments': 2869}
+  [PASS] I14 commit catalog only after DB registration  0 early entries []
+  [PASS] I15 request scope covers every group the gold reads 0 []
+  [PASS] I16 min_cover consistent with class, holders ≥ min_cover 0 []
+  [PASS] I17 gold values conform to the public answer types 0 []
+  [PASS] F6 C_ops ≥ 20%                                 0.229
+  [PASS] F7 targeted sensitivity ≥ 80%                  {'C_ops→partial': 1.0, 'B→neardup|wrong_owner': 0.857, 'repeat_changed→stale': 0.887}
+  [PASS] F8 top signature ≤ 3%, explicit follow-ups 8–12% top 0.027 follow 0.102
+  [PASS] F9 task count                                  450 / 450
+  → integrity=PASS; distribution=PASS

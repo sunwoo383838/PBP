@@ -1,0 +1,14 @@
+{
+  "scenarios_d/K16k/D5_s12_T45": {
+    "ok": true,
+    "checked": {
+      "tasks": 450,
+      "db_sources": 2993,
+      "catalog_sources": 1716,
+      "pending_values": 438,
+      "public_fragments": 2888
+    },
+    "errors": [],
+    "scope": "input/source integrity only; not a solving oracle; follow-up results supplied by runtime agents"
+  }
+}

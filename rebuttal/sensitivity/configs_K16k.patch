@@ -1,0 +1,13 @@
+--- a/configs/params.yaml
++++ b/configs_K16k/params.yaml
+@@ -39,8 +39,8 @@
+   sha256: aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4
+ 
+ context:
+-  raw_window: 8000                          # K: 최근 원문 창 (토큰)
+-  summary: 2000                             # 창 이전 항목의 digest, 최신부터
++  raw_window: 16000                         # K: 최근 원문 창 (토큰). 리버탈 EXP-D K16k (기준 8000)
++  summary: 4000                             # 창 이전 항목의 digest. 리버탈 EXP-D K16k (기준 2000)
+ 
+ agent:
+   max_steps: null                           # 단계 상한 없음: 과제 예산(호출 60회)이 실제 상한. 모든 조건 동일

@@ -1,0 +1,530 @@
+{
+ "deepseek-v4-flash": {
+  "n": 285,
+  "direct": {
+   "needs": 280,
+   "gates": {
+    "L_reach": 161,
+    "ok": 70,
+    "L_respond": 9,
+    "L_request": 18,
+    "L_observe.window": 22
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 24,
+     "all_delivered_correct": 11,
+     "not_delivered": 152,
+     "not_delivered_correct": 10
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 7,
+     "all_delivered_correct": 7,
+     "not_delivered": 5,
+     "not_delivered_correct": 1
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 10,
+     "all_delivered_correct": 3,
+     "not_delivered": 48,
+     "not_delivered_correct": 6
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 3,
+     "all_delivered_correct": 1,
+     "not_delivered": 60,
+     "not_delivered_correct": 3
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 4,
+     "all_delivered_correct": 0,
+     "not_delivered": 39,
+     "not_delivered_correct": 0
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 83
+   },
+   "asked_all": {
+    "all": 231,
+    "judgeable": 136,
+    "n_judgeable": 176,
+    "group_coverage": 0.9183098591549296
+   }
+  },
+  "sidecar": {
+   "needs": 280,
+   "gates": {
+    "ok": 201,
+    "L_select": 28,
+    "L_request": 20,
+    "L_observe.search": 27,
+    "L_observe.window": 3,
+    "L_respond": 1
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 120,
+     "all_delivered_correct": 91,
+     "not_delivered": 56,
+     "not_delivered_correct": 2
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 11,
+     "all_delivered_correct": 10,
+     "not_delivered": 1,
+     "not_delivered_correct": 0
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 39,
+     "all_delivered_correct": 28,
+     "not_delivered": 19,
+     "not_delivered_correct": 1
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 40,
+     "all_delivered_correct": 32,
+     "not_delivered": 23,
+     "not_delivered_correct": 1
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 30,
+     "all_delivered_correct": 21,
+     "not_delivered": 13,
+     "not_delivered_correct": 0
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 86
+   },
+   "asked_all": {
+    "all": 229,
+    "judgeable": 133,
+    "n_judgeable": 176,
+    "group_coverage": 0.9140845070422535
+   }
+  },
+  "gain": {
+   "전체": {
+    "n": 285,
+    "direct": 36.49122807017544,
+    "sidecar": 62.80701754385965,
+    "gain": 26.31578947368421,
+    "ci": [
+     20.0,
+     32.631578947368425
+    ]
+   },
+   "양쪽 모두 필요한 그룹 전부에 요청": {
+    "n": 224,
+    "direct": 39.285714285714285,
+    "sidecar": 72.32142857142857,
+    "gain": 33.035714285714285,
+    "ci": [
+     25.892857142857146,
+     40.17857142857143
+    ]
+   },
+   "한쪽이라도 빠뜨림": {
+    "n": 61,
+    "direct": 26.229508196721312,
+    "sidecar": 27.868852459016395,
+    "gain": 1.639344262295082,
+    "ci": [
+     -6.557377049180328,
+     9.836065573770492
+    ]
+   },
+   "양쪽 모두 전부 요청 · 판정 가능한 과제만": {
+    "n": 129,
+    "direct": 11.627906976744185,
+    "sidecar": 67.44186046511628,
+    "gain": 55.81395348837209,
+    "ci": [
+     45.73643410852713,
+     65.11627906976744
+    ]
+   },
+   "양쪽 모두 전부 요청 · 등급 B·C·D": {
+    "n": 119,
+    "direct": 7.563025210084033,
+    "sidecar": 66.38655462184875,
+    "gain": 58.8235294117647,
+    "ci": [
+     48.739495798319325,
+     68.90756302521008
+    ]
+   }
+  },
+  "asked_cross": {
+   "direct=True,sidecar=True": 224,
+   "direct=False,sidecar=False": 49,
+   "direct=False,sidecar=True": 5,
+   "direct=True,sidecar=False": 7
+  }
+ },
+ "qwen3.5-9b": {
+  "n": 285,
+  "direct": {
+   "needs": 280,
+   "gates": {
+    "L_reach": 125,
+    "L_request": 97,
+    "L_respond": 28,
+    "ok": 21,
+    "L_observe.window": 9
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 5,
+     "all_delivered_correct": 1,
+     "not_delivered": 171,
+     "not_delivered_correct": 3
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 1,
+     "all_delivered_correct": 0,
+     "not_delivered": 11,
+     "not_delivered_correct": 0
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 1,
+     "all_delivered_correct": 1,
+     "not_delivered": 57,
+     "not_delivered_correct": 3
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 1,
+     "all_delivered_correct": 0,
+     "not_delivered": 62,
+     "not_delivered_correct": 0
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 2,
+     "all_delivered_correct": 0,
+     "not_delivered": 41,
+     "not_delivered_correct": 0
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 51
+   },
+   "asked_all": {
+    "all": 134,
+    "judgeable": 87,
+    "n_judgeable": 176,
+    "group_coverage": 0.5816901408450704
+   }
+  },
+  "sidecar": {
+   "needs": 280,
+   "gates": {
+    "L_select": 85,
+    "ok": 54,
+    "L_observe.search": 30,
+    "L_request": 104,
+    "L_observe.window": 7
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 24,
+     "all_delivered_correct": 11,
+     "not_delivered": 152,
+     "not_delivered_correct": 6
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 5,
+     "all_delivered_correct": 5,
+     "not_delivered": 7,
+     "not_delivered_correct": 1
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 6,
+     "all_delivered_correct": 5,
+     "not_delivered": 52,
+     "not_delivered_correct": 4
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 6,
+     "all_delivered_correct": 1,
+     "not_delivered": 57,
+     "not_delivered_correct": 1
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 7,
+     "all_delivered_correct": 0,
+     "not_delivered": 36,
+     "not_delivered_correct": 0
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 52
+   },
+   "asked_all": {
+    "all": 119,
+    "judgeable": 69,
+    "n_judgeable": 176,
+    "group_coverage": 0.5676056338028169
+   }
+  },
+  "gain": {
+   "전체": {
+    "n": 285,
+    "direct": 19.29824561403509,
+    "sidecar": 24.210526315789473,
+    "gain": 4.912280701754386,
+    "ci": [
+     0.3508771929824561,
+     9.473684210526317
+    ]
+   },
+   "양쪽 모두 필요한 그룹 전부에 요청": {
+    "n": 86,
+    "direct": 27.906976744186046,
+    "sidecar": 40.69767441860465,
+    "gain": 12.790697674418604,
+    "ci": [
+     4.651162790697675,
+     20.930232558139537
+    ]
+   },
+   "한쪽이라도 빠뜨림": {
+    "n": 199,
+    "direct": 15.577889447236181,
+    "sidecar": 17.08542713567839,
+    "gain": 1.5075376884422111,
+    "ci": [
+     -4.0201005025125625,
+     7.035175879396985
+    ]
+   },
+   "양쪽 모두 전부 요청 · 판정 가능한 과제만": {
+    "n": 52,
+    "direct": 3.8461538461538463,
+    "sidecar": 17.307692307692307,
+    "gain": 13.461538461538462,
+    "ci": [
+     5.769230769230769,
+     23.076923076923077
+    ]
+   },
+   "양쪽 모두 전부 요청 · 등급 B·C·D": {
+    "n": 47,
+    "direct": 4.25531914893617,
+    "sidecar": 12.76595744680851,
+    "gain": 8.51063829787234,
+    "ci": [
+     2.127659574468085,
+     17.02127659574468
+    ]
+   }
+  },
+  "asked_cross": {
+   "direct=False,sidecar=True": 33,
+   "direct=False,sidecar=False": 118,
+   "direct=True,sidecar=False": 48,
+   "direct=True,sidecar=True": 86
+  }
+ },
+ "qwen3.5-27b": {
+  "n": 285,
+  "direct": {
+   "needs": 280,
+   "gates": {
+    "L_reach": 178,
+    "ok": 52,
+    "L_request": 27,
+    "L_respond": 14,
+    "E_*": 2,
+    "L_observe.window": 7
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 20,
+     "all_delivered_correct": 8,
+     "not_delivered": 156,
+     "not_delivered_correct": 10
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 9,
+     "all_delivered_correct": 6,
+     "not_delivered": 3,
+     "not_delivered_correct": 2
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 2,
+     "all_delivered_correct": 2,
+     "not_delivered": 56,
+     "not_delivered_correct": 7
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 5,
+     "all_delivered_correct": 0,
+     "not_delivered": 58,
+     "not_delivered_correct": 1
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 4,
+     "all_delivered_correct": 0,
+     "not_delivered": 39,
+     "not_delivered_correct": 0
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 78
+   },
+   "asked_all": {
+    "all": 196,
+    "judgeable": 115,
+    "n_judgeable": 176,
+    "group_coverage": 0.8436619718309859
+   }
+  },
+  "sidecar": {
+   "needs": 280,
+   "gates": {
+    "L_select": 60,
+    "ok": 156,
+    "L_request": 24,
+    "L_observe.search": 35,
+    "L_observe.window": 3,
+    "L_respond": 2
+   },
+   "tasks": {
+    "전체": {
+     "judgeable": 176,
+     "all_delivered": 95,
+     "all_delivered_correct": 62,
+     "not_delivered": 81,
+     "not_delivered_correct": 13
+    },
+    "A": {
+     "judgeable": 12,
+     "all_delivered": 11,
+     "all_delivered_correct": 8,
+     "not_delivered": 1,
+     "not_delivered_correct": 0
+    },
+    "B": {
+     "judgeable": 58,
+     "all_delivered": 29,
+     "all_delivered_correct": 18,
+     "not_delivered": 29,
+     "not_delivered_correct": 5
+    },
+    "C": {
+     "judgeable": 63,
+     "all_delivered": 32,
+     "all_delivered_correct": 21,
+     "not_delivered": 31,
+     "not_delivered_correct": 6
+    },
+    "D": {
+     "judgeable": 43,
+     "all_delivered": 23,
+     "all_delivered_correct": 15,
+     "not_delivered": 20,
+     "not_delivered_correct": 2
+    }
+   },
+   "unjudgeable": {
+    "n": 109,
+    "correct": 84
+   },
+   "asked_all": {
+    "all": 194,
+    "judgeable": 113,
+    "n_judgeable": 176,
+    "group_coverage": 0.8352112676056338
+   }
+  },
+  "gain": {
+   "전체": {
+    "n": 285,
+    "direct": 33.68421052631579,
+    "sidecar": 55.78947368421053,
+    "gain": 22.105263157894736,
+    "ci": [
+     16.140350877192983,
+     28.07017543859649
+    ]
+   },
+   "양쪽 모두 필요한 그룹 전부에 요청": {
+    "n": 179,
+    "direct": 34.63687150837989,
+    "sidecar": 68.15642458100558,
+    "gain": 33.5195530726257,
+    "ci": [
+     26.81564245810056,
+     40.78212290502793
+    ]
+   },
+   "한쪽이라도 빠뜨림": {
+    "n": 106,
+    "direct": 32.075471698113205,
+    "sidecar": 34.905660377358494,
+    "gain": 2.830188679245283,
+    "ci": [
+     -5.660377358490567,
+     11.320754716981133
+    ]
+   },
+   "양쪽 모두 전부 요청 · 판정 가능한 과제만": {
+    "n": 103,
+    "direct": 6.796116504854369,
+    "sidecar": 60.19417475728155,
+    "gain": 53.398058252427184,
+    "ci": [
+     43.689320388349515,
+     63.10679611650486
+    ]
+   },
+   "양쪽 모두 전부 요청 · 등급 B·C·D": {
+    "n": 95,
+    "direct": 3.1578947368421053,
+    "sidecar": 58.94736842105263,
+    "gain": 55.78947368421053,
+    "ci": [
+     45.26315789473684,
+     65.26315789473685
+    ]
+   }
+  },
+  "asked_cross": {
+   "direct=True,sidecar=True": 179,
+   "direct=False,sidecar=False": 74,
+   "direct=True,sidecar=False": 17,
+   "direct=False,sidecar=True": 15
+  }
+ }
+}
