@@ -1,0 +1,12 @@
+{
+ "condition": "direct",
+ "scenario": "D5_s12_T45",
+ "max_day": 10,
+ "wal_hash": "30688718f1efdf003e292064e3cba99f247a76cd7c25330fb75ae786b833ea6e",
+ "seconds_last_segment": 12807.3,
+ "segments": 1,
+ "scripted": false,
+ "api_calls_last_segment": 2035,
+ "embed_computed_last_segment": 0,
+ "rerank_computed_last_segment": 0
+}

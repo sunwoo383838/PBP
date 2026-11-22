@@ -47,6 +47,25 @@
 
 결과 표는 `RESULTS.md`.
 
+## 원본 로그 (`logs/`)
+
+추가 실험 런의 원본 로그를 런마다 한 폴더에 압축해 두었다. 형식은 본 실험의 `output/analysis_package/logs/`(master)와 같고,
+폴더 이름은 원장과 같다(`A__<조건>__<시드>`, `C__<모델>__sidecar__<시드>`, `D__<셀>__<조건>__s12`). `export_logs.py`로 만들었다.
+
+| 파일 | 내용 |
+|---|---|
+| `events.jsonl.gz` | 실행 기록(WAL) 전체: 메시지, LLM 호출, 도구 호출, 검색, 창구 결정, 답 |
+| `obs_llm` · `obs_messages` · `obs_gateway` · `obs_retrievals` · `obs_batches` | 분석용 관측 기록 (본 실험과 같은 종류) |
+| `obs_access` · `obs_db_lookups` · `obs_context_windows` | 기록 접근 판정, DB 조회, 호출별 맥락 구성 (K16k 창 확인에 썼다) |
+| `timing_llm.jsonl.gz` | 호출별 시각과 지연 |
+| `manifest.json` · `manifest_history.jsonl` · `run.json` · `run_meta.json` · `supervise.jsonl` | 실행 설정, 구간별 manifest, 실행 기록 해시, 감시 기록 |
+
+- 분석에 쓴 런 21개 외에 두 가지가 더 들어 있다. `A__rag_only_v1_rulecite__s*`는 인용 규칙을 고치기 전의 rag_only v1(분석에 쓰지
+  않음), `C__deepseek-v4-flash__sidecar__s*.failed_toolname`은 제공자가 도구 이름을 거부해 시작 직후 멈춘 첫 시도다.
+- `manifest.json`은 첫 구간(1일차 점검)의 값이라 `max_day`가 1이다. 10일까지의 구간은 `manifest_history.jsonl`과 `run_meta.json`에 있다.
+- `decomposition.py`와 `rag_only.py`는 `<조건>/<시드>/wal/events.jsonl` 배치를 읽는다. 이 폴더의 `events.jsonl.gz`를 그 자리에 풀면 된다.
+- 응답 캐시(`llm_cache.sqlite`)와 그룹별 이력 파일은 크기 때문에 넣지 않았다.
+
 ## 한계
 
 - 민감도는 시드 1개(탐색적). 세계와 과제가 기준과 달라 "같은 과제에서 변수만 바꾼 효과"가 아니다.

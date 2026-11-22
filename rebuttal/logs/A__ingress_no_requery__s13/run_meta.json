@@ -1,0 +1,12 @@
+{
+ "condition": "ingress_no_requery",
+ "scenario": "D5_s13_T45",
+ "max_day": 10,
+ "wal_hash": "9355ada4585756bb8f21a29ae0229b2199dcf39bd498b8aaa339ce48085f3bf9",
+ "seconds_last_segment": 38906.7,
+ "segments": 1,
+ "scripted": false,
+ "api_calls_last_segment": 4031,
+ "embed_computed_last_segment": 925,
+ "rerank_computed_last_segment": 20830
+}

@@ -1,0 +1,12 @@
+{
+ "condition": "ingress_plain_sym",
+ "scenario": "D5_s14_T45",
+ "max_day": 10,
+ "wal_hash": "228767edd744e173014163013f04973eaacf72b30c6be03d0f747c4f51d6ad36",
+ "seconds_last_segment": 36090.8,
+ "segments": 1,
+ "scripted": false,
+ "api_calls_last_segment": 3449,
+ "embed_computed_last_segment": 856,
+ "rerank_computed_last_segment": 18739
+}

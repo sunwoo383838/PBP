@@ -1,0 +1,12 @@
+{
+ "condition": "sidecar",
+ "scenario": "D5_s13_T45",
+ "max_day": 10,
+ "wal_hash": "1ddd8c1a53d23104d73713f32c71b8a859353bd11705f9b05f1bdfec69ec0214",
+ "seconds_last_segment": 39155.6,
+ "segments": 1,
+ "scripted": false,
+ "api_calls_last_segment": 5203,
+ "embed_computed_last_segment": 1468,
+ "rerank_computed_last_segment": 58199
+}
