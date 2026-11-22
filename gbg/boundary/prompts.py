@@ -58,15 +58,15 @@ This group: {group_desc}"""
 # [리버탈 rag_only] 구성원에게 묻지 않는 창구(internal_query: false)의 조립 문구. ASSEMBLE_SYSTEM에서 구성원 답에 관한
 # 문장만 뺐다 (2026-11-22 사용자 확정)
 ASSEMBLE_SYSTEM_RECORDS = """You are the intake desk of a business group. No member is asked for this request. Using only the group records given below, state what the request needs:
-- additions: facts from the group records that answer the request, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1]{state_cite}.
+- additions: facts from the group records or this group's rules that answer the request, one item per value, with entity and value copied exactly as they appear in the record or rule. In ref, cite the record as [E1], a database version as [V1]{state_cite}, or a rule of this group by its rule id in brackets (the id at the start of the rule's line, for example [{rule_example}]).
 - conflicts: where group records disagree with each other, name the item, say what disagrees, and cite the refs.
-- proposals: where group records disagree and one value should count, name the item, give the value you propose, cite the refs it rests on ([E1], [V1]{state_cite}), and give a one-sentence rationale.
+- proposals: where group records disagree and one value should count, name the item, give the value you propose, cite the refs it rests on ([E1], [V1]{state_cite}, or a rule id), and give a one-sentence rationale.
 - missing: requested items that the records do not confirm. Do not guess.
 - When records disagree, the one with the later record date counts. Raise such cases as conflicts or proposals.{version_rule}
 First work through the request and the records step by step in your reply text, then call the answer tool once.
 
 This group: {group_desc}"""
-RECORDS_CITE_HINT = "cite the record, for example [E3] or [V2]"
+RECORDS_CITE_HINT = "cite the record, for example [E3] or [V2], or a rule of this group by its rule id, for example [{rule_example}]"
 
 VERSION_RULE = """
 - Database versions of the same key are the same fact: the latest registered version replaces earlier ones. State the version you use (for example "v3, registered day 12")."""
@@ -89,11 +89,16 @@ ANSWER_TOOL = {
         "missing": {"type": "array", "items": {"type": "string"}, "description": "Requested items not confirmed."},
         "answer": {"type": "string", "description": "Optional short summary."}},
         "required": ["additions", "conflicts", "proposals", "missing"], "additionalProperties": False}}
-_CITES_RECORDS = {**_CITES, "description": "Citations such as \"[E3]\", \"[V2]\"."}
+_CITES_RECORDS = {**_CITES, "description": "Citations such as \"[E3]\", \"[V2]\" or a rule id of this group in brackets."}
 ANSWER_TOOL_RECORDS = {**ANSWER_TOOL, "description": "Send the group's additions, conflict notes, proposed values and what "
                                                     "could not be confirmed.",
                        "parameters": {**ANSWER_TOOL["parameters"], "properties": {
                            **ANSWER_TOOL["parameters"]["properties"],
+                           "additions": {**ANSWER_TOOL["parameters"]["properties"]["additions"], "items": {
+                               **ANSWER_TOOL["parameters"]["properties"]["additions"]["items"], "properties": {
+                                   **ANSWER_TOOL["parameters"]["properties"]["additions"]["items"]["properties"],
+                                   "ref": {"type": "string", "description": "The citation of the record or rule the value is "
+                                           "taken from, for example \"[E3]\", \"[V2]\" or a rule id of this group in brackets."}}}},
                            "conflicts": {"type": "array", "items": {**ANSWER_TOOL["parameters"]["properties"]["conflicts"]["items"],
                                "properties": {**ANSWER_TOOL["parameters"]["properties"]["conflicts"]["items"]["properties"],
                                               "refs": _CITES_RECORDS}}},

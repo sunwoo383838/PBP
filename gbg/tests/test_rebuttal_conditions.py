@@ -196,3 +196,44 @@ def test_safe_tool_names_only_for_listed_models_and_mapped_back(tmp_path):
     assert ds["tools"][0]["function"]["description"] == "Use db.query."                 # 설명 글은 그대로
     assert qw["tools"][0]["function"]["name"] == "db.query"                             # 목록 밖 모델은 그대로
     assert keys["deepseek-v4-flash"]["tools"][0]["function"]["name"] == "db.query"      # 캐시 키용 요청은 원래 이름
+
+
+def _rule_script(ref_of, seen):
+    """조립(answer) 1차 호출에 규정 인용 항목 하나를 넣는 스크립트. ref_of(rule_id) → ref 문자열."""
+    import re as _re
+
+    def script(req):
+        tools, msgs = _tools(req), req["messages"]
+        if "answer" in tools:
+            system = msgs[0]["content"]
+            rules = _re.findall(r"^- (\S+?)(?: \(|:)", system.split("[Rules of", 1)[1], _re.M) if "[Rules of" in system else []
+            if rules and len(msgs) == 2:
+                seen["first"].append(rules[0])
+                return T.mk([("answer", {"additions": [{"entity": "rule", "attribute": "text", "value": "x", "status": "",
+                                                         "ref": ref_of(rules[0])}],
+                                         "conflicts": [], "proposals": [], "missing": []})])
+            if len(msgs) > 2:
+                seen["retry"].append(msgs[-1]["content"])
+        return oracle(req)
+    return script
+
+
+@pytest.mark.parametrize("cond", ["rag_only", "ingress"])
+def test_rule_id_citation_is_accepted_only_by_records_only_desk(tmp_path, cond):
+    """[리버탈 v2] rag_only: additions 근거로 이 그룹 규정 id를 받고 source=rule. ingress 등 기존 조건은 그대로 거절."""
+    seen = {"first": [], "retry": []}
+    _, ev = run(tmp_path, cond, script=_rule_script(lambda r: f"[{r}]", seen), max_day=1)
+    assert seen["first"]
+    resp = [e["payload"]["response"] for e in ev if e["type"] == "message" and e["payload"]["kind"] == "response"
+            and e["payload"]["to_agent"] is None and not e["payload"].get("serving")]
+    rule_items = [x for r in resp for x in r["items"] if x["entity"] == "rule"]
+    if cond == "rag_only":
+        assert not seen["retry"] and rule_items and all(x["source"] == "rule" and x["day"] == "fixed" for x in rule_items)
+    else:
+        assert seen["retry"] and all("cite the reply or record" in m for m in seen["retry"]) and not rule_items
+
+
+def test_rag_only_rule_header_is_not_a_citation_and_hint_names_rule_id(tmp_path):
+    seen = {"first": [], "retry": []}
+    run(tmp_path, "rag_only", script=_rule_script(lambda r: "[Rules of this group]", seen), max_day=1)
+    assert seen["retry"] and all("or a rule of this group by its rule id, for example [" in m for m in seen["retry"])

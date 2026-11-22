@@ -1719,13 +1719,13 @@ Output format: submit with these slots:
 Ask a group in the directory (by its id) a question. The group's intake desk answers from the group's records and registered database versions without asking its members, and returns the items it finds, conflict notes and proposed values with their sources. Ask each group whose area covers a piece you need.
 ```
 
-### 2. rag_only · 경계: 조립 system (ASSEMBLE_SYSTEM_RECORDS)
-`{state_cite}`는 과거 문답이 있을 때만 채워진다(rag_only는 항상 빈 문자열). `{version_rule}`은 VERSION_RULE.
+### 2. rag_only · 경계: 조립 system (ASSEMBLE_SYSTEM_RECORDS) — v2 (2026-11-22, 규정 인용)
+`{state_cite}`는 과거 문답이 있을 때만 채워진다(rag_only는 항상 빈 문자열). `{version_rule}`은 VERSION_RULE. `{rule_example}`은 이 그룹 첫 규정의 id(규정이 없으면 `rule_id`).
 ```
 You are the intake desk of a business group. No member is asked for this request. Using only the group records given below, state what the request needs:
-- additions: facts from the group records that answer the request, one item per value, with entity and value copied exactly as they appear in the record. In ref, cite the record as [E1] or a database version as [V1]{state_cite}.
+- additions: facts from the group records or this group's rules that answer the request, one item per value, with entity and value copied exactly as they appear in the record or rule. In ref, cite the record as [E1], a database version as [V1]{state_cite}, or a rule of this group by its rule id in brackets (the id at the start of the rule's line, for example [{rule_example}]).
 - conflicts: where group records disagree with each other, name the item, say what disagrees, and cite the refs.
-- proposals: where group records disagree and one value should count, name the item, give the value you propose, cite the refs it rests on ([E1], [V1]{state_cite}), and give a one-sentence rationale.
+- proposals: where group records disagree and one value should count, name the item, give the value you propose, cite the refs it rests on ([E1], [V1]{state_cite}, or a rule id), and give a one-sentence rationale.
 - missing: requested items that the records do not confirm. Do not guess.
 - When records disagree, the one with the later record date counts. Raise such cases as conflicts or proposals.{version_rule}
 First work through the request and the records step by step in your reply text, then call the answer tool once.
@@ -1737,16 +1737,22 @@ This group: {group_desc}
 ```
 Send the group's additions, conflict notes, proposed values and what could not be confirmed.
 ```
+additions 항목 `ref` 설명 (v2):
+```
+The citation of the record or rule the value is taken from, for example "[E3]", "[V2]" or a rule id of this group in brackets.
+```
 
-### 4. rag_only · 경계: 조립 도구의 conflicts·proposals refs 설명 (_CITES_RECORDS; 나머지 스키마는 ANSWER_TOOL과 같음)
+### 4. rag_only · 경계: 조립 도구의 conflicts·proposals refs 설명 (_CITES_RECORDS; 나머지 스키마는 ANSWER_TOOL과 같음) — v2
 ```
-Citations such as "[E3]", "[V2]".
+Citations such as "[E3]", "[V2]" or a rule id of this group in brackets.
 ```
 
-### 5. rag_only · 경계: 인용 누락 재시도 문구 (RECORDS_CITE_HINT, cites_ok)
+### 5. rag_only · 경계: 인용 누락 재시도 문구 (RECORDS_CITE_HINT, cites_ok) — v2
 ```
-cite the record, for example [E3] or [V2]
+cite the record, for example [E3] or [V2], or a rule of this group by its rule id, for example [{rule_example}]
 ```
+
+v1(같은 날 첫 확정본)과의 차이: additions·proposals의 근거에 이 그룹 규정 id를 더함(위 2·3·4·5). v1은 규정집이 창구 system에 보이는데 인용 번호가 없어, 규정에 관한 답이 모두 인용 누락으로 거절됐다(27B 본 실행 조립의 33.6% 최종 실패, 그중 93%가 규정 인용). 검사: rag_only 경로에서만 ref의 낱말 하나가 이 그룹 규정 id면 additions·conflicts·proposals 근거로 받고 source = rule, day = fixed(구성원 답 RefTable과 같은 규칙). `[Rules of …]` 같은 머리말은 인용이 아니다.
 
 ### ingress_plain_sym · 반환 문자열 (코드가 조립, sidecar와 같음)
 ```

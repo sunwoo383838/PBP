@@ -530,10 +530,13 @@ class BoundaryModule:
         versions = self._versions(stores, entities, bctx.day) if cfg.version_marks else []
         state = self._state(stores, entities, bctx.task_id) if cfg.boundary_state else []
         records_only = not cfg.internal_query                           # [rag_only·gateway_rag] 구성원 답 없이 기록만
+        rule_ids = [r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
+                    for r in stores.rulebook.read_all(self.group)]
+        rule_example = rule_ids[0] if rule_ids else "rule_id"           # [rag_only] 규정 인용 예시 = 이 그룹 첫 규정 id
         system = (P.ASSEMBLE_SYSTEM_RECORDS if records_only else P.ASSEMBLE_SYSTEM).format(
                                           state_cite=P.STATE_CITE if state else "",
                                           version_rule=P.VERSION_RULE if cfg.version_marks else "",
-                                          group_desc=self._group_desc(stores))
+                                          rule_example=rule_example, group_desc=self._group_desc(stores))
 
         def user_text(replies):
             parts = [f"Today is day {bctx.day}.\nRequest from {req.from_group}:\n{text}"]
@@ -553,8 +556,12 @@ class BoundaryModule:
 
         # 인용 표기: 응답 [R#], 그룹 기록 [E#], DB 버전 [V#], 과거 문답 [S#]. 버전을 V로 쓰는 것은 담당자 항목의
         # ref(자기 조회 결과 D#)와 겹치지 않게 하려는 것이다 (pilot18: 담당자 D1과 버전 [D1]을 같은 것으로 읽어 가짜 충돌)
-        rule_ids = {r.id.split(".", 1)[1] if r.id.startswith(f"{r.group}.") else r.id
-                    for r in stores.rulebook.read_all(self.group)}
+        rule_ids = set(rule_ids)
+
+        def rule_cite(ref: str) -> bool:
+            """[rag_only] 이 그룹 규정 id를 인용했나. 구성원 답의 RefTable과 같은 규칙: ref의 낱말 중 하나가 규정 id.
+            구성원이 없어 규정을 전해 줄 사람이 없으므로 기록만 쓰는 창구에서만 additions·conflicts 근거로 받는다."""
+            return bool({w.lower() for w in re.split(r"[\s,;:()\[\]]+", ref) if w} & {r.lower() for r in rule_ids})
 
         def exists(c: str) -> bool:                                        # 인용이 실제로 있는 응답·기록·버전·과거 문답인가
             k, n = c[0], int(c[1:])
@@ -565,13 +572,16 @@ class BoundaryModule:
             """제안의 근거 하나가 실제로 풀리는가: 증거·DB 버전·과거 문답이 있거나, 항목이 있는 응답이거나, 이 그룹 규정 id."""
             cs = re.findall(r"[REVS]\d+", ref)
             if not cs:
-                return ref.strip().strip("[]").strip() in rule_ids
+                return rule_cite(ref) if records_only else ref.strip().strip("[]").strip() in rule_ids
             return all(exists(c) and (c[0] != "R" or bool(replies[int(c[1:]) - 1][1].items)) for c in cs)
 
         def cites_ok(refs) -> str | None:
             cs = [c for r in refs for c in re.findall(r"[REVS]\d+", r)]
             if not cs:
-                return P.RECORDS_CITE_HINT if records_only else "cite the reply or record, for example [R1] or [E3]"
+                if records_only and refs and all(rule_cite(r) for r in refs):
+                    return None
+                return (P.RECORDS_CITE_HINT.format(rule_example=rule_example) if records_only
+                        else "cite the reply or record, for example [R1] or [E3]")
             bad = [c for c in cs if not exists(c)]
             return f"unknown citation {bad[0]}" if bad else None
 
@@ -596,6 +606,8 @@ class BoundaryModule:
                 elif kind == "S" and 0 <= i < len(state):
                     if m := re.match(r"day (-?\d+):", state[i]):
                         return "history", m.group(1)
+            if records_only and not re.search(r"[REVS]\d+", x["ref"]) and rule_cite(x["ref"]):
+                return "rule", "fixed"                                     # 구성원 답 RefTable과 같은 표기
             return "unknown", "unknown"
 
         def check_answer(a):
