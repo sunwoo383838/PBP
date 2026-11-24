@@ -1,0 +1,11 @@
+__pycache__/
+batches/
+out/
+redo/
+regate_out/
+regate.log
+verdicts.json
+verdicts_dup.json
+index.json
+problems.json
+fixed_keys.json

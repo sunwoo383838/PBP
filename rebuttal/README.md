@@ -44,6 +44,7 @@
 | `decomposition.py` | ingress_no_requery − ingress_plain_sym 원인 분해 (실행 기록 필요) |
 | `rag_only.py` → `rag_only.json` | rag_only 실행 확인, need 출처(DB 목록 조회·부재 확인)별 정확도, 비용 (실행 기록·시나리오 필요) |
 | `common_tasks_27b.json` | 27B 열 조건의 공통 과제 285개 |
+| `relabel/` | 102런 손실 고리 LLM 재판정: 판정 규칙·원본·재계산 고리·요약(`relabel/SUMMARY.md`, `relabel/README.md`) |
 
 결과 표는 `RESULTS.md`.
 
